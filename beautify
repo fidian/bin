@@ -1,0 +1,7 @@
+#!/bin/bash
+
+#php_beautifier -t -l "Pear() ListClassFunction() ArrayNested() NewLines(before=if:switch:T_COMMENT:T_CLASS:while,after='}')" -t1 $1
+
+#php_beautifier -d ~/bby/ -t -l "Pear() ListClassFunction() ArrayNested() BBY()" -t1 $1
+#php_beautifier -d ~/bby/ -t -l "Pear() ListClassFunction() ArrayNested() NewLines(before=if:switch:while:return:case:default) BBY()" -t1 $1
+php_beautifier -d ~/bin/ -l "beautify()" $1

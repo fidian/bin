@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for D in */; do (
+	cd $D
+	make install
+	make clean
+); done
