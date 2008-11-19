@@ -1,0 +1,14 @@
+#!/bin/bash
+
+FROM="$1"
+TO="$2"
+
+if [ -z "$TO" ]; then
+	echo "Change a User ID from X to Y"
+	echo "Usage:  $0 FROM_ID TO_ID"
+	echo "Changes the ownership of all files on the server to match."
+	exit;
+fi
+
+find / -xdev -uid "$FROM" -exec chown "$TO" \{\} \;
+find / -xdev -gid "$FROM" -exec chgrp "$TO" \{\} \;

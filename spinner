@@ -1,0 +1,13 @@
+#!/usr/bin/perl
+
+# exit if (fork() > 0);
+
+$| = 1;
+
+@chars = split(//, '.-o*+O0O+*o-. ');
+while (1) {
+    sleep 5;
+    $c = shift(@chars);
+    print $c . chr(8);
+    push(@chars, $c);
+}
