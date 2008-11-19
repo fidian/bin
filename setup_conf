@@ -1,0 +1,10 @@
+#!/bin/bash
+
+BASH_FILE=~/.bashrc
+grep "/bin/conf/bashrc" "${BASH_FILE}" > /dev/null
+if [ $? -ne 0 ]; then
+	echo ". ~$USER/bin/conf/bashrc" >> "${BASH_FILE}"
+fi
+
+rm -f ~/.vimrc
+ln -s bin/conf/vimrc ~/.vimrc
