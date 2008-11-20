@@ -1,9 +1,7 @@
 " Turn on syntax highlighting, set some colors
 syn on
 highlight Search term=underline cterm=underline ctermfg=green ctermbg=darkblue gui=NONE guifg=white guibg=yellow
-highlight phpComment ctermfg=blue
-highlight cComment ctermfg=blue
-highlight comment ctermfg=blue
+highlight comment cterm=NONE ctermfg=darkgray
 
 " Set tab and indent preferences
 set noexpandtab tabstop=4 shiftwidth=4 softtabstop=4 smartindent autoindent
