@@ -1,11 +1,35 @@
+" Turn on syntax highlighting, set some colors
 syn on
-set noexpandtab tabstop=4 shiftwidth=4 softtabstop=4
-set smartindent autoindent
-set mouse=r
-set incsearch
-set ignorecase smartcase
-set hlsearch
-nohlsearch
 highlight Search term=underline cterm=underline ctermfg=green ctermbg=darkblue gui=NONE guifg=white guibg=yellow
 highlight phpComment ctermfg=blue
 highlight cComment ctermfg=blue
+highlight comment ctermfg=blue
+
+" Set tab and indent preferences
+set noexpandtab tabstop=4 shiftwidth=4 softtabstop=4 smartindent autoindent
+
+" Searching options
+set incsearch ignorecase smartcase hlsearch
+nohlsearch
+
+" Unhighlight your search automatically when editing
+" Alternately, the following map will clear your search
+" map \ :noh<cr> 
+nnoremap a :noh<CR>a
+nnoremap A :noh<CR>A
+nnoremap i :noh<CR>i
+nnoremap I :noh<CR>I
+nnoremap o :noh<CR>o
+nnoremap O :noh<CR>O
+
+" Allow F1 to exit edit mode.  Can bring up help, but can also remove help
+inoremap <F1> <Esc>
+noremap <F1> :call MapF1()<CR>
+
+function! MapF1()
+	if &buftype == "help"
+		exec 'quit'
+	else
+		exec 'help'
+	endif
+endfunction
