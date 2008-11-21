@@ -97,7 +97,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		if ($index > 0) {
 			$token = $this->oBeaut->getNextTokenConstant($index);
 		} elseif ($index < 0) {
-			$token = $this->oBeaut->getPreviousTokenConstant(-$index);
+			$token = $this->oBeaut->getPreviousTokenConstant(- $index);
 		} else {
 			return;
 		}
@@ -128,7 +128,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		
 		if (is_array($doNotSkip)) {
 			foreach ($doNotSkip as $type) {
-				unset ($tokens[$type]);
+				unset($tokens[$type]);
 			}
 		}
 		
@@ -195,9 +195,9 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	private function outputModifiers($sTag) {
 		$m = $this->modifiers;
 		$this->modifiers = array();
-		
 		$thisControl = $this->oBeaut->getControlSeq();
 		$prevControl = $this->oBeaut->getControlSeq(1);
+		
 		if (($thisControl == T_CLASS || $prevControl == T_CLASS) && strtolower($sTag) != 'class') {
 			if (! (isset($m['public']) || isset($m['protected']) || isset($m['private']))) {
 				$m['public'] = true;
@@ -320,13 +320,14 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	
 	/**
 	 * Commas, really only special in arrays and function calls
-	 *
+	 * 
 	 * They are really only special in arrays and function calls.
 	 * Arrays shouldn't add the newline if the next token is T_COMMENT.
 	 */
 	public function t_comma($sTag) {
 		if ($this->oBeaut->getControlParenthesis() == T_ARRAY) {
 			$this->oBeaut->add($sTag);
+			
 			if (! $this->oBeaut->isNextTokenConstant(T_COMMENT)) {
 				$this->oBeaut->addNewLineIndent();
 			}
@@ -403,12 +404,14 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	public function t_constant_encapsed_string($sTag) {
 		if (substr($sTag, 0, 1) == '\'') {
 			$prev = $this->oBeaut->getPreviousTokenConstant();
+			
 			if ($prev == T_INCLUDE || $prev == T_INCLUDE_ONCE || $prev == T_REQUIRE || $prev == T_REQUIRE_ONCE || $prev == T_ECHO) {
 				$this->oBeaut->removeWhitespace();
 				$this->oBeaut->add(' ');
 				$this->oBeaut->add($sTag);
 				return;
 			}
+			
 			return PHP_Beautifier_Filter::BYPASS;
 		}
 		
@@ -471,9 +474,12 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 			$this->controlInDo += 0x01;
 		}
 		
-		$this->findLastGoodToken(1);
+		$this->findLastGoodToken(1, array(
+				T_COMMENT,
+				T_DOC_COMMENT
+			));
 		
-		if ($this->lastGoodToken != '{') {
+		if ($this->lastGoodToken != '{' && $this->lastGoodToken != T_COMMENT && $this->lastGoodToken != T_DOC_COMMENT) {
 			$this->pad(2);
 		} else {
 			$this->pad(1);
@@ -521,7 +527,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 			if (substr($line, 0, 2) != '/*') {
 				if (substr($line, 0, 1) != '*') {
 					$line = '* ' . $line;
-				} elseif (!preg_match('/^\\*[\\*\\ \\/]/', $line)) {
+				} elseif (! preg_match('/^\\*[\\*\\ \\/]/', $line)) {
 					$line = '* ' . substr($line, 1);
 				}
 				
@@ -544,6 +550,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		if (! $this->inHereDoc) {
 			return PHP_Beautifier_Filter::BYPASS;
 		}
+		
 		$lines = explode("\n", $sTag);
 		$this->oBeaut->incIndent();
 		
@@ -551,9 +558,11 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 			$line = str_replace('\\', '\\\\', $line);
 			$line = str_replace('"', '\\"', $line);
 			$this->oBeaut->add($line);
+			
 			if (isset($lines[$key + 1])) {
 				// There is at least one more
 				$this->oBeaut->add('\\n');
+				
 				if (isset($lines[$key + 2]) || $lines[$key + 1] != '') {
 					$this->oBeaut->add('" .');
 					$this->oBeaut->addNewLineIndent();
@@ -588,7 +597,10 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	// include and require
 	public function t_include($sTag) {
 		$this->findLastGoodToken(1, array(
-			T_COMMENT, T_DOC_COMMENT));
+				T_COMMENT,
+				T_DOC_COMMENT
+			));
+		
 		switch ($this->lastGoodToken) {
 			case T_OPEN_TAG:
 				$this->pad(2);
@@ -597,9 +609,11 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 			default:
 				$this->pad(1);
 		}
+		
 		$this->oBeaut->add($sTag);
 	}
-
+	
+	
 	// Generic language constructs (function, class, var)
 	public function t_language_construct($sTag) {
 		switch (strtolower($sTag)) {
@@ -664,9 +678,11 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		$this->oBeaut->add('<?php');
 		$nextToken = $this->oBeaut->getToken($this->oBeaut->iCount + 1);
 		$ws = '';
+		
 		if (is_array($nextToken) && $nextToken[0] == T_WHITESPACE) {
 			$ws = $nextToken[1];
 		}
+		
 		if (strpos($ws, "\n") !== false) {
 			$this->oBeaut->addNewLineIndent();
 		} else {
@@ -679,17 +695,20 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	public function t_open_tag_with_echo($sTag) {
 		$this->oBeaut->add('<?php echo ');
 	}
-
-
+	
+	
 	// Handle mathematical operators
 	public function t_operator($sTag) {
 		$this->oBeaut->removeWhitespace();
 		$prevToken = $this->oBeaut->getPreviousTokenContent();
+		
 		if ($prevToken != '(') {
 			$this->oBeaut->add(' ');
 		}
+		
 		$this->oBeaut->add($sTag);
 		$nextToken = $this->oBeaut->getNextTokenContent();
+		
 		if ($nextToken != '(') {
 			$this->oBeaut->add(' ');
 		}
@@ -721,13 +740,23 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		$this->oBeaut->removeWhitespace();
 		
 		if (! $this->oBeaut->isPreviousTokenConstant(array(
-					T_STRING,
 					T_ARRAY,
-					T_ISSET, T_INCLUDE, T_INCLUDE_ONCE, T_REQUIRE, T_REQUIRE_ONCE, T_EXIT, T_UNSET, T_EVAL, '(', T_VARIABLE, T_EMPTY
+					T_EMPTY
+					T_EVAL,
+					T_EXIT,
+					T_INCLUDE,
+					T_INCLUDE_ONCE,
+					T_ISSET,
+					T_REQUIRE,
+					T_REQUIRE_ONCE,
+					T_STRING,
+					T_UNSET,
+					T_VARIABLE,
+					'(',
 				), 1)) {
 			$this->oBeaut->add(' ');
 		}
-	
+		
 		$this->oBeaut->add($sTag);
 		$this->oBeaut->incIndent();
 		
@@ -756,7 +785,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		$this->inHereDoc = true;
 		$this->oBeaut->add('"');
 	}
-
+	
 	
 	// For some reason, try is not handled as a control structure
 	public function t_try($sTag) {
