@@ -85,7 +85,7 @@ done
 export LS_COLORS
 
 HISTCONTROL=ignoreboth
-HISTFILE=/home/fidian/.bash_history
+HISTFILE=${HOME}/.bash_history
 HISTFILESIZE=500
 HISTSIZE=500
 export HISTCONTROL HISTFILE HISTFILESIZE HISTSIZE
@@ -107,3 +107,12 @@ export PS2=$YEL'>'$NONE' '
 export PS3=$YEL'#?'$NONE' '
 export PS4=$YEL'+'$NONE' '
 
+
+# Add some directories to the path if they exist
+FAKEPATH=":${PATH}:"
+for D in "${HOME}/android-sdk-linux_x86-1.0_r1" "${HOME}/bin"; do
+	if [ -d "$D" ]; then
+		PATH="${PATH}:${D}"
+	fi
+done
+export PATH
