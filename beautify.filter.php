@@ -99,7 +99,11 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		} elseif ($index < 0) {
 			$token = $this->oBeaut->getPreviousTokenConstant(- $index);
 		} else {
-			return;
+			$token = $this->oBeaut->getToken($this->oBeaut->iCount);
+		}
+
+		if (is_array($token)) {
+			$token = $token[0];
 		}
 		
 		$out = '[' . $index . ':';
@@ -318,6 +322,32 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	}
 	
 	
+	// Close PHP tag; handle whitespace
+	public function t_close_tag($sTag) {
+		$ws = '';
+		$token = $this->oBeaut->getToken($this->oBeaut->iCount - 1);
+
+		if (is_array($token) && $token[0] == T_WHITESPACE) {
+			$ws .= $token[1];
+		}
+
+		if (strpos($ws, "\n") !== false) {
+			$this->pad(2);
+		} else {
+			$this->pad(0);
+			$this->oBeaut->add(' ');
+		}
+
+		$token = $this->oBeaut->getToken($this->oBeaut->iCount);
+		
+		if (is_array($token)) {
+			$this->oBeaut->add($token[1]);
+		} else {
+			$this->oBeaut->add('?>');
+		}
+	}
+	
+	
 	/**
 	 * Commas, really only special in arrays and function calls
 	 * 
@@ -371,7 +401,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 					T_DOC_COMMENT
 				));
 			
-			if ($this->lastGoodToken != '{') {
+			if ($this->lastGoodToken != '{' && $this->lastGoodToken != '(') {
 				/* Add extra space above comments at main level or between
 				 * functions in classes */
 				$controlSeq = $this->oBeaut->getControlSeq();
@@ -673,25 +703,31 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	}
 	
 	
-	// Open PHP tag; force to all caps
+	// Open PHP tag; force to all lowercase
 	public function t_open_tag($sTag) {
 		$this->oBeaut->add('<?php');
-		$nextToken = $this->oBeaut->getToken($this->oBeaut->iCount + 1);
+		$token = $this->oBeaut->getToken($this->oBeaut->iCount);
 		$ws = '';
 		
-		if (is_array($nextToken) && $nextToken[0] == T_WHITESPACE) {
-			$ws = $nextToken[1];
+		if (is_array($token)) {
+			$ws .= $token[1];
+		}
+
+		$token = $this->oBeaut->getToken($this->oBeaut->iCount + 1);
+
+		if (is_array($token) && $token[0] == T_WHITESPACE) {
+			$ws .= $token[1];
 		}
 		
 		if (strpos($ws, "\n") !== false) {
-			$this->oBeaut->addNewLineIndent();
+			$this->pad(2);
 		} else {
 			$this->oBeaut->add(' ');
 		}
 	}
 	
 	
-	// Open PHP tag with echo or <?=; force to all caps with 'echo'
+	// Open PHP tag as "<?="; force to lowercase and 'echo' call
 	public function t_open_tag_with_echo($sTag) {
 		$this->oBeaut->add('<?php echo ');
 	}
@@ -741,7 +777,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		
 		if (! $this->oBeaut->isPreviousTokenConstant(array(
 					T_ARRAY,
-					T_EMPTY
+					T_EMPTY,
 					T_EVAL,
 					T_EXIT,
 					T_INCLUDE,
