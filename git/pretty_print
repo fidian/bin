@@ -1,0 +1,68 @@
+#!/bin/bash
+
+FILE="$1"
+EXT="`echo "$FILE" | rev | cut -d '.' -f 1 | rev`"
+BASEPATH=""
+
+for D in tools/utils . ../tools/utils; do
+	if [ -f "${D}/BBY.filter.php" ]; then
+		BASEPATH="${D}"
+	fi
+done
+
+if [ -z "$BASEPATH" ]; then
+	echo "Could not locate pretty print directory."
+	exit
+fi
+
+if [ -z "$FILE" ]; then
+	echo "Specify a file to pretty print."
+	exit
+fi
+
+if [ ! -f "$FILE" ]; then
+	echo "Could not read $FILE"
+	exit
+fi
+
+if [ "$EXT" != "php" ]; then
+	echo "Input file does not have .php extension: $FILE"
+	exit
+fi
+
+if [ ! -s "$FILE" ]; then
+	echo "Input file has no data: $FILE"
+	exit
+fi
+
+TEMPFILE="`tempfile -p beautify`"
+php_beautifier -d "${BASEPATH}" -l "BBY()" "$FILE" > "${TEMPFILE}"
+
+if [ ! -s "${TEMPFILE}" ]; then
+	echo "Zero size after pretty printing: $FILE"
+	rm "${TEMPFILE}"
+	exit 1
+fi
+
+php -l "${TEMPFILE}" > /dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+	echo "Invalid PHP after pretty printing:  $FILE"
+	rm "${TEMPFILE}"
+	exit 2
+fi
+
+diff -q "${FILE}" "${TEMPFILE}" > /dev/null
+
+if [ "$?" -ne 0 ]; then
+	# mv doesn't preserve destination file permissions
+	cat "${TEMPFILE}" > "${FILE}"
+	rm "${TEMPFILE}"
+	# Plan on changing this line?  Change the git hooks too!
+	echo "File needed pretty printing:  $FILE"
+	exit 3
+fi
+
+# Clear for commit
+rm "${TEMPFILE}"
+exit 0

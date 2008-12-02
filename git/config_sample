@@ -1,0 +1,13 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	# Make files updatable by anyone in the group
+	sharedrepository = true
+[remote "origin"]
+	url = fidian@rumkin.com:rumkin.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master

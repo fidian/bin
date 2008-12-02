@@ -1,0 +1,45 @@
+#!/bin/sh
+#
+# Enforce pretty printing of all PHP code that is committed.
+#
+# Called by git-commit with no arguments.  The hook should
+# exit with non-zero status after issuing an appropriate message if
+# it wants to stop the commit.
+#
+
+# The hook is called in the top-most directory, which is where the
+# .git repository directory is located.
+PP_BIN='pretty_print'
+
+if [ ! -f "${PP_BIN}" ]
+then
+	echo " * You need to have the tools repository checked out at the same"
+	echo " * level as this repository."
+	exit 1
+fi
+
+TEMPFILE="`tempfile -p precommit`"
+
+if git-rev-parse --verify HEAD 2>/dev/null
+then
+	git-diff-index --name-only -M HEAD --
+else
+	git-ls-files --full-name
+fi |
+	grep ".php$" |
+	xargs -n 1 -rd "\n" "${PP_BIN}" >> ${TEMPFILE}
+
+RESULT="$?"
+cat "${TEMPFILE}"
+
+if [ $RESULT -ne 0 ]; then
+	echo ""
+	if grep -qv "File needed pretty printing" "${TEMPFILE}"; then
+		echo "Correct any errors and try committing again."
+	else
+		echo "Pretty printing was applied - just commit again."
+	fi
+fi
+
+rm "${TEMPFILE}"
+exit $RESULT
