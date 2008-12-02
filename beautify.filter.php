@@ -788,7 +788,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 					T_STRING,
 					T_UNSET,
 					T_VARIABLE,
-					'(',
+					'('
 				), 1)) {
 			$this->oBeaut->add(' ');
 		}
