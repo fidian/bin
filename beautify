@@ -15,7 +15,7 @@ fi
 TEMPFILE="`mktemp`"
 
 # Beautify
-php_beautifier -d ~/bin/ -l "beautify()" "$INFILE" > "$TEMPFILE"
+php_beautifier -d ~/bin/conf/ -l "beautify()" "$INFILE" > "$TEMPFILE"
 
 # Lint check
 if ! php -l "$TEMPFILE" > /dev/null 2>&1; then
