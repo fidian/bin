@@ -2,6 +2,7 @@
 
 INFILE="$1"
 OUTFILE="$2"
+SKIP_TESTS="$3"
 
 if [ -z "$INFILE" ]; then
 	INFILE="-"
@@ -18,7 +19,7 @@ TEMPFILE="`mktemp`"
 php_beautifier -d ~/bin/conf/ -l "beautify()" "$INFILE" > "$TEMPFILE"
 
 # Lint check
-if ! php -l "$TEMPFILE" > /dev/null 2>&1; then
+if [ -z "$SKIP_TESTS" ] && ! php -l "$TEMPFILE" > /dev/null 2>&1; then
 	echo "Beautified code is invalid PHP" > /dev/stderr
 	echo " IN:  $INFILE" > /dev/stderr
 	echo "OUT:  $TEMPFILE" > /dev/stderr
