@@ -1,0 +1,27 @@
+#!/bin/bash
+
+CMD="$1"
+
+if ! which "git-$CMD" > /dev/null 2>&1 ; then
+	echo "You need to specify a valid command to run on all git repositories"
+	echo "found in the current directory."
+	exit
+fi
+
+PROCESSED=0
+
+for F in */.git; do
+	if [ -d "$F" ]; then
+		G="`echo $F | rev | cut -d '/' -f 2- | rev`"
+		echo "*** $G"
+		(
+			cd "$G"
+			"git-$CMD"
+		)
+		PROCESSED=$(( $PROCESSED + 1 ))
+	fi
+done
+
+if [ $PROCESSED -eq 0 ]; then
+	echo "No repositories found"
+fi
