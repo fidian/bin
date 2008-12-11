@@ -250,11 +250,17 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	 * will write it out
 	 */
 	public function t_access($sTag) {
-		if ($this->oBeaut->getControlSeq() != T_CLASS || $sTag == 'interface' || $sTag == 'const') {
+		$sTagL = strtolower($sTag);
+		
+		if ($this->oBeaut->getControlSeq() != T_CLASS) {
+			if ($sTagL != 'abstract') {
+				return PHP_Beautifier_Filter::BYPASS;
+			}
+		} elseif ($sTagL == 'const' || $sTagL == 'interface') {
 			return PHP_Beautifier_Filter::BYPASS;
 		}
 		
-		$this->modifiers[strtolower($sTag)] = true;
+		$this->modifiers[$sTagL] = true;
 	}
 	
 	
@@ -831,6 +837,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 			case 'true':
 				$sTag = strtolower($sTag);
 		}
+		
 		$this->oBeaut->add($sTag);
 	}
 	
