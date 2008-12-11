@@ -101,7 +101,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		} else {
 			$token = $this->oBeaut->getToken($this->oBeaut->iCount);
 		}
-
+		
 		if (is_array($token)) {
 			$token = $token[0];
 		}
@@ -326,18 +326,18 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	public function t_close_tag($sTag) {
 		$ws = '';
 		$token = $this->oBeaut->getToken($this->oBeaut->iCount - 1);
-
+		
 		if (is_array($token) && $token[0] == T_WHITESPACE) {
 			$ws .= $token[1];
 		}
-
+		
 		if (strpos($ws, "\n") !== false) {
 			$this->pad(2);
 		} else {
 			$this->pad(0);
 			$this->oBeaut->add(' ');
 		}
-
+		
 		$token = $this->oBeaut->getToken($this->oBeaut->iCount);
 		
 		if (is_array($token)) {
@@ -712,9 +712,9 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		if (is_array($token)) {
 			$ws .= $token[1];
 		}
-
+		
 		$token = $this->oBeaut->getToken($this->oBeaut->iCount + 1);
-
+		
 		if (is_array($token) && $token[0] == T_WHITESPACE) {
 			$ws .= $token[1];
 		}
@@ -823,6 +823,18 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	}
 	
 	
+	// Strings
+	public function t_string($sTag) {
+		switch (strtolower($sTag)) {
+			case 'null':
+			case 'false':
+			case 'true':
+				$sTag = strtolower($sTag);
+		}
+		$this->oBeaut->add($sTag);
+	}
+	
+	
 	// For some reason, try is not handled as a control structure
 	public function t_try($sTag) {
 		return $this->t_control($sTag);
@@ -865,4 +877,5 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		$this->outputModifiers($sTag);
 	}
 }
+
 ?>
