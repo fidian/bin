@@ -1,5 +1,3 @@
-$Id: README.TXT,v 1.1.1.1 2008/06/27 10:05:39 michaels2 Exp $
-
 This folder is for scripts or programs that might
 be of use to developers or project managers but are
 not part of the product itself.
