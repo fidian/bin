@@ -469,7 +469,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 				} elseif ($char == '\\') {
 					$singleQuoteString .= '\\\\';
 				} else {
-					$singleQuoteString = '\\\\' . $char;
+					$singleQuoteString .= '\\\\' . $char;
 				}
 			} else {
 				if ($char == '$') {
