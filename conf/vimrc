@@ -31,3 +31,8 @@ function! MapF1()
 		exec 'help'
 	endif
 endfunction
+
+" Start up on the last line we were editing
+if has("autocmd")
+	autocmd BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal g`\"" | endif
+endif
