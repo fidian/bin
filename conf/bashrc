@@ -15,6 +15,7 @@ alias grep='grep --color=auto'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias ls='ls -F --color=auto'
+alias mysqlrepair_all='mysqlrepair -A --auto-repair -g -m -o -r'
 alias screen='screen -xRR'
 
 test_for_program 'less'

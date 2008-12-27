@@ -1,0 +1,70 @@
+#!/bin/bash
+
+SIZE="$1"
+FILE="$2"
+OUT="$3"
+
+if [ -z "$OUT" ]; then
+	echo "Syntax:"
+	echo "   $0 SIZE INPUT OUTPUT"
+	echo ""
+	echo "Specify the size, input file, and the output filename or directory."
+	echo ""
+	echo "Sizes are:"
+	echo "  G1Photo:  455x320"
+	echo "  G1Background:  640x480 (even though some gets trimmed)"
+	exit
+fi
+
+case "$SIZE" in
+	G1Photo)
+		X=455
+		Y=320
+		OUT_TYPE="Landscape"
+		;;
+
+	G1Background)
+		X=640
+		Y=480
+		OUT_TYPE="Landscape"
+		;;
+
+	*)
+		echo "Invalid size specification"
+		exit;
+		;;
+esac
+
+if [ ! -f "$FILE" ]; then
+	echo "Shame on you for specifying a non-existant file"
+	exit;
+fi
+
+if [ -d "$OUT" ]; then
+	BASEFILE="`basename "$FILE" | rev | cut -d '.' -f 2- | rev`.jpg"
+	OUT="${OUT}/${BASEFILE}"
+fi;
+
+TEMPFILE="`tempfile -p Scaler`"
+anytopnm "$FILE" 2> /dev/null > "$TEMPFILE"
+WIDTH="`pnmfile "$TEMPFILE" | cut -d ' ' -f 3`"
+HEIGHT="`pnmfile "$TEMPFILE" | cut -d ' ' -f 5`"
+IN_TYPE="Landscape"
+if [ $WIDTH -lt $HEIGHT ]; then
+	IN_TYPE="Portrait"
+fi
+ROTATE="cat"
+if [ "$IN_TYPE" != "$OUT_TYPE" ]; then
+	ROTATE="pnmrotate 90";
+	TEMP="$WIDTH"
+	WIDTH="$HEIGHT"
+	HEIGHT="$TEMP"
+fi
+RESCALE="cat"
+if [ "$WIDTH" -gt "$X" ] || [ "$HEIGHT" -gt "$Y" ]; then
+	RESCALE="pnmscale -xysize $X $Y"
+fi
+
+cat "$TEMPFILE" | $RESCALE | $ROTATE | \
+	pnmtojpeg --optimize --quality=85 > "$OUT"
+rm "$TEMPFILE"

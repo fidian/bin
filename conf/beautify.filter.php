@@ -101,7 +101,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		} else {
 			$token = $this->oBeaut->getToken($this->oBeaut->iCount);
 		}
-
+		
 		if (is_array($token)) {
 			$token = $token[0];
 		}
@@ -250,11 +250,17 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	 * will write it out
 	 */
 	public function t_access($sTag) {
-		if ($this->oBeaut->getControlSeq() != T_CLASS || $sTag == 'interface' || $sTag == 'const') {
+		$sTagL = strtolower($sTag);
+		
+		if ($this->oBeaut->getControlSeq() != T_CLASS) {
+			if ($sTagL != 'abstract') {
+				return PHP_Beautifier_Filter::BYPASS;
+			}
+		} elseif ($sTagL == 'const' || $sTagL == 'interface') {
 			return PHP_Beautifier_Filter::BYPASS;
 		}
 		
-		$this->modifiers[strtolower($sTag)] = true;
+		$this->modifiers[$sTagL] = true;
 	}
 	
 	
@@ -326,18 +332,18 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	public function t_close_tag($sTag) {
 		$ws = '';
 		$token = $this->oBeaut->getToken($this->oBeaut->iCount - 1);
-
+		
 		if (is_array($token) && $token[0] == T_WHITESPACE) {
 			$ws .= $token[1];
 		}
-
+		
 		if (strpos($ws, "\n") !== false) {
 			$this->pad(2);
 		} else {
 			$this->pad(0);
 			$this->oBeaut->add(' ');
 		}
-
+		
 		$token = $this->oBeaut->getToken($this->oBeaut->iCount);
 		
 		if (is_array($token)) {
@@ -463,7 +469,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 				} elseif ($char == '\\') {
 					$singleQuoteString .= '\\\\';
 				} else {
-					$singleQuoteString = '\\\\' . $char;
+					$singleQuoteString .= '\\\\' . $char;
 				}
 			} else {
 				if ($char == '$') {
@@ -712,9 +718,9 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		if (is_array($token)) {
 			$ws .= $token[1];
 		}
-
+		
 		$token = $this->oBeaut->getToken($this->oBeaut->iCount + 1);
-
+		
 		if (is_array($token) && $token[0] == T_WHITESPACE) {
 			$ws .= $token[1];
 		}
@@ -823,6 +829,19 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	}
 	
 	
+	// Strings
+	public function t_string($sTag) {
+		switch (strtolower($sTag)) {
+			case 'null':
+			case 'false':
+			case 'true':
+				$sTag = strtolower($sTag);
+		}
+		
+		$this->oBeaut->add($sTag);
+	}
+	
+	
 	// For some reason, try is not handled as a control structure
 	public function t_try($sTag) {
 		return $this->t_control($sTag);
@@ -865,4 +884,5 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		$this->outputModifiers($sTag);
 	}
 }
+
 ?>
