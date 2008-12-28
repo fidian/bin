@@ -1,0 +1,33 @@
+#!/bin/bash
+
+IN="$1"
+OUT="$2"
+
+if [ -z "$IN" ]; then
+	echo "Specify a m4a to convert"
+	exit
+fi
+
+if [ -z "$OUT" ]; then
+	OUT="`echo "$IN"|rev|cut -d '.' -f 2-|rev`.mp3"
+fi
+
+META="`faad -i "${F}" 2>&1`"
+TITLE="`echo "$META" | grep "^title: " | cut -d ' ' -f 2-`"
+ARTIST="`echo "$META" | grep "^artist: " | cut -d ' ' -f 2-`"
+ALBUM="`echo "$META" | grep "^album: " | cut -d ' ' -f 2-`"
+GENRE="`echo "$META" | grep "^genre: " | cut -d ' ' -f 2-`"
+TRACK="`echo "$META" | grep "^track: " | cut -d ' ' -f 2-`"
+YEAR="`echo "$META" | grep "^date: " | cut -d ' ' -f 2-`"
+
+faad -qo - "${F}" | lame -Sh --vbr-new -V 2 \
+	--tt "${TITLE}" --ta "${ARTIST}" --tl "${ALBUM}" \
+	--tg "${GENRE}" --tn "${TRACK}" --ty "${YEAR}" \
+	- "${DESTNAME}"
+if [ $? -eq 1 ]; then
+	# Try again with no genre
+	faad -qo - "${F}" | lame -Sh --vbr-new -V 2 \
+		--tt "${TITLE}" --ta "${ARTIST}" --tl "${ALBUM}" \
+		--tn "${TRACK}" --ty "${YEAR}" \
+		- "${DESTNAME}"
+fi
