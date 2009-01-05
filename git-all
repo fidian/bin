@@ -1,6 +1,8 @@
 #!/bin/bash
 
 CMD="$1"
+shift
+PARMS="$*"
 
 if ! which "git-$CMD" > /dev/null 2>&1 ; then
 	echo "You need to specify a valid command to run on all git repositories"
@@ -16,7 +18,7 @@ for F in */.git; do
 		echo "*** $G"
 		(
 			cd "$G"
-			"git-$CMD"
+			"git-$CMD" $PARMS
 		)
 		PROCESSED=$(( $PROCESSED + 1 ))
 	fi
