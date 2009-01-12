@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
 				retcode = doCount(in, dest, quiet);
 			} else if (inplace) {
 				out = tmpfile();
-				doConvert(in, out, dest);
+				length = doConvert(in, out, dest);
 				rewind(in);
 				rewind(out);
 				left = length;
