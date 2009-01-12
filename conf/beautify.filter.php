@@ -468,6 +468,8 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 					$singleQuoteString .= $char;
 				} elseif ($char == '\\') {
 					$singleQuoteString .= '\\\\';
+				} elseif ($char == '\'') {
+					$singleQuoteString .= '\\\'';
 				} else {
 					$singleQuoteString .= '\\\\' . $char;
 				}
