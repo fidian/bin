@@ -45,7 +45,7 @@ if [ -d "$OUT" ]; then
 	OUT="${OUT}/${BASEFILE}"
 fi;
 
-TEMPFILE="`tempfile -p Scaler`"
+TEMPFILE="`mktemp`"
 anytopnm "$FILE" 2> /dev/null > "$TEMPFILE"
 WIDTH="`pnmfile "$TEMPFILE" | cut -d ' ' -f 3`"
 HEIGHT="`pnmfile "$TEMPFILE" | cut -d ' ' -f 5`"
