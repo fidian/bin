@@ -36,3 +36,12 @@ endfunction
 if has("autocmd")
 	autocmd BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal g`\"" | endif
 endif
+
+" Have search results appear in the middle of the screen
+nmap n nzzzv
+nmap N Nzzzv
+nmap * *zzzv
+nmap # #zzzv
+nmap g* g*zzzv
+nmap g# g#zzzv
+
