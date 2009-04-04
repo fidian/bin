@@ -1,0 +1,21 @@
+#!/bin/bash
+
+IN="$1"
+OUT="$2"
+
+if [ -z "$IN" ]; then
+	echo "Specify a wav to convert"
+	exit
+fi
+
+if [ -z "$OUT" ]; then
+	OUT="`echo "$IN"|rev|cut -d '.' -f 2-|rev`.mp3"
+fi
+
+lame -Sh --vbr-new -V 2 "${IN}" "${OUT}"
+
+if [ $? -eq 1 ]; then
+	# ffmpeg:  While I don't like it (can't set good VBR), it does convert
+	# troublesome WAV files very nicely
+	ffmpeg -y -i "${IN}" -vn -ac 2 -ar 44100 "${OUT}" 2>/dev/null
+fi
