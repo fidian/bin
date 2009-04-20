@@ -299,7 +299,13 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		$this->oBeaut->add($sTag . ' ');
 	}
 	
-	
+
+	// "catch" (part of the try {} catch () {} blocks)
+	public function t_catch($sTag) {
+		$this->oBeaut->removeWhitespace();
+		$this->oBeaut->add(' ' . $sTag . ' ');
+	}
+
 	/**
 	 * Close braces
 	 * 
@@ -855,7 +861,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		if ($this->oBeaut->getControlSeq() != T_CLASS) {
 			$prev = $this->oBeaut->getPreviousTokenConstant();
 			
-			if ($prev == T_STRING && $this->oBeaut->getMode('double_quote')) {
+			if ($prev == T_STRING) {
 				$this->oBeaut->removeWhiteSpace();
 				$this->oBeaut->add(' ');
 			} elseif ($prev == '&') {
