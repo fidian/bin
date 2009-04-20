@@ -23,11 +23,11 @@ YEAR="`echo "$META" | grep "^date: " | cut -d ' ' -f 2-`"
 faad -qo - "${F}" | lame -Sh --vbr-new -V 2 \
 	--tt "${TITLE}" --ta "${ARTIST}" --tl "${ALBUM}" \
 	--tg "${GENRE}" --tn "${TRACK}" --ty "${YEAR}" \
-	- "${DESTNAME}"
+	- "${OUT}"
 if [ $? -eq 1 ]; then
 	# Try again with no genre
 	faad -qo - "${F}" | lame -Sh --vbr-new -V 2 \
 		--tt "${TITLE}" --ta "${ARTIST}" --tl "${ALBUM}" \
 		--tn "${TRACK}" --ty "${YEAR}" \
-		- "${DESTNAME}"
+		- "${OUT}"
 fi
