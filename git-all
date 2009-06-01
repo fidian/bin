@@ -6,7 +6,7 @@ PARMS="$*"
 
 if ! which "git-$CMD" > /dev/null 2>&1 ; then
 	if [ ! -f "/usr/lib/git-core/git-$CMD" ]; then
-		if ! git-config --global "alias.$CMD" > /dev/null 2>&1 ; then
+		if ! git config --global "alias.$CMD" > /dev/null 2>&1 ; then
 			echo "You need to specify a valid command to run on all git repositories"
 			echo "found in the current directory."
 			exit
