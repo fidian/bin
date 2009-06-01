@@ -1,0 +1,28 @@
+#!/usr/bin/php
+<?PHP
+
+if (! isset($_SERVER['argv'])) {
+	die("This is a command-line tool\n");
+}
+
+$argv = $_SERVER['argv'];
+
+if (isset($argv[1])) {
+	// input filename
+	$contents = file_get_contents($argv[1]);
+	if ($contents === false) {
+		die("Can not read " . $argv[1] . "\n");
+	}
+} else {
+	$contents = file_get_contents('php://stdin');
+}
+
+$xml = new DOMDocument;
+$xml->loadXML($contents);
+$xml->formatOutput = true;
+
+if (isset($argv[2])) {
+	file_put_contents($argv[2], $xml->saveXML());
+} else {
+	echo $xml->saveXML();
+}
