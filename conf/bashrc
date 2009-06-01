@@ -28,6 +28,9 @@ fi
 test_for_program 'vim'
 if [ $? != 0 ]; then
 	alias vi='vim'
+	export EDITOR=vim
+else
+	export EDITOR=vi
 fi
 
 
