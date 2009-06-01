@@ -15,6 +15,7 @@ rsync -axzvP --delete --delete-during --delete-excluded \
 	--exclude /.nautilus/metafiles/ \
 	--exclude /.openoffice.org2/ \
 	--exclude /.opera/ \
+	--exclude /.pulse/ \
 	--exclude /.thumbnails/ \
 	--exclude /.VirtualBox/ \
 	--exclude /.vlc/ \
