@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cat $* |
+	perl -e 'while (<STDIN>) { s/&/&amp;/g; s/</&lt;/g; s/>/&gt;/g; print; }'
