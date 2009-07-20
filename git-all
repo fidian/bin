@@ -28,6 +28,17 @@ for F in */.git; do
 	fi
 done
 
+for F in *.git; do
+	if [ -d "$F" ]; then
+		echo "*** $F"
+		(
+			cd "$F"
+			git "$CMD" $PARMS
+		)
+		PROCESSED=$(( $PROCESSED + 1 ))
+	fi
+done
+
 if [ $PROCESSED -eq 0 ]; then
 	echo "No repositories found"
 fi
