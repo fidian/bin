@@ -9,18 +9,16 @@ rsync -axzvP --delete --delete-during --delete-excluded \
 	--exclude /.gtk-gnutella/tth_cache/ \
 	--exclude /.local/share/Trash/ \
 	--exclude /.macromedia/ \
-	--exclude /.mozilla/firefox/u7zuljok.default/OfflineCache/ \
-	--exclude /.mozilla/firefox/u7zuljok.default/Cache/ \
-	--exclude /.mozilla/firefox2/13wt1hcx.default/Cache/ \
-	--exclude /.nautilus/metafiles/ \
-	--exclude /.openoffice.org2/ \
+	--exclude /.mozilla/firefox\*/\*/OfflineCache/ \
+	--exclude /.mozilla/firefox\*/\*/Cache/ \
+	--exclude /.nautilus/ \
+	--exclude /.openoffice.org \
 	--exclude /.opera/ \
 	--exclude /.pulse/ \
 	--exclude /.thumbnails/ \
 	--exclude /.VirtualBox/ \
 	--exclude /.vlc/ \
 	--exclude /gtk-gnutella-downloads/ \
-	--exclude /installs/ \
 	--exclude /rumkin/ \
 	--exclude /rumkin-media/ \
 	/home/fidian/ fidian@${DEST}:/home/fidian/laptop/
