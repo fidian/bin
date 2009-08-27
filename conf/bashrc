@@ -28,7 +28,7 @@ fi
 test_for_program 'vim'
 if [ $? != 0 ]; then
 	alias vi='vim'
-	export EDITOR=vim
+	export EDITOR="vim +0"
 else
 	export EDITOR=vi
 fi
@@ -119,3 +119,5 @@ for D in "${HOME}/bin"; do
 	fi
 done
 export PATH
+
+cd
