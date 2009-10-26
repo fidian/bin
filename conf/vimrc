@@ -1,7 +1,7 @@
 " Turn on syntax highlighting
 syntax on
 
-" Set some colors
+" Set some colors - http://vimdoc.sourceforge.net/htmldoc/syntax.html#E421
 highlight Search term=underline cterm=underline ctermfg=green ctermbg=darkblue gui=NONE guifg=white guibg=yellow
 highlight comment cterm=NONE ctermfg=darkgray
 highlight visual cterm=bold ctermfg=black ctermbg=gray
