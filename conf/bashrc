@@ -126,7 +126,7 @@ function bash_prompt_path {
 
 # Set the title bar to the current directory
 export PS1='\[\033]2;\h:\w\007\]'
-export PS1=$PS1$GRN'\A'$NONE' '$PRPL'\h'$NONE':'$HBLU'$(bash_prompt_path)'$YEL$(bash_prompt_git)$NONE
+export PS1=$PS1$GRN'\A'$NONE' '$PRPL'\h'$NONE':'$HBLU'$(bash_prompt_path)'$YEL'$(bash_prompt_git)'$NONE
 if [ ${UID} -eq 0 ]; then
 	export PS1=$PS1$RED
 fi
