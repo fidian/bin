@@ -1,5 +1,7 @@
-" Turn on syntax highlighting, set some colors
-syn on
+" Turn on syntax highlighting
+syntax on
+
+" Set some colors
 highlight Search term=underline cterm=underline ctermfg=green ctermbg=darkblue gui=NONE guifg=white guibg=yellow
 highlight comment cterm=NONE ctermfg=darkgray
 highlight visual cterm=bold ctermfg=black ctermbg=gray
@@ -9,6 +11,15 @@ set noexpandtab tabstop=4 shiftwidth=4 softtabstop=4 smartindent autoindent
 
 " Searching options
 set incsearch ignorecase smartcase hlsearch
+
+" Show matching brackets for a short time
+set showmatch matchtime=2
+set laststatus=2
+
+" Allow backspace for everything
+set backspace=indent,eol,start
+
+" Clear the last search when opening a file
 nohlsearch
 
 " Unhighlight your search automatically when editing
@@ -33,6 +44,9 @@ function! MapF1()
 	endif
 endfunction
 
+" Report after N lines changed; default is two
+set report=2
+
 " Start up on the last line we were editing
 if has("autocmd")
 	autocmd BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal g`\"" | endif
@@ -45,4 +59,3 @@ nmap * *zzzv
 nmap # #zzzv
 nmap g* g*zzzv
 nmap g# g#zzzv
-
