@@ -2,6 +2,7 @@
 syn on
 highlight Search term=underline cterm=underline ctermfg=green ctermbg=darkblue gui=NONE guifg=white guibg=yellow
 highlight comment cterm=NONE ctermfg=darkgray
+highlight visual cterm=bold ctermfg=black ctermbg=gray
 
 " Set tab and indent preferences
 set noexpandtab tabstop=4 shiftwidth=4 softtabstop=4 smartindent autoindent
