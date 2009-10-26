@@ -9,6 +9,12 @@ function test_for_program {
 	return 1;
 }
 
+function move_most_recent {
+	FROM="${1:-$HOME/Desktop}"
+	FILE="`ls -rt --indicator-style=none "$FROM" | tail -n 1`"
+	mv "$FROM/$FILE" .
+}
+
 alias del='gvfs-trash'
 alias dir='ls -lF --color=auto'
 alias grep='grep --color=auto'
@@ -95,6 +101,7 @@ HISTSIZE=500
 export HISTCONTROL HISTFILE HISTFILESIZE HISTSIZE
 
 # Color Variables for Prompt
+# Lots of info at http://networking.ringofsaturn.com/Unix/Bash-prompts.php
 NONE='\[\033[00m\]'
 HBLU='\[\033[01;34m\]'
 GRN='\[\033[00;32m\]'
@@ -102,11 +109,28 @@ YEL='\[\033[00;33m\]'
 PRPL='\[\033[00;35m\]'
 RED='\[\033[00;31m\]'
 
-if [ "`whoami`" == "root" ]; then
-	export PS1=$GRN'\A'$NONE' '$PRPL'\h'$NONE':'$HBLU'\w'$RED'#'$NONE' '
-else
-	export PS1=$GRN'\A'$NONE' '$PRPL'\h'$NONE':'$HBLU'\w'$NONE'\$ '
+# add info about git branch to the prompt
+function bash_prompt_git {
+	ref=$(git symbolic-ref HEAD 2> /dev/null) || return
+	echo -e " ("${ref#refs/heads/}")" 
+}
+
+# add shortened path to the prompt
+function bash_prompt_path {
+	if [ "${#PWD}" -gt 35 ]; then
+		echo -n "...${PWD: -32}"
+	else
+		echo -n "${PWD}"
+	fi
+}
+
+# Set the title bar to the current directory
+export PS1='\[\033]2;\h:\w\007\]'
+export PS1=$PS1$GRN'\A'$NONE' '$PRPL'\h'$NONE':'$HBLU'$(bash_prompt_path)'$YEL$(bash_prompt_git)$NONE
+if [ ${UID} -eq 0 ]; then
+	export PS1=$PS1$RED
 fi
+export PS1=$PS1'\$'$NONE' '
 export PS2=$YEL'>'$NONE' '
 export PS3=$YEL'#?'$NONE' '
 export PS4=$YEL'+'$NONE' '
