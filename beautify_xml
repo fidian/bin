@@ -14,12 +14,13 @@ if (isset($argv[1])) {
 		die("Can not read " . $argv[1] . "\n");
 	}
 } else {
-	$contents = file_get_contents('php://stdin');
+	$contents = stream_get_contents(STDIN);
 }
 
 $xml = new DOMDocument;
-$xml->loadXML($contents);
+$xml->preserveWhiteSpace = false;
 $xml->formatOutput = true;
+$xml->loadXML($contents);
 
 if (isset($argv[2])) {
 	file_put_contents($argv[2], $xml->saveXML());
