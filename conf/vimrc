@@ -6,6 +6,7 @@ highlight Search term=underline cterm=underline ctermfg=green ctermbg=darkblue g
 highlight comment cterm=NONE ctermfg=darkgray
 highlight visual cterm=bold ctermfg=black ctermbg=gray
 highlight StatusLine cterm=NONE ctermfg=yellow ctermbg=blue
+highlight String ctermfg=red
 
 " Set tab and indent preferences
 set noexpandtab tabstop=4 shiftwidth=4 softtabstop=4 smartindent autoindent
