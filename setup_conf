@@ -8,3 +8,6 @@ fi
 
 rm -f ~/.vimrc
 ln -s bin/conf/vimrc ~/.vimrc
+
+rm -rf ~/.vim
+ln -s bin/conf/vim ~/.vim
