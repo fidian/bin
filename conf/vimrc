@@ -11,6 +11,9 @@ highlight String ctermfg=red
 " Set tab and indent preferences
 set noexpandtab tabstop=4 shiftwidth=4 softtabstop=4 smartindent autoindent
 
+" Stop the annoying behavior of '#' as the first character going to column 1
+inoremap # X<BS>#
+
 " Searching options
 set incsearch ignorecase smartcase hlsearch
 
