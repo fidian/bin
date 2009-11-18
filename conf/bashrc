@@ -12,6 +12,7 @@ function test_for_program {
 function move_most_recent {
 	FROM="${1:-$HOME/Desktop}"
 	FILE="`ls -rt --indicator-style=none "$FROM" | tail -n 1`"
+	echo "$FILE"
 	mv "$FROM/$FILE" .
 }
 
