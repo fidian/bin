@@ -1,0 +1,39 @@
+#!/bin/bash
+
+INFILE="$1"
+OUTFILE="$2"
+SKIP_TESTS="$3"
+
+if [ -z "$INFILE" ]; then
+	INFILE="-"
+fi
+
+if [ -z "$OUTFILE" ]; then
+	OUTFILE="$INFILE"
+fi
+
+# Create temp file
+TEMPFILE="`mktemp`"
+
+# Beautify
+csstidy "$INFILE" --sort_properties=true --template=~/bin/conf/csstidy.template --preserve_css=true --merge_selectors=0 --silent=true > "$TEMPFILE"
+
+# Lint check
+if [ -z "$SKIP_TESTS" ] && ! csslint "$TEMPFILE" > /dev/null 2>&1; then
+	echo "Beautified CSS is invalid" > /dev/stderr
+	echo " IN:  $INFILE" > /dev/stderr
+	echo "OUT:  $TEMPFILE" > /dev/stderr
+	exit 1
+fi
+
+exit 0
+
+if [ "$OUTFILE" == "-" ]; then
+	cat "$TEMPFILE"
+else
+	# Use cat to preserve file permissions
+	cat "$TEMPFILE" > "$OUTFILE"
+fi
+
+rm "$TEMPFILE"
+exit 0
