@@ -118,10 +118,11 @@ function bash_prompt_git {
 
 # add shortened path to the prompt
 function bash_prompt_path {
-	if [ "${#PWD}" -gt 35 ]; then
-		echo -n "...${PWD: -32}"
+	P="${PWD/#${HOME}/~}"
+	if [ "${#P}" -gt 35 ]; then
+		echo -n "...${P: -32}"
 	else
-		echo -n "${PWD}"
+		echo -n "${P}"
 	fi
 }
 
