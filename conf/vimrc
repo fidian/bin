@@ -1,5 +1,5 @@
 " Turn on syntax highlighting
-if has(syntax)
+if has("syntax")
 	syntax on
 endif
 
@@ -13,8 +13,10 @@ highlight String ctermfg=red
 " Set tab and indent preferences
 set noexpandtab tabstop=4 shiftwidth=4 softtabstop=4 smartindent autoindent
 
-" Stop the annoying behavior of '#' as the first character going to column 1
-inoremap # X<BS>#
+if has("syntax")
+	" Stop the annoying behavior of '#' as the first character going to column 1
+	inoremap # X<BS>#
+endif
 
 " Searching options
 set incsearch ignorecase smartcase hlsearch
@@ -26,7 +28,7 @@ set laststatus=2
 " Allow backspace for everything
 set backspace=indent,eol,start
 
-if has(hlsearch)
+if has("hlsearch")
 	" Clear the last search when opening a file
 	nohlsearch
 
@@ -41,11 +43,11 @@ if has(hlsearch)
 	nnoremap O :noh<CR>O
 endif
 
-" Allow F1 to exit edit mode.  Can bring up help, but can also remove help
-inoremap <F1> <Esc>
-noremap <F1> :call MapF1()<CR>
+if has("function")
+	" Allow F1 to exit edit mode.  Can bring up help, but can also remove help
+	inoremap <F1> <Esc>
+	noremap <F1> :call MapF1()<CR>
 
-if has(function)
 	function! MapF1()
 		if &buftype == "help"
 			exec 'quit'
