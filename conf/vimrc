@@ -1,5 +1,7 @@
 " Turn on syntax highlighting
-syntax on
+if has(syntax)
+	syntax on
+endif
 
 " Set some colors - http://vimdoc.sourceforge.net/htmldoc/syntax.html#E421
 highlight Search term=underline cterm=underline ctermfg=green ctermbg=darkblue gui=NONE guifg=white guibg=yellow
@@ -24,30 +26,34 @@ set laststatus=2
 " Allow backspace for everything
 set backspace=indent,eol,start
 
-" Clear the last search when opening a file
-nohlsearch
+if has(hlsearch)
+	" Clear the last search when opening a file
+	nohlsearch
 
-" Unhighlight your search automatically when editing
-" Alternately, the following map will clear your search
-" map \ :noh<cr> 
-nnoremap a :noh<CR>a
-nnoremap A :noh<CR>A
-nnoremap i :noh<CR>i
-nnoremap I :noh<CR>I
-nnoremap o :noh<CR>o
-nnoremap O :noh<CR>O
+	" Unhighlight your search automatically when editing
+	" Alternately, the following map will clear your search
+	" map \ :noh<cr> 
+	nnoremap a :noh<CR>a
+	nnoremap A :noh<CR>A
+	nnoremap i :noh<CR>i
+	nnoremap I :noh<CR>I
+	nnoremap o :noh<CR>o
+	nnoremap O :noh<CR>O
+endif
 
 " Allow F1 to exit edit mode.  Can bring up help, but can also remove help
 inoremap <F1> <Esc>
 noremap <F1> :call MapF1()<CR>
 
-function! MapF1()
-	if &buftype == "help"
-		exec 'quit'
-	else
-		exec 'help'
-	endif
-endfunction
+if has(function)
+	function! MapF1()
+		if &buftype == "help"
+			exec 'quit'
+		else
+			exec 'help'
+		endif
+	endfunction
+endif
 
 " Report after N lines changed; default is two
 set report=2
