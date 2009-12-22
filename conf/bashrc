@@ -1,5 +1,8 @@
 function test_for_program {
 	TEST_RES="$( which $* 2>&1 )"
+	if [ $? -ne 0 ]; then
+		return 0;
+	fi
 	TEST_NO1="$( echo "$TEST_RES" | cut -b 1-3 )"
 	TEST_NO2="$( echo "$TEST_RES" | cut -d : -f 2 | cut -b 2-4 )"
 	TEST_NO3="$( echo "$TEST_RES" | grep "command not found" )"
