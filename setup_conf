@@ -11,3 +11,6 @@ ln -s bin/conf/vimrc ~/.vimrc
 
 rm -rf ~/.vim
 ln -s bin/conf/vim ~/.vim
+
+rm -rf ~/.putty
+ln -s bin/conf/putty ~/.putty
