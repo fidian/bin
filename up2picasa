@@ -1,0 +1,198 @@
+#!/usr/bin/php
+<?php
+
+/**
+ * up2picasa - command line program to upload images or videos to picasaweb
+ *
+ * Copyright (c) 2009, Stéphane Gully
+ *
+ * Requires the zend-framework package for Zend/Loader.php
+ *
+ * Usage:
+ *      -u or --username    Specify username
+ *      -p or --password    Specify password
+ *      -a or --album       Specify album
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the author nor the names of its contributors may be
+ *       used to endorse or promote products derived from this software without
+ *       specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE REGENTS AND CONTRIBUTORS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
+
+$version = '1.0';
+
+//ini_set('include_path',dirname(__FILE__).'/picuploader/ZendGdata-1.9.3PL1/library'.':'.ini_get('include_path'));
+ini_set('include_path', ini_get('include_path') . ':/usr/share/php/libzend-framework-php');
+
+require_once 'Zend/Loader.php';
+Zend_Loader::loadClass('Zend_Gdata_Photos');
+Zend_Loader::loadClass('Zend_Gdata_ClientLogin');
+Zend_Loader::loadClass('Zend_Gdata_AuthSub');
+
+function myreadline( $prompt = '', $password = false ) {
+    echo $prompt;
+    if ($password) { system('stty -echo'); }
+    $s = trim(fgets(STDIN));
+    if ($password) { system('stty echo'); echo "\n"; }
+    return $s;
+}
+
+try {
+    Zend_Loader::loadClass('Zend_Console_Getopt');
+    $opts = new Zend_Console_Getopt(
+      array(
+	'username|u=s'   => 'google login',
+	'password|p=s'   => 'google password',
+	'album|a=s'      => 'picasaweb album name',
+      )
+    );
+    $user      = $opts->getOption('u');
+    $pass      = $opts->getOption('p');
+    $albumName = $opts->getOption('a');
+    $filenames = $opts->getRemainingArgs();
+    if (!is_array($filenames) || count($filenames) == 0) {
+      echo "Missing images in arguments\n";
+      exit(1);
+    }
+} catch (Zend_Console_Getopt_Exception $e) {
+    echo $e->getUsageMessage();
+    exit(1);
+}
+
+if (empty($user))      $user = myreadline("Username: ");
+if (empty($pass))      $pass = myreadline("Password: ",true);
+if (empty($albumName)) $albumName = myreadline("Album name: ");
+
+// authenticate at google
+try {
+    // handle http proxy
+    Zend_Loader::loadClass('Zend_Http_Client_Adapter_Proxy');
+//    $adapter = new Zend_Http_Client_Adapter_Proxy();
+//    $adapter->setConfig(array('proxy_host' => 'localhost', 'proxy_port' => 8888));
+    $httpclient = new Zend_Gdata_HttpClient();
+//    $httpclient->setAdapter($adapter);
+
+    $client = Zend_Gdata_ClientLogin::getHttpClient($user, $pass, Zend_Gdata_Photos::AUTH_SERVICE_NAME, $httpclient);
+/*
+    $adapter = $client->getAdapter();
+    $adapter->setConfig(array(
+	    'proxy_host' => 'localhost',
+	    'proxy_port' => 8888,
+	));
+    $adapter = $client->setAdapter($adapter);
+*/
+
+} catch (Zend_Gdata_App_HttpException $e) {
+    echo $e->getMessage()."\n";
+    exit(1);
+}
+
+$gp = new Zend_Gdata_Photos($client, "up2picasa-".$version);
+
+// Search an existing albumId or create a new one
+$albumId = $albumEntry = $albumQuery = $albumURL = null;
+$userFeed = $gp->getUserFeed("default");
+foreach ($userFeed as $userEntry) {
+    if ($userEntry->title->text == $albumName) {
+      $albumId = $userEntry->getGphotoId();
+      $albumEntry = $userEntry;
+    }
+}
+if (is_null($albumId)) {
+  $entry = new Zend_Gdata_Photos_AlbumEntry();
+  $entry->setTitle($gp->newTitle($albumName));
+  $createdEntry = $gp->insertAlbumEntry($entry);
+  $albumId = $createdEntry->getGphotoId();
+  $albumEntry = $createdEntry;
+}
+// Album URL
+foreach($albumEntry->getLink() as $link) {
+  if ($link->getType() == 'text/html') {
+    $albumURL = $link->getHref();
+    break;
+  }
+}
+echo "Starting upload to ".$albumURL."\n";
+
+// Album location query
+$albumQuery = $gp->newAlbumQuery();
+$albumQuery->setUser('default');
+$albumQuery->setAlbumId($albumId);
+
+
+
+// Loop over photos of the given album
+// search for already uploaded photos
+$userFeed = $gp->getUserFeed("default",$albumQuery);
+foreach ($userFeed as $photoEntry) {
+  $size      = (integer)$photoEntry->getGphotoSize()->getText();
+  // check if photos to upload are not already uploaded
+  foreach($filenames as $k => $filename) {
+    $size2 = filesize($filename);
+    if ($size == $size2) {
+      // skip this photo
+      echo $filename." already uploaded (ignored)\n";
+      unset($filenames[$k]);
+    }
+  }
+}
+
+// Upload photos
+foreach($filenames as $filename) {
+
+  try {
+    $fd = $gp->newMediaFileSource($filename);
+    
+    // try to detect the media mime type
+    $mime = mime_content_type($filename);
+    if (preg_match('/\/ogg$/',mime_content_type($filename)) ||
+	preg_match('/^video\//',mime_content_type($filename))) {
+      $fd->setContentType("video/theora");
+    } else {
+      $fd->setContentType($mime);
+    }
+
+    // Create a PhotoEntry
+    $photoEntry = $gp->newPhotoEntry();
+    $photoEntry->setMediaSource($fd);
+  //  $photoEntry->setTitle($gp->newTitle($photoName));
+  //  $photoEntry->setSummary($gp->newSummary($photoCaption));
+    //$photoEntry->setGphotoChecksum($checksum);
+
+    // add some tags
+  //  $keywords = new Zend_Gdata_Media_Extension_MediaKeywords();
+  //  $keywords->setText($photoTags);
+  //  $photoEntry->mediaGroup = new Zend_Gdata_Media_Extension_MediaGroup();
+  //  $photoEntry->mediaGroup->keywords = $keywords;
+
+    // We insert the photo, and the server returns the entry representing
+    // that photo after it is uploaded
+    echo "uploading $filename to picasaweb ... ";
+    $insertedEntry = $gp->insertPhotoEntry($photoEntry, $albumQuery->getQueryUrl()); 
+    echo "(done)\n";
+  } catch (Exception $e) {
+    echo $e->getMessage()."\n";
+  }
+}
+echo "Upload finished, have a look: ".$albumURL."\n";
