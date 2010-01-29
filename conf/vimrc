@@ -28,7 +28,7 @@ set laststatus=2
 " Allow backspace for everything
 set backspace=indent,eol,start
 
-if has("hlsearch")
+if has("extra_search")
 	" Clear the last search when opening a file
 	nohlsearch
 
@@ -43,19 +43,17 @@ if has("hlsearch")
 	nnoremap O :noh<CR>O
 endif
 
-if has("function")
-	" Allow F1 to exit edit mode.  Can bring up help, but can also remove help
-	inoremap <F1> <Esc>
-	noremap <F1> :call MapF1()<CR>
+" Allow F1 to exit edit mode.  Can bring up help, but can also remove help
+inoremap <F1> <Esc>
+noremap <F1> :call MapF1()<CR>
 
-	function! MapF1()
-		if &buftype == "help"
-			exec 'quit'
-		else
-			exec 'help'
-		endif
-	endfunction
-endif
+function! MapF1()
+	if &buftype == "help"
+		exec 'quit'
+	else
+		exec 'help'
+	endif
+endfunction
 
 " Report after N lines changed; default is two
 set report=2
