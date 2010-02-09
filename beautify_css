@@ -19,14 +19,21 @@ TEMPFILE="`mktemp`"
 csstidy "$INFILE" --sort_properties=true --template=${HOME}/bin/conf/csstidy.template --preserve_css=true --merge_selectors=0 --silent=true --compress_font-weight=false --compress_colors=false > "$TEMPFILE"
 
 # Lint check
-if [ -z "$SKIP_TESTS" ] && ! csslint "$TEMPFILE" > /dev/null 2>&1; then
+LINT=""
+if test_for_program 'csslint'; then
+	LINT="csslint";
+else
+	if test_for_program 'csslint-0.6'; then
+		LINT="csslint-0.6"
+	fi
+fi
+
+if [ -z "$SKIP_TESTS" ] && [ ! -z "$LINT" ] && ! $LINT "$TEMPFILE" > /dev/null 2>&1; then
 	echo "Beautified CSS is invalid" > /dev/stderr
 	echo " IN:  $INFILE" > /dev/stderr
 	echo "OUT:  $TEMPFILE" > /dev/stderr
 	exit 1
 fi
-
-exit 0
 
 if [ "$OUTFILE" == "-" ]; then
 	cat "$TEMPFILE"
