@@ -45,7 +45,12 @@ $version = '1.0';
 //ini_set('include_path',dirname(__FILE__).'/picuploader/ZendGdata-1.9.3PL1/library'.':'.ini_get('include_path'));
 ini_set('include_path', ini_get('include_path') . ':/usr/share/php/libzend-framework-php');
 
-require_once 'Zend/Loader.php';
+@include_once 'Zend/Loader.php';
+if (! class_exists('Zend_Loader')) {
+	echo "Zend_Loader does not exist.\n";
+	echo "You might want to see if you can install the zend-framework package.\n";
+	exit();
+}
 Zend_Loader::loadClass('Zend_Gdata_Photos');
 Zend_Loader::loadClass('Zend_Gdata_ClientLogin');
 Zend_Loader::loadClass('Zend_Gdata_AuthSub');
