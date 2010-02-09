@@ -5,7 +5,7 @@ endif
 
 " Set some colors - http://vimdoc.sourceforge.net/htmldoc/syntax.html#E421
 highlight Search term=underline cterm=underline ctermfg=green ctermbg=darkblue gui=NONE guifg=white guibg=yellow
-highlight comment cterm=NONE ctermfg=darkgray
+highlight comment cterm=bold ctermfg=darkgray
 highlight visual cterm=bold ctermfg=black ctermbg=gray
 highlight StatusLine cterm=NONE ctermfg=yellow ctermbg=blue
 highlight String ctermfg=red
