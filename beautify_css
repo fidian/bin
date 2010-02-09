@@ -16,7 +16,7 @@ fi
 TEMPFILE="`mktemp`"
 
 # Beautify
-csstidy "$INFILE" --sort_properties=true --template=~/bin/conf/csstidy.template --preserve_css=true --merge_selectors=0 --silent=true > "$TEMPFILE"
+csstidy "$INFILE" --sort_properties=true --template=${HOME}/bin/conf/csstidy.template --preserve_css=true --merge_selectors=0 --silent=true --compress_font-weight=false --compress_colors=false > "$TEMPFILE"
 
 # Lint check
 if [ -z "$SKIP_TESTS" ] && ! csslint "$TEMPFILE" > /dev/null 2>&1; then
