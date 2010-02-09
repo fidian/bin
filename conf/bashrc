@@ -1,17 +1,3 @@
-function test_for_program {
-	TEST_RES="$( which $* 2>&1 )"
-	if [ $? -ne 0 ]; then
-		return 0;
-	fi
-	TEST_NO1="$( echo "$TEST_RES" | cut -b 1-3 )"
-	TEST_NO2="$( echo "$TEST_RES" | cut -d : -f 2 | cut -b 2-4 )"
-	TEST_NO3="$( echo "$TEST_RES" | grep "command not found" )"
-	if [ "$TEST_NO1" == "no " ] || [ "$TEST_NO2" == "no " ] || [ ! -z "$TEST_NO3" ]; then
-		return 0;
-	fi
-	return 1;
-}
-
 function move_most_recent {
 	FROM="${1:-$HOME/Desktop}"
 	FILE="`ls -rt --indicator-style=none "$FROM" | tail -n 1`"
@@ -29,14 +15,13 @@ alias mysqlrepair_all='mysqlrepair -A --auto-repair -g -m -o -r'
 alias screen='screen -xRR'
 
 test_for_program 'less'
-if [ $? != 0 ]; then
+if test_for_program 'less'; then
 	export PAGER=less
 else
 	alias less=more
 fi
 
-test_for_program 'vim'
-if [ $? != 0 ]; then
+if test_for_program 'vim'; then
 	alias vi='vim'
 	export EDITOR="vim +0"
 else

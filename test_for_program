@@ -1,0 +1,22 @@
+#!/bin/bash
+
+TEST_RES="$( which $* 2>&1 )"
+
+if [ $? -ne 0 ]; then
+	exit 1;
+fi
+
+if [ "$( echo "$TEST_RES" | cut -b 1-3 )" == "no " ]; then
+	exit 1;
+fi
+
+if [ "$( echo "$TEST_RES" | cut -d : -f 2 | cut -b 2-4 )" == "no " ]; then
+	exit 1;
+fi
+
+if [ ! -z "$( echo "$TEST_RES" | grep "command not found" )" ]; then
+	exit 1;
+fi
+
+exit 0;
+
