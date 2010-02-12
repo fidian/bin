@@ -70,3 +70,6 @@ nmap * *zzzv
 nmap # #zzzv
 nmap g* g*zzzv
 nmap g# g#zzzv
+
+" Search for "tags" file in current, then through parent directories
+set tags=tags;/
