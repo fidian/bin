@@ -5,6 +5,16 @@ function move_most_recent {
 	mv "$FROM/$FILE" .
 }
 
+
+# Add some directories to the path if they exist
+for D in "${HOME}/bin"; do
+	if [ -d "$D" ]; then
+		PATH="${PATH}:${D}"
+	fi
+done
+export PATH
+
+
 alias del='gvfs-trash'
 alias dir='ls -lF --color=auto'
 alias grep='grep --color=auto'
@@ -125,13 +135,5 @@ export PS2=$YEL'>'$NONE' '
 export PS3=$YEL'#?'$NONE' '
 export PS4=$YEL'+'$NONE' '
 
-
-# Add some directories to the path if they exist
-for D in "${HOME}/bin"; do
-	if [ -d "$D" ]; then
-		PATH="${PATH}:${D}"
-	fi
-done
-export PATH
 
 cd
