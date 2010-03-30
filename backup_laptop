@@ -21,4 +21,4 @@ rsync -axzvP --delete --delete-during --delete-excluded \
 	--exclude /gtk-gnutella-downloads/ \
 	--exclude /rumkin/ \
 	--exclude /rumkin-media/ \
-	/home/fidian/ fidian@${DEST}:/home/fidian/laptop/
+	${HOME}/ fidian@${DEST}:/home/fidian/`uname -n`/
