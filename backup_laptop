@@ -19,6 +19,8 @@ rsync -axzvP --delete --delete-during --delete-excluded \
 	--exclude /.VirtualBox/ \
 	--exclude /.vlc/ \
 	--exclude /gtk-gnutella-downloads/ \
+	--exclude /Dropbox/ \
 	--exclude /rumkin/ \
 	--exclude /rumkin-media/ \
+	--exclude /Ubuntu\ One/ \
 	${HOME}/ ${USER}@${DEST}:`uname -n`/
