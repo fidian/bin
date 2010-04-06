@@ -43,17 +43,19 @@ if has("extra_search")
 	nnoremap O :noh<CR>O
 endif
 
-" Allow F1 to exit edit mode.  Can bring up help, but can also remove help
-inoremap <F1> <Esc>
-noremap <F1> :call MapF1()<CR>
+if has("user_commands")
+	" Allow F1 to exit edit mode.  Can bring up help, but can also remove help
+	inoremap <F1> <Esc>
+	noremap <F1> :call MapF1()<CR>
 
-function! MapF1()
-	if &buftype == "help"
-		exec 'quit'
-	else
-		exec 'help'
-	endif
-endfunction
+	function! MapF1()
+		if &buftype == "help"
+			exec 'quit'
+		else
+			exec 'help'
+		endif
+	endfunction
+endif
 
 " Report after N lines changed; default is two
 set report=2
