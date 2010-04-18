@@ -160,7 +160,7 @@ size_t doStrip(FILE *in, FILE *out, int dest) {
 	if (dest != DEST_DOS) {
 		while (! feof(in)) {
 			c = fgetc(in);
-			if (c != newlines[dest][0]) {
+			if (c != EOF && c != newlines[dest][0]) {
 				fputc(c, out);
 				length ++;
 			}
