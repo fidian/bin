@@ -5,6 +5,7 @@
 
 #define MODE_CONVERT 0
 #define MODE_COUNT 1
+#define MODE_STRIP 2
 
 #define DEST_UNIX 0
 #define DEST_MAC 1
@@ -21,12 +22,13 @@ void showHelp(void) {
 	fprintf(stderr, "  newlines [options] [files]\n");
 	fprintf(stderr, "By default, the program will convert newlines from stdin to stdout\n");
 	fprintf(stderr, "  -c        Show newline counts (stops newline conversion)\n");
-	fprintf(stderr, "  -d        Convert to / test for DOS-style newlines\n");
+	fprintf(stderr, "  -s        Strip specified type of newlines (does not convert/count)\n");
+	fprintf(stderr, "  -d        Convert to / test for / strip DOS-style newlines\n");
+	fprintf(stderr, "  -m        Convert to / test for / strip Mac-style newlines\n");
+	fprintf(stderr, "  -u        Convert to / test for / strip Unix-style newlines (default)\n");
 	fprintf(stderr, "  -i        Do an \"in place\" edit of the file\n");
 	fprintf(stderr, "  -h        Print this help message\n");
-	fprintf(stderr, "  -m        Convert to / test for Mac-style newlines\n");
 	fprintf(stderr, "  -q        Quiet - do not print anything\n");
-	fprintf(stderr, "  -u        Convert to / test for Unix-style newlines (default)\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "When using -i, you must also specify at least one filename.\n");
 	fprintf(stderr, "When using -c, the return code will be zero if all of the newlines\n");
@@ -129,18 +131,56 @@ size_t doConvert(FILE *in, FILE *out, int dest) {
 			if (c == 0x0D) {
 				fputs(newlines[dest], out);
 				length ++;
-				if (dest == 2) {
+				if (dest == DEST_DOS) {
 					length ++;
 				}
 			} else if (c == 0x0A) {
 				if (lastC != 0x0D) {
 					fputs(newlines[dest], out);
 					length ++;
-					if (dest == 2) {
+					if (dest == DEST_DOS) {
 						length ++;
 					}
 				}
 			} else {
+				fputc(c, out);
+				length ++;
+			}
+		}
+	}
+	
+	return length;
+}
+
+size_t doStrip(FILE *in, FILE *out, int dest) {
+	int c = 0, nextC = 0;
+	static char *newlines[] = {"\n", "\r", "\r\n"};
+	size_t length = 0;
+
+	if (dest != DEST_DOS) {
+		while (! feof(in)) {
+			c = fgetc(in);
+			if (c != newlines[dest][0]) {
+				fputc(c, out);
+				length ++;
+			}
+		}
+	} else {
+		// DOS's two-character newlines
+		while (! feof(in)) {
+			c = fgetc(in);
+			while (c == newlines[dest][0]) {
+				// Need to confirm second byte matches and base action on both characters
+				nextC = fgetc(in);
+				if (nextC != newlines[dest][1]) {
+					fputc(c, out);
+					length ++;
+					c = nextC;
+				} else {
+					c = fgetc(in);
+				}
+			}
+			if (c != EOF) {
 				fputc(c, out);
 				length ++;
 			}
@@ -160,6 +200,9 @@ int main(int argc, char **argv) {
 	for (i = 1; i < argc; i ++) {
 		if (strcmp(argv[i], "-c") == 0) {
 			mode = MODE_COUNT;
+			argv[i][0] = '\0';
+		} else if (strcmp(argv[i], "-s") == 0) {
+			mode = MODE_STRIP;
 			argv[i][0] = '\0';
 		} else if (strcmp(argv[i], "-d") == 0) {
 			dest = DEST_DOS;
@@ -193,7 +236,11 @@ int main(int argc, char **argv) {
 				retcode = doCount(in, dest, quiet);
 			} else if (inplace) {
 				out = tmpfile();
-				length = doConvert(in, out, dest);
+				if (mode == MODE_STRIP) {
+					length = doStrip(in, out, dest);
+				} else {
+					length = doConvert(in, out, dest);
+				}
 				rewind(in);
 				rewind(out);
 				left = length;
@@ -216,9 +263,16 @@ int main(int argc, char **argv) {
 				}
 				fclose(out);
 				fclose(in);
-				truncate(argv[i], length);
+				if (truncate(argv[i], length)) {
+					fprintf(stderr, "Error truncating file\n");
+					exit(6);
+				}
 			} else {
-				doConvert(in, stdout, dest);
+				if (mode == MODE_STRIP) {
+					doStrip(in, stdout, dest);
+				} else {
+					doConvert(in, stdout, dest);
+				}
 			}
 			filesProcessed ++;
 		}
