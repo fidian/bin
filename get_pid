@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# enable monitor mode
+set -m 
+
+# run process
+$* &
+
+# trap process id
+PID=$!
+
+# Return to backgrounded process
+fg %- > /dev/null
+
+# Whew, done.  Echo PID
+echo pid $PID
