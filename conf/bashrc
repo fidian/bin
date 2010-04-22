@@ -24,14 +24,24 @@ alias ls='ls -F --color=auto'
 alias mysqlrepair_all='mysqlrepair -A --auto-repair -g -m -o -r'
 alias screen='screen -xRR'
 
-test_for_program 'less'
-if test_for_program 'less'; then
+
+# Check for our program checker, then check for programs
+TEST_FOR_PROGRAM=test_for_program
+
+if [ ! -z "$BASH_SOURCE" ]; then
+	P="`dirname "$BASH_SOURCE"`/../test_for_program";
+	if [ -f "$P" ]; then
+		TEST_FOR_PROGRAM="$P"
+	fi
+fi
+
+if $TEST_FOR_PROGRAM 'less'; then
 	export PAGER=less
 else
 	alias less=more
 fi
 
-if test_for_program 'vim'; then
+if $TEST_FOR_PROGRAM 'vim'; then
 	alias vi='vim'
 	export EDITOR="vim +0"
 else
