@@ -5,6 +5,7 @@ DEST=rumkin.com
 
 rsync -axzvP --delete --delete-during --delete-excluded \
 	--exclude /.cache/ \
+	--exclude /.dropbox/ \
 	--exclude /.evolution/ \
 	--exclude /.gtk-gnutella/tth_cache/ \
 	--exclude /.local/share/Trash/ \
