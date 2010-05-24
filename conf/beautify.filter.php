@@ -25,6 +25,7 @@
  * Classes:
  *   All methods get marked with public, private, protected
  *   All variables get marked with public, private, protected
+ *   Newlines before a -> may get preserved (for chaining)
  * 
  * Switches:
  *   Newline after 'break' when followed by 'case' or 'default'
@@ -35,7 +36,7 @@
  *   '<?=' is replaced by '<?php echo'
  *   Indentation is done with tabs
  *   Open braces on same line as function/switch/etc.
- *   'else' on same line as close braceA
+ *   'else' on same line as close brace
  *   Spacing for 'for' lines:  for ($a; $b; $c) {
  */
 class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
@@ -74,7 +75,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		
 		/* Enable logging with this command */
 		
-		// $this->addLog();
+		$this->addLog();
 	}
 	
 	
@@ -752,7 +753,24 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		$this->oBeaut->add($sTag . ' ');  // Keep exactly 1 space
 	}
 	
-	
+
+	// Preserve a newline if there is one
+	public function t_object_operator($sTag) {
+		if ('->' !== $sTag) {
+			return PHP_Beautifier_Filter::BYPASS;
+		}
+
+		$token = $this->oBeaut->getToken($this->oBeaut->iCount - 1);
+		$this->oBeaut->removeWhitespace();
+		if (is_array($token) && $token[0] == T_WHITESPACE && false !== strpos($token[1], "\n")) {
+			$this->oBeaut->incIndent();
+			$this->oBeaut->addNewLineIndent();
+			$this->oBeaut->decIndent();
+		}
+		$this->oBeaut->add($sTag);
+	}
+
+
 	/* Open braces, which we only mess with class and function braces
 	 * Also handles the special case where there is a // comment right before
 	 * the open brace.
