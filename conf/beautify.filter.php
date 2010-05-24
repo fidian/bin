@@ -696,7 +696,13 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		}
 	}
 	
-	
+
+	// Namespace declarations
+	public function t_namespace($sTag) {
+		$this->oBeaut->add($sTag . ' ');
+	}
+
+
 	// Open braces, which we only mess with class and function braces
 	public function t_open_brace($sTag) {
 		$this->controlInDo <<= 1;
