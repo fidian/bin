@@ -67,7 +67,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 	/**
 	 * Filter constructor
 	 */
-	public function __construct(PHP_Beautifier$oBeaut, $aSettings) {
+	public function __construct(PHP_Beautifier $oBeaut, $aSettings) {
 		parent::__construct($oBeaut, $aSettings);
 		$oBeaut->setIndentChar("\t");
 		$oBeaut->setIndentNumber(1);
@@ -134,6 +134,8 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 			foreach ($doNotSkip as $type) {
 				unset($tokens[$type]);
 			}
+		} else {
+			unset($tokens[$doNotSkip]);
 		}
 		
 		while (isset($tokens[$prevToken]) || -- $count) {
@@ -142,6 +144,53 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		}
 		
 		$this->lastGoodToken = $prevToken;
+	}
+	
+	
+	/**
+	 * Returns true if the next token is a comment and is not a doc-style
+	 * comment.  Right now, if isNextTokenConstant(T_COMMENT) is true, the
+	 * comment could still be a doc-style comment.
+	 * 
+	 * What is also not mergeable is if a // style comment is following
+	 * some code on the first line and a // style comment follows on a
+	 * different line.
+	 * 
+	 * @return boolean
+	 */
+	public function is_next_a_mergeable_comment() {
+		if (! $this->oBeaut->isNextTokenConstant(T_COMMENT)) {
+			return false;
+		}
+		
+		// The beautifer doesn't let me pull the next token with a method
+		$idx = 1;
+		$nextToken = $this->oBeaut->getToken($this->oBeaut->iCount + $idx);
+		
+		while (is_array($nextToken) && $nextToken[0] == T_WHITESPACE) {
+			$idx ++;
+			$nextToken = $this->oBeaut->getToken($this->oBeaut->iCount + $idx);
+		}
+		
+		if (! is_array($nextToken)) {
+			return false;
+		}
+		
+		if ($nextToken[0] == 370) {
+			return false;
+		}
+		
+		if (substr($nextToken[1], 0, 2) == '/*') {
+			return false;
+		}
+		
+		$prevToken = $this->oBeaut->getToken($this->oBeaut->iCount - 1);
+		
+		if (! is_array($prevToken) || strpos($prevToken[1], "\n") === false) {
+			return false;
+		}
+		
+		return true;
 	}
 	
 	
@@ -157,7 +206,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 			$sTag
 		);
 		
-		while ($this->oBeaut->isNextTokenConstant(T_COMMENT)) {
+		while ($this->is_next_a_mergeable_comment()) {
 			$idx = $this->oBeaut->iCount + 1;
 			$token = $this->oBeaut->getToken($idx);
 			array_splice($this->oBeaut->aTokens, $idx, 1);
@@ -299,13 +348,14 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		$this->oBeaut->add($sTag . ' ');
 	}
 	
-
+	
 	// "catch" (part of the try {} catch () {} blocks)
 	public function t_catch($sTag) {
 		$this->oBeaut->removeWhitespace();
 		$this->oBeaut->add(' ' . $sTag . ' ');
 	}
-
+	
+	
 	/**
 	 * Close braces
 	 * 
@@ -355,7 +405,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		if (is_array($token)) {
 			$this->oBeaut->add($token[1]);
 		} else {
-			$this->oBeaut->add('?>');
+			$this->oBeaut->add('?' . '>');  // Separate the tag for syntax highlighting
 		}
 	}
 	
@@ -391,7 +441,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 			return $this->t_doc_comment($sTag);
 		}
 		
-		if ($this->oBeaut->isNextTokenConstant(T_COMMENT)) {
+		if ($this->is_next_a_mergeable_comment()) {
 			return $this->merge_comments($sTag);
 		}
 		
@@ -696,16 +746,20 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		}
 	}
 	
-
-	// Namespace declarations
+	
+	// Namespace declarations, by default, have trailing whitespace removed
 	public function t_namespace($sTag) {
-		$this->oBeaut->add($sTag . ' ');
+		$this->oBeaut->add($sTag . ' ');  // Keep exactly 1 space
 	}
-
-
-	// Open braces, which we only mess with class and function braces
+	
+	
+	/* Open braces, which we only mess with class and function braces
+	 * Also handles the special case where there is a // comment right before
+	 * the open brace.
+	 */
 	public function t_open_brace($sTag) {
 		$this->controlInDo <<= 1;
+		$prevToken = $this->oBeaut->getPreviousTokenConstant(1);
 		
 		switch ($this->oBeaut->getControlSeq()) {
 			case T_CLASS:
@@ -713,11 +767,20 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 				break;
 
 			default:
-				return PHP_Beautifier_Filter::BYPASS;
+				
+				if ($prevToken != T_COMMENT) {
+					return PHP_Beautifier_Filter::BYPASS;
+				}
 		}
 		
-		$this->oBeaut->removeWhitespace();
-		$this->oBeaut->add(' ' . $sTag);
+		if ($prevToken == T_COMMENT) {
+			$this->pad(1);
+			$this->oBeaut->add($sTag);
+		} else {
+			$this->oBeaut->removeWhitespace();
+			$this->oBeaut->add(' ' . $sTag);
+		}
+		
 		$this->oBeaut->incIndent();
 		$this->oBeaut->addNewLineIndent();
 	}
