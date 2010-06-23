@@ -1,0 +1,17 @@
+#!/bin/bash
+
+CMD="$1"
+shift
+PARMS="$*"
+
+for F in $PARMS; do
+	echo "$CMD $F"
+	$CMD $F
+	RETURN_CODE="$?"
+	if [ $RETURN_CODE -ne 0 ]; then
+		echo ""
+		echo "ERROR $RETURN_CODE: $CMD $F"
+		echo "Press enter to continue..."
+		read
+	fi
+done
