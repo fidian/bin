@@ -5,6 +5,7 @@ DEST=rumkin.com
 
 rsync -axzvP --delete --delete-during --delete-excluded \
 	--exclude /.cache/ \
+	--exclude /.config/google-chrome/ \
 	--exclude /.dropbox/ \
 	--exclude /.evolution/ \
 	--exclude /.gtk-gnutella/tth_cache/ \
@@ -15,10 +16,13 @@ rsync -axzvP --delete --delete-during --delete-excluded \
 	--exclude /.nautilus/ \
 	--exclude /.openoffice.org \
 	--exclude /.opera/ \
+	--exclude /.PlayOnLinux/ \
 	--exclude /.pulse/ \
 	--exclude /.thumbnails/ \
 	--exclude /.VirtualBox/ \
 	--exclude /.vlc/ \
+	--exclude /.wine/ \
+	--exclude /.winetrickscache/ \
 	--exclude /gtk-gnutella-downloads/ \
 	--exclude /Dropbox/ \
 	--exclude /rumkin/ \
