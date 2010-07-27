@@ -1,3 +1,5 @@
+" Zen Coding:  ol#list>li*5>a[href=asdf]    then type Ctrl-y ,
+
 " Turn on syntax highlighting
 if has("syntax")
 	syntax on
@@ -5,10 +7,11 @@ endif
 
 " Set some colors - http://vimdoc.sourceforge.net/htmldoc/syntax.html#E421
 highlight Search term=underline cterm=underline ctermfg=green ctermbg=darkblue gui=NONE guifg=white guibg=yellow
-highlight comment cterm=bold ctermfg=darkgray
-highlight visual cterm=bold ctermfg=black ctermbg=gray
+highlight Comment cterm=NONE ctermfg=cyan
+highlight Visual cterm=bold ctermfg=black ctermbg=gray
 highlight StatusLine cterm=NONE ctermfg=yellow ctermbg=blue
 highlight String ctermfg=red
+highlight Normal cterm=NONE ctermfg=white
 
 " Set tab and indent preferences
 set noexpandtab tabstop=4 shiftwidth=4 softtabstop=4 smartindent autoindent
