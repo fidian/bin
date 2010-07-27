@@ -75,7 +75,7 @@ class PHP_Beautifier_Filter_beautify extends PHP_Beautifier_Filter {
 		
 		/* Enable logging with this command */
 		
-		$this->addLog();
+		//$this->addLog();
 	}
 	
 	
