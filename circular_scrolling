@@ -1,0 +1,14 @@
+#!/bin/bash
+
+case `hostname` in
+	'anise')
+		TOUCHPAD="SynPS/2 Synaptics TouchPad"
+		;;
+	*)
+		TOUCHPAD=""
+esac
+
+if [ ! -z "$TOUCHPAD" ]; then
+	xinput set-prop "$TOUCHPAD" --type=int "Synaptics Circular Scrolling" 1
+	xinput set-prop "$TOUCHPAD" --type=int "Synaptics Circular Scrolling Trigger" 3
+fi
