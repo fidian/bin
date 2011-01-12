@@ -22,7 +22,20 @@ $xml->preserveWhiteSpace = false;
 $xml->formatOutput = true;
 $xml->loadXML($contents);
 
-if (isset($argv[2])) {
+if (isset($argv[3])) {
+	ini_set('display_errors', 'On');
+	error_reporting(E_ALL | E_NOTICE);
+	if (! $xml->schemaValidate($argv[3])) {
+		$errors = libxml_get_errors();
+		if (! empty($errors)) {
+			var_export($errors);
+			echo "\n";
+		}
+		exit();
+	}
+}
+
+if (isset($argv[2]) && ! empty($argv[2]) && $argv[2] != '-') {
 	file_put_contents($argv[2], $xml->saveXML());
 } else {
 	echo $xml->saveXML();
