@@ -1,0 +1,2 @@
+#!/bin/bash
+while :; do ps ax | awk '{print $3 " "  $0}' | grep ^D;echo "*****"; sleep .5;done

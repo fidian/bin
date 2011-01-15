@@ -77,9 +77,9 @@ endif
 if !exists('g:checksyntax_okrx_javascript')
     let g:checksyntax_okrx_javascript = '0 error(s), 0 warning(s)'
 endif
-" if !exists('g:checksyntax_auto_javascript')
-"     let g:checksyntax_auto_javascript = 0
-" endif
+if !exists('g:checksyntax_auto_javascript')
+    let g:checksyntax_auto_javascript = 1
+endif
 
 
 """ Ruby specific
