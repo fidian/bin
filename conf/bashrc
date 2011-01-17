@@ -22,6 +22,7 @@ alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias ls='ls -F --color=auto'
 alias mysqlrepair_all='mysqlrepair -A --auto-repair -g -m -o -r'
+alias mysqlcheck_all='mysqlcheck --auto-repair --check --optimize --all-databases'
 alias screen='screen -xRR'
 
 
