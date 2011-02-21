@@ -22,6 +22,7 @@ alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias ls='ls -F --color=auto'
 alias mysqlrepair_all='mysqlrepair -A --auto-repair -g -m -o -r'
+alias mysqlcheck_all='mysqlcheck --auto-repair --check --optimize --all-databases'
 alias screen='screen -xRR'
 
 
@@ -134,11 +135,27 @@ function bash_prompt_path {
 	fi
 }
 
-# Set the title bar to the current directory
-export PS1='\[\033]2;\h:\w\007\]'
-export PS1=$PS1$GRN'\A'$NONE' '$PRPL'\h'$NONE':'$HBLU'$(bash_prompt_path)'$YEL'$(bash_prompt_git)'$NONE
+PS1=""
+case "${TERM}" in
+	xterm*)
+		# Set the title bar to the current directory
+		PS1='\[\033]2;\h:\w\007\]'
+		;;
+	vt100)
+		# Eliminate fancy things like colors
+		NONE=""
+		HBLU=""
+		GRN=""
+		YEL=""
+		PRPL=""
+		RED=""
+		;;
+	*)
+		;;
+esac
+PS1=$PS1$GRN'\A'$NONE' '$PRPL'\h'$NONE':'$HBLU'$(bash_prompt_path)'$YEL'$(bash_prompt_git)'$NONE
 if [ ${UID} -eq 0 ]; then
-	export PS1=$PS1$RED
+	PS1=$PS1$RED
 fi
 export PS1=$PS1'\$'$NONE' '
 export PS2=$YEL'>'$NONE' '

@@ -28,4 +28,5 @@ rsync -axzvP --delete --delete-during --delete-excluded \
 	--exclude /rumkin/ \
 	--exclude /rumkin-media/ \
 	--exclude /Ubuntu\ One/ \
+	--exclude /whitelabel/db/snapshots/ \
 	${HOME}/ ${USER}@${DEST}:`uname -n`/
