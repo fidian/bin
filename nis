@@ -1,0 +1,16 @@
+#!/bin/bash
+
+CMD=$1
+
+if [ -f /etc/init.d/portreserve ]; then
+	/etc/init.d/portreserve $CMD
+fi
+
+/etc/init.d/rpcbind $CMD
+/etc/init.d/rpcidmapd $CMD
+/etc/init.d/rpcgssd $CMD
+/etc/init.d/ypserv $CMD
+/etc/init.d/yppasswdd $CMD
+/etc/init.d/ypxfrd $CMD
+/etc/init.d/ypbind $CMD
+

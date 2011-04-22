@@ -19,4 +19,7 @@ if [ ! -d ~/.ssh ]; then
 	mkdir ~/.ssh
 	chmod 700 ~/.ssh
 fi
+rm -rf ~/.ssh/authorized_keys
 ln -s bin/ssh/authorized_keys ~/.ssh/authorized_keys
+rm -rf ~/.ssh/config
+ln -s bin/ssh/config ~/.ssh/config

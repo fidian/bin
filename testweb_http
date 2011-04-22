@@ -1,0 +1,12 @@
+#!/bin/bash
+
+CMD="$1"
+
+if [ -z "$CMD" ]; then
+	echo "Specify a command to send to Apache on the test servers"
+	exit
+fi
+
+for S in testweb1 testweb2; do
+	ssh -t $S sudo /etc/init.d/httpd $1
+done

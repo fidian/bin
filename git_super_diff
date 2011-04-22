@@ -1,0 +1,29 @@
+#!/bin/bash
+
+FROM_HASH="50e60398a130b0ca9ce7bb12b82ab8c87722af42"
+TO_HASH="cd226bd150da547dca7e1d247619ace6a83eb65f"
+
+AUTHORS="`git log --no-merges --pretty="format:%ae" ${FROM_HASH}..${TO_HASH} |
+	cut -d ' ' -f 2 | sort | uniq |
+	grep -Ev "(andrew.boerema@gmail.com|brianmbyers@gmail.com|chris.mcmacken@gmail.com|chris.tetreault@bestbuy.com|conley.sandberg@bestbuy.com|fidian@rumkin.com|garadox47@gmail.com|gloria.habeck@bestbuy.com|jacek.radko@bestbuy.com|james.long3@bestbuy.com|justin.kuto@gmail.com|long.kyle@live.com|minimifidianism@gmail.com|srinivas.damodara@bestbuy.com)"`"
+
+COMMITS="`(
+for A in $AUTHORS; do
+	git log --no-merges --format="format:%h" --author="$A" ${FROM_HASH}..${TO_HASH}
+	echo ""
+done
+) | grep -v "989e8a8" | sort`"
+
+
+FILES="`(
+for C in $COMMITS; do
+	echo $C
+	git log -w --numstat --format="format:" ${C}^..${C} |
+		grep -E "^[-0-9]+\W[-0-9]+\W" |
+		grep -vE "^0\W0\W" |
+		cut -f 3
+	echo ""
+done
+) | sort | uniq`"
+
+git diff -w ${FROM_HASH}..${TO_HASH} -- $FILES
