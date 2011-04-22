@@ -14,3 +14,9 @@ ln -s bin/conf/vim ~/.vim
 
 rm -rf ~/.putty
 ln -s bin/conf/putty ~/.putty
+
+if [ ! -d ~/.ssh ]; then
+	mkdir ~/.ssh
+	chmod 700 ~/.ssh
+fi
+ln -s bin/ssh/authorized_keys ~/.ssh/authorized_keys
