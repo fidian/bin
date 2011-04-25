@@ -6,20 +6,22 @@ if [ $? -ne 0 ]; then
 	echo ". ~$USER/bin/conf/bashrc" >> "${BASH_FILE}"
 fi
 
+cd "`dirname $0`"
+
 rm -f ~/.vimrc
-ln -s bin/conf/vimrc ~/.vimrc
+ln -s conf/vimrc ~/.vimrc
 
 rm -rf ~/.vim
-ln -s bin/conf/vim ~/.vim
+ln -s conf/vim ~/.vim
 
 rm -rf ~/.putty
-ln -s bin/conf/putty ~/.putty
+ln -s conf/putty ~/.putty
 
 if [ ! -d ~/.ssh ]; then
 	mkdir ~/.ssh
 	chmod 700 ~/.ssh
 fi
 rm -rf ~/.ssh/authorized_keys
-ln -s bin/ssh/authorized_keys ~/.ssh/authorized_keys
+cat ssh/*.pub > ~/.ssh/authorized_keys
 rm -rf ~/.ssh/config
-ln -s bin/ssh/config ~/.ssh/config
+cp ssh/config ~/.ssh/config
