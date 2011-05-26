@@ -1,0 +1,7 @@
+#!/bin
+
+if [ ! -z "$2" ]; then
+	openssl s_client -host $1 -port $2
+else 
+	openssl s_client -host $1
+fi
