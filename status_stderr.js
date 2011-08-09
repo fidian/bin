@@ -33,7 +33,7 @@ var buff = '';
 process.stdin.on('data', function (chunk) {
 	buff += chunk.toString();
 	buff = buff.split("\n");
-	while (buff.length) {
+	while (buff.length > 1) {
 		var line = buff.shift();
 		logger(line);
 		writer(line);
