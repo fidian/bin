@@ -9,13 +9,13 @@ fi
 cd "`dirname $0`"
 
 rm -f ~/.vimrc
-ln -s conf/vimrc ~/.vimrc
+ln -s "`pwd`/conf/vimrc" ~/.vimrc
 
 rm -rf ~/.vim
-ln -s conf/vim ~/.vim
+ln -s "`pwd`/conf/vim" ~/.vim
 
 rm -rf ~/.putty
-ln -s conf/putty ~/.putty
+ln -s "`pwd`/conf/putty" ~/.putty
 
 if [ ! -d ~/.ssh ]; then
 	mkdir ~/.ssh
