@@ -1,3 +1,3 @@
 #!/bin/bash
 
-s3cmd --add-header=x-amz-storage-class:REDUCED_REDUNDANCY sync $*
+s3cmd --add-header=x-amz-storage-class:REDUCED_REDUNDANCY sync ${1+"$@"}
