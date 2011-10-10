@@ -24,6 +24,7 @@ alias ls='ls -F --color=auto'
 alias mysqlrepair_all='mysqlrepair -A --auto-repair -g -m -o -r'
 alias mysqlcheck_all='mysqlcheck --auto-repair --check --optimize --all-databases'
 alias screen='screen -xRR'
+alias ppid='ps -o ppid --no-headers -p'
 
 
 # Check for our program checker, then check for programs
@@ -161,6 +162,12 @@ export PS1=$PS1'\$'$NONE' '
 export PS2=$YEL'>'$NONE' '
 export PS3=$YEL'#?'$NONE' '
 export PS4=$YEL'+'$NONE' '
+
+
+# Sets the window size to 100% of height if xdotool is found
+if $TEST_FOR_PROGRAM 'xdotool'; then
+	xdotool getactivewindow windowsize --usehints 80 100%
+fi
 
 
 cd
