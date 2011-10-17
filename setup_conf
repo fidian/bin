@@ -17,6 +17,9 @@ ln -s "`pwd`/conf/vim" ~/.vim
 rm -rf ~/.putty
 ln -s "`pwd`/conf/putty" ~/.putty
 
+rm -rf ~/.fonts
+ln -s "`pwd`/conf/fonts" ~/.fonts
+
 if [ ! -d ~/.ssh ]; then
 	mkdir ~/.ssh
 	chmod 700 ~/.ssh
