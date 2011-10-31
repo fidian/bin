@@ -8,6 +8,7 @@ for F in $PARMS; do
 	RUNTEST=1
 
 	while [ $RUNTEST -ne 0 ]; do
+		RUNTEST=0
 		echo "$CMD $F"
 		$CMD $F
 		RETURN_CODE="$?"
@@ -27,12 +28,12 @@ for F in $PARMS; do
 
 				case $V in
 					a)
-						# Do nothing
+						# Rerun current test
+						RUNTEST=1
 						;;
 
 					enter)
 						# Run next test
-						RUNTEST=0
 						;;
 
 					*)
