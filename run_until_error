@@ -5,13 +5,45 @@ shift
 PARMS="$*"
 
 for F in $PARMS; do
-	echo "$CMD $F"
-	$CMD $F
-	RETURN_CODE="$?"
-	if [ $RETURN_CODE -ne 0 ]; then
-		echo ""
-		echo "ERROR $RETURN_CODE: $CMD $F"
-		echo "Press enter to continue..."
-		read
-	fi
+	RUNTEST=1
+
+	while [ $RUNTEST -ne 0 ]; do
+		RUNTEST=0
+		echo "$CMD $F"
+		$CMD $F
+		RETURN_CODE="$?"
+		if [ $RETURN_CODE -ne 0 ]; then
+			echo ""
+			echo "ERROR $RETURN_CODE: $CMD $F"
+			READLOOP=1
+
+			while [ $READLOOP -ne 0 ]; do
+				echo "a=run again, enter to continue..."
+				read V
+				READLOOP=0
+				
+				if [ -z "$V" ]; then
+					V="enter"
+				fi
+
+				case $V in
+					a)
+						# Rerun current test
+						RUNTEST=1
+						;;
+
+					enter)
+						# Run next test
+						;;
+
+					*)
+						READLOOP=1
+						echo "Options:"
+						echo "   a = run Again"
+						echo "   enter = skip to the next one"
+						;;
+				esac
+			done
+		fi
+	done
 done

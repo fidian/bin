@@ -78,3 +78,6 @@ nmap g# g#zzzv
 
 " Search for "tags" file in current, then through parent directories
 set tags=tags;/
+
+" Single-key macros
+nmap Q oecho __FILE__.':'.__LINE__."\n";//NOCOMMIT-DEBUG<esc>
