@@ -1,2 +1,7 @@
 Host minecraft.fidian.com
 Port 2222
+
+Host utilities
+User storage
+Hostname 10.72.247.110
+IdentityFile ~/.ssh/storage
