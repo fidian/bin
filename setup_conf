@@ -1,13 +1,14 @@
 #!/bin/bash
 
 MYSELF="$0"
+cd "`dirname "$MYSELF"`"
+
 BASH_FILE=~/.bashrc
 grep "/bin/conf/bashrc" "${BASH_FILE}" > /dev/null 2>&1
+
 if [ $? -ne 0 ]; then
 	echo ". ~$USER/bin/conf/bashrc" >> "${BASH_FILE}"
 fi
-
-cd "`dirname "$MYSELF"`"
 
 rm -f ~/.vimrc
 ln -s "`pwd`/conf/vimrc" ~/.vimrc
