@@ -1,12 +1,13 @@
 #!/bin/bash
 
+cd "`dirname "$0"`"
+
 BASH_FILE=~/.bashrc
 grep "/bin/conf/bashrc" "${BASH_FILE}" > /dev/null 2>&1
+
 if [ $? -ne 0 ]; then
 	echo ". ~$USER/bin/conf/bashrc" >> "${BASH_FILE}"
 fi
-
-cd "`dirname $0`"
 
 rm -f ~/.vimrc
 ln -s "`pwd`/conf/vimrc" ~/.vimrc
@@ -27,6 +28,8 @@ fi
 rm -rf ~/.ssh/authorized_keys
 cat ssh/*.pub > ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
-rm -rf ~/.ssh/config
+if [ -f ~/.ssh/config ]; then
+	mv ~/.ssh/config ~/.ssh/config.old;
+fi
 cp ssh/config ~/.ssh/config
 chmod 600 ~/.ssh/config
