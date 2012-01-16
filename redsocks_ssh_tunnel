@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ -z "$1" ]; then
+	echo "Specify target machine"
+	exit
+fi
+
+ssh -fqND 1080 -o TCPKeepAlive=yes $*

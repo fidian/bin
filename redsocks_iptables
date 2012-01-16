@@ -1,0 +1,43 @@
+#! /bin/sh
+
+TARGET="$1"
+BASE="$( dirname "$0" )"
+
+if [ -z "${TARGET}" ]; then
+	echo "Target hostname/IP not specified"
+	exit
+fi
+
+TARGETIP="$( "${BASE}/ipof" -q "$TARGET" )"
+
+if [ -z "$TARGETIP" ]; then
+	echo "Can not find target IP"
+	exit
+fi
+
+iptables -t nat -N REDSOCKS
+iptables -t nat -A REDSOCKS -d 0.0.0.0/8 -j RETURN 
+
+# VirtualBox NAT - do not forward
+iptables -t nat -A REDSOCKS -d 10.0.2.0/24 -j RETURN 
+
+# VMWare NAT - do not forward
+iptables -t nat -A REDSOCKS -d 192.168.254.0/24 -j RETURN
+
+# BBY internal - do not forward
+iptables -t nat -A REDSOCKS -d 168.94.0.0/16 -j RETURN
+
+# Various local domains
+iptables -t nat -A REDSOCKS -d 127.0.0.0/8 -j RETURN 
+iptables -t nat -A REDSOCKS -d 192.168.0.0/16 -j RETURN
+iptables -t nat -A REDSOCKS -d 169.254.0.0/16 -j RETURN 
+iptables -t nat -A REDSOCKS -d 172.16.0.0/12 -j RETURN 
+iptables -t nat -A REDSOCKS -d 224.0.0.0/4 -j RETURN 
+iptables -t nat -A REDSOCKS -d 240.0.0.0/4 -j RETURN 
+
+# Now forward everything that is left over to REDSOCKS
+iptables -t nat -A REDSOCKS -o eth0 -p tcp -j DNAT --to-destination 127.0.0.1:12345
+iptables -t nat -A OUTPUT -p tcp -j REDSOCKS
+
+# Lastly, stuff from REDSOCKS is allowed to go to our target machine
+iptables -t nat -I REDSOCKS -d "$TARGETIP" -j RETURN
