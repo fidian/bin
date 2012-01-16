@@ -29,9 +29,9 @@ rm -rf ~/.ssh/authorized_keys
 cat ssh/*.pub > ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 for F in config storage; do
-	if [ -f "~/.ssh/$F" ]; then
-		mv "~/.ssh/$F" "~/.ssh/${F}.old";
+	if [ -f "$HOME/.ssh/$F" ]; then
+		mv "$HOME/.ssh/$F" "$HOME/.ssh/${F}.old";
 	fi
-	cp "ssh/$F" "~/.ssh/$F"
-	chmod 600 "~/.ssh/$F"
-fi
+	cp "ssh/$F" "$HOME/.ssh/$F"
+	chmod 600 "$HOME/.ssh/$F"
+done
