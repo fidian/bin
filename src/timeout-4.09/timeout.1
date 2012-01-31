@@ -1,0 +1,25 @@
+.\" @(#)$Id: timeout.1,v 1.2 1996/09/24 18:28:54 johnl Exp $
+'\" @(#)Manual page: Timeout -- stop process after given time
+.ds fC "Version: $Revision: 1.2 $ ($Date: 1996/09/24 18:28:54 $)
+.TH TIMEOUT 1S "Sphinx UNIX Tools"
+.SH NAME
+timeout \(em prevent process taking too long
+.SH SYNOPSIS
+\fBtimeout\fP -t time [-s signal] cmd [arg ...]
+.SH DESCRIPTION
+\fBTimeout\fP runs the command specified with the arguments specified.
+If the command has not complete after the amount of time specified,
+the command is sent the signal specified or an interrupt if no signal
+is specified.
+The time specified must be greater than zero.
+.P
+The command is executed using \fIexecvp\fP.
+.SH BUGS
+Be careful about which signal is sent to the command;
+things like SIGALRM (14) may not work as intended.
+.SH AUTHOR
+Jonathan Leffler
+.br
+Sphinx Ltd.
+.br
+2nd October 1989
