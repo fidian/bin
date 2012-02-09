@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Approximate track length as min.sec
+TIME=5.00
+
+function bintest() {
+	PROG="$1";
+	which "$PROG" > /dev/null 2>&1
+
+	if [ $? -ne 0 ]; then
+		echo "Can not find $PROG binary"
+		error
+	fi
+}
+
+function error() {
+	echo "Error detected - aborting"
+	exit
+}
+
+bintest mp3splt
+bintest mp3gain
+
+PROCESSED_NONE=true
+
+while [ $# -gt 0 ]; do
+	FILE="$1"
+
+	if [ ! -f "$FILE" ]; then
+		echo "$FILE does not exist";
+		error
+	fi
+
+	echo "$FILE"
+	OUTPUTDIR="$(echo "$FILE" | rev | cut -d '.' -f 2- | rev)"
+	BASEFILE="$(basename "$FILE" | rev | cut -d '.' -f 2- | rev)"
+
+	if [ ! -d "$OUTPUTDIR" ]; then
+		mkdir "$OUTPUTDIR" || error
+	fi
+
+	# mp3splt options:
+	# -t TIME = Split every TIME increment
+	# -f = Use MP3 frame mode
+	# -a = Auto adjust splitpoints with silence detection
+	# -d DIR = Output directory
+	# -o FORMAT = Output file
+	mp3splt -D -t $TIME -f -a "$FILE" -d "$OUTPUTDIR" -o "${BASEFILE}-@n" || error
+
+	# mp3gain options:
+	# -a = Apply album gain automatically
+	# -T = Modify MP3 file directly
+	# -s r = Force recalculation, don't read tag info
+	mp3gain -a -T -s r "${OUTPUTDIR}/${BASEFILE}-"* || error
+
+	PROCESSED_NONE=false
+	shift
+done
+
+if $PROCESSED_NONE; then
+	echo "No MP3 files were specified on the command line."
+fi
