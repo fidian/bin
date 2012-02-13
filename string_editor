@@ -1,0 +1,203 @@
+#!/bin/bash
+
+INFILE=/dev/stdin
+OUTFILE=/dev/stdout
+STATUS=/dev/stderr
+RESULT=0
+
+###########################################################################
+
+function se_append {
+	local LINE="$1"
+
+	status "Appending line"
+	echo "$LINE" >> $OUTFILE
+}
+
+function se_backup {
+	local NUM="$(echo "$1" | tr -cd 0-9)"
+
+	if [ -z "$NUM" ]; then
+		error "The backup command needs to be told the number of backups"
+	fi
+
+	if [ "$NUM" -lt 1 ]; then
+		error "The number of backups must be at least 1"
+	fi
+
+	if [ "$NUM" -gt 1 ]; then
+		se_delete "${OUTFILE}.bak${NUM}"
+
+		while [ "$NUM" -gt 1 ]; do
+			if [ "$NUM" -eq 2 ]; then
+				se_rename "${OUTFILE}.bak" "${OUTFILE}.bak${NUM}"
+			else
+				se_rename "${OUTFILE}.bak$(($NUM - 1))" "${OUTFILE}.bak${NUM}"
+			fi
+
+			NUM="$(($NUM - 1))"
+		done
+	fi
+
+	se_copy "${OUTFILE}" "${OUTFILE}.bak"
+
+	status "Backup $NUM"
+}
+
+function se_contains_line {
+	local LINE="$1"
+
+	grep -F "$LINE" "$INFILE" > /dev/null
+	RESULT=$?
+}
+
+function se_copy {
+	local FROM="$1"
+	local TO="$2"
+
+	if [ -f "$FROM" ]; then
+		status "Copy ${FROM} to ${TO}"
+		cp -p "${FROM}" "${TO}" || error "Unable to copy file $FROM to $TO"
+	fi
+}
+
+function se_delete {
+	local FILE="$1"
+
+	if [ -f "$FILE" ]; then
+		status "Deleting ${FILE}"
+		rm "${FILE}" || error "Unable to delete file $FILE"
+	fi
+}
+
+function se_exit_if {
+	$1
+	local CONDITION=$?
+	local MATCH=false
+
+	if [ $RESULT -eq 0 ]; then
+		if [ $CONDITION -eq 0 ]; then
+			MATCH=true
+		fi
+	else
+		if [ $CONDITION -ne 0 ]; then
+			MATCH=true
+		fi
+	fi
+
+	if $MATCH; then
+		status "Exit condition matches"
+		exit
+	fi
+}
+
+function se_file {
+	local FILE="$1"
+
+	if [ -f "$FILE" ]; then
+		INFILE="$FILE"
+		OUTFILE="$FILE"
+	else
+		error "File does not exist: $FILE"
+	fi
+}
+
+function se_remove_line {
+	local LINE="$1"
+	local TEMP="$(temp_file)"
+
+	grep -Fv "$LINE" "$INFILE" > "$TEMP"
+	temp_swap "$TEMP"
+}
+
+function se_rename {
+	local FROM="$1"
+	local TO="$2"
+
+	if [ -f "$FROM" ]; then
+		status "Rename ${FROM} to ${TO}"
+		mv "$FROM" "$TO" || error "Unable to move $FROM to $TO"
+	fi
+}
+
+###########################################################################
+
+function error {
+	echo $* > /dev/stderr
+	exit
+}
+
+function status {
+	echo $* > "$STATUS"
+}
+
+function temp_file {
+	mktemp || error "Unable to use mktemp to make a temp file"
+}
+
+function temp_swap {
+	local TEMP="$1"
+	chmod --reference="$INFILE" "$TEMP" || error "Can not use chmod with --reference"
+	chown --reference="$INFILE" "$TEMP" || error "Can not use chown with --reference"
+	mv "$TEMP" "$OUTFILE" || error "Can not move $TEMP to $OUTFILE"
+}
+
+while [ $# -gt 0 ]; do
+	ACTION="$1"
+	shift
+
+	case "$ACTION" in
+		"append")
+			se_append "$1"
+			shift
+			;;
+
+		"backup")
+			se_backup "$1"
+			shift
+			;;
+
+		"contains_line")
+			se_contains_line "$1"
+			shift
+			;;
+
+		"copy")
+			se_copy "$1" "$2"
+			shift 2
+			;;
+
+		"delete")
+			se_delete "$1"
+			shift
+			;;
+
+		"exit_if")
+			se_exit_if "$1"
+			shift
+			;;
+
+		"file")
+			se_file "$1"
+			shift
+			;;
+
+		"quiet")
+			STATUS=/dev/null
+			;;
+
+		"remove_line")
+			se_remove_line "$1"
+			shift
+			;;
+
+		"rename")
+			se_rename "$1" "$2"
+			shift 2
+			;;
+
+		*)
+			echo "Unknown action: $ACTION"
+			exit
+	esac
+done
