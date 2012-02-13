@@ -87,7 +87,8 @@ function se_exit_if {
 
 	if $MATCH; then
 		status "Exit condition matches"
-		exit
+		RESULT=0
+		exit $RESULT
 	fi
 }
 
@@ -124,7 +125,7 @@ function se_rename {
 
 function error {
 	echo $* > /dev/stderr
-	exit
+	exit 127
 }
 
 function status {
@@ -141,6 +142,13 @@ function temp_swap {
 	chown --reference="$INFILE" "$TEMP" || error "Can not use chown with --reference"
 	mv "$TEMP" "$OUTFILE" || error "Can not move $TEMP to $OUTFILE"
 }
+
+###########################################################################
+
+if [ $# -eq 0 ]; then
+	echo "Try adding 'help' on the command line"
+	exit 0
+fi
 
 while [ $# -gt 0 ]; do
 	ACTION="$1"
@@ -196,8 +204,28 @@ while [ $# -gt 0 ]; do
 			shift 2
 			;;
 
+		"help")
+			echo "String Editor"
+			echo "	string_editor command <args?> [command <args?> [...]]"
+			echo ""
+			echo "Commands:"
+			echo "	append LINE - appends a given line to the file"
+			echo "	backup NUM - makes a backup, keeping at most NUM backups"
+			echo "	contains_line LINE - sets the internal flag if the file has a line"
+			echo "	copy FROM DEST - copies a file if it exists, preserving permissions"
+			echo "	delete FILE - deletes a file if it exists"
+			echo "	exit_if true/false - exits if the internal flag matches true/false"
+			echo "	file FILE - sets the file we are working on"
+			echo "	quiet - silences messages to the screen"
+			echo "	remove_line LINE - Removes a line from the file"
+			echo "	rename FROM TO - Renames a file"
+			;;
+
 		*)
 			echo "Unknown action: $ACTION"
-			exit
+			echo "Try 'help'"
+			exit 126
 	esac
 done
+
+exit $RESULT
