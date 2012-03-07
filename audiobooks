@@ -20,6 +20,7 @@ function error() {
 
 bintest mp3splt
 bintest mp3gain
+bintest mp3info
 
 PROCESSED_NONE=true
 
@@ -43,15 +44,26 @@ while [ $# -gt 0 ]; do
 	# -t TIME = Split every TIME increment
 	# -f = Use MP3 frame mode
 	# -a = Auto adjust splitpoints with silence detection
+	# -p = Extra parameters
+	#      th=40  Set silence detection to -40Db (default is 52)
 	# -d DIR = Output directory
 	# -o FORMAT = Output file
-	mp3splt -D -t $TIME -f -a "$FILE" -d "$OUTPUTDIR" -o "${BASEFILE}-@n" || error
+	mp3splt -t $TIME -f -a -p th=40 "$FILE" -d "$OUTPUTDIR" -o "${BASEFILE}-@n" || error
+
+	# Confirm the files are all good and delete bad ones
+	for F in "${OUTPUTDIR}/${BASEFILE}-"*; do
+		mp3info -p "%u" "$F" > /dev/null 2>&1
+		if [ $? -ne 0 ]; then
+			echo "Bad file detected: $F - removing it"
+			rm "$F"
+		fi
+	done
 
 	# mp3gain options:
 	# -a = Apply album gain automatically
 	# -T = Modify MP3 file directly
 	# -s r = Force recalculation, don't read tag info
-	mp3gain -a -T -s r "${OUTPUTDIR}/${BASEFILE}-"* || error
+	mp3gain -c -a -T -s r "${OUTPUTDIR}/${BASEFILE}-"* || error
 
 	PROCESSED_NONE=false
 	shift
