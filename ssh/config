@@ -3,5 +3,5 @@ Port 2222
 
 Host utilities
 User storage
-Hostname 10.72.247.110
+Hostname utilities.bbymwl.com
 IdentityFile ~/.ssh/storage
