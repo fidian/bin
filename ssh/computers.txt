@@ -1,0 +1,10 @@
+anise - Silver laptop
+bay - HP 15" laptop, silver-gray, 2.3 ghz
+bby-laptop - Work laptop
+build.pub
+clove.pub
+marjoram
+saffron - Acer netbook (the one from Gareth)
+tarragon - Media server at home
+thyme.pub
+vubuntu - Work virtual machine "Vubuntu"
