@@ -1,0 +1,130 @@
+#!/bin/bash
+#
+# m4a to wav
+# for music from iPod
+# http://www.linuxquestions.org/questions/showthread.php?t=170553
+
+# This software is licensed under the GNU General Public License
+# For the full text of the GNU GPL, see:
+#
+# http://www.gnu.org/copyleft/gpl.html
+#
+# No guarantees of any kind are associated with use of this software.
+
+#requirements: faad, lame
+LOGFILE="mp4tomp3conversion.txt"
+count=0
+
+help_convert()
+{
+	echo
+	echo "This software is licensed under the GNU General Public License"
+	echo "For the full text of the GNU GPL, see:"
+	echo "http://www.gnu.org/copyleft/gpl.html"
+	echo "No guarantees of any kind are associated with use of this software."
+	echo "requirements: faad, lame"
+	echo
+	echo "Usage: $0 [-h] [-r] [-d path]"
+	echo "Options: "
+	echo "-h displays this help"
+	echo "-r recursively scans directories"
+	echo "-d specifies a path other the current path"
+	exit 1
+}
+
+# handle options passed in by the user
+recursive=0
+directory=`pwd`
+while getopts "hrd:" opt
+do 
+	case $opt in
+		h) help_convert;;
+		r) recursive=1;;
+		d) directory="$OPTARG";;
+		*) help_convert;;
+	esac
+done
+# This nifty IFS line is from:
+# http://www.issociate.de/board/post/420747/files_and_directories_with_spaces_in_bash_script.html
+IFS=$'\n'
+echo `date` >> $LOGFILE
+# if not recursive, then limit the find to the directory itself.
+if [ $recursive == 1 ]; then
+	total_files=`find ${directory} -iname '*.m4a' -print`
+	echo `find ${directory} -iname '*.m4a' -print | wc -l `" mp4 files to begin with" >> $LOGFILE
+else
+	total_files=`find ${directory} -maxdepth 1 -iname '*.m4a' -print`
+	echo `find ${directory} -maxdepth 1 -iname '*.m4a' -print | wc -l `" mp4 files to begin with" >> $LOGFILE
+fi 
+
+for i in $total_files
+	do
+		x=`echo "$i"|sed -e 's/\.m4a/\.wav/'`
+		y=`echo "$i"|sed -e 's/\.m4a/\.mp3/'`
+		echo "X: $x"
+		echo "Y: $y"
+		# if the directory name doesn't start with a / then prepend the path
+		# to the directory name.
+		if [[ "$directory" =~ ^[^/] ]]
+		then 
+			x=`pwd`/`echo ${x}|sed -e 's/^\.\///'`
+			y=`pwd`/`echo $y|sed -e 's/^\.\///'`
+			orig=`pwd`/`echo ${i}|sed -e 's/^\.\///'`
+		else
+			orig=$i
+		fi
+		faad ${orig}
+		echo "X: $x"
+		echo "Y: $y"
+
+		faad -i ${orig} 2>.trackinfo.txt
+		sed -i '23s/unknown: /title: /' .trackinfo.txt
+		sed -i '24s/unknown: /artist: /' .trackinfo.txt
+
+		year=`grep 'date: ' .trackinfo.txt|sed -e 's/date: //'`
+
+		sed -i 's/unknown: iTunes/iTunes: iTunes/' .trackinfo.txt
+
+		genrecount=`grep -c 'genre: ' .trackinfo.txt`
+		unknowncount=`grep -c 'unknown: ' .trackinfo.txt`
+
+		if [ "$genrecount" -eq 1 ] && [ "$unknowncount" -eq 2 ]; then
+			sed -i '25s/unknown: /composer: /' .trackinfo.txt
+			sed -i '26s/unknown: /album: /' .trackinfo.txt
+			genre=`grep 'genre: ' .trackinfo.txt|sed -e 's/genre: //'`
+		fi
+
+		if [ "$genrecount" -eq 1 ] && [ "$unknowncount" -eq 1 ]; then
+			sed -i '25s/unknown: /album: /' .trackinfo.txt
+			genre=`grep 'genre: ' .trackinfo.txt|sed -e 's/genre: //'`
+		fi
+
+		if [ "$genrecount" -eq 0 ] && [ "$unknowncount" -eq 3 ]; then
+			sed -i '25s/unknown: /composer: /' .trackinfo.txt
+			sed -i '26s/unknown: /album: /' .trackinfo.txt
+			sed -i '27s/unknown: /genre: /' .trackinfo.txt
+			genre='other'
+		fi
+
+		if [ "$genrecount" -eq 0 ] && [ "$unknowncount" -eq 2 ]; then
+			sed -i '25s/unknown: /album: /' .trackinfo.txt
+			sed -i '26s/unknown: /genre: /' .trackinfo.txt
+			genre='other'
+		fi
+	
+		title=`grep 'title: ' .trackinfo.txt|sed -e 's/title: //'`
+		artist=`grep 'artist: ' .trackinfo.txt|sed -e 's/artist: //'`
+		album=`grep 'album: ' .trackinfo.txt|sed -e 's/album: //'`
+		track=`grep 'track: ' .trackinfo.txt|sed -e 's/track: //'`
+
+		lame -Sh --vbr-new -V 2 --id3v2-only --tt "$title" --ta "$artist" --tl "$album" --tg "$genre" --tn "$track" --ty "$year" "$x" "$y"
+		rm .trackinfo.txt
+		rm "$x"
+# if you want to rename the files, then here's the place.
+		#mv "$y" "$artist - $title.mp3"
+# uncomment to delete the original
+		#rm ${orig}
+		((count++))
+		echo "$orig converted" >> $LOGFILE
+done
+echo "$count mp4 files converted to mp3" >> $LOGFILE
