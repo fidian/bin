@@ -1,0 +1,3 @@
+[submodule "src/redsocks"]
+	path = src/redsocks
+	url = https://github.com/darkk/redsocks.git
