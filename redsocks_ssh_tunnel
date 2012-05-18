@@ -1,8 +1,26 @@
 #!/bin/sh
+TARGET="$1"
 
-if [ -z "$1" ]; then
+if [ -z "$TARGET" ]; then
 	echo "Specify target machine"
 	exit
 fi
 
-ssh -fqND 1080 -o TCPKeepAlive=yes $*
+which autossh > /dev/null 2>&1
+
+if [ $? -eq 0 ]; then
+	# Use autossh
+	AUTOSSH_POLL=30
+	AUTOSSH_FIRST_POLL=30 # See Ubuntu bug 992110
+	PORT="$(od -N2 -An -i /dev/urandom)" # Random port number, could fail
+	while [ $PORT -le 1024 ]; do # Eliminate privileged ports
+		PORT="$(od -N2 -An -i /dev/urandom)"
+	done
+	autossh -M $PORT -qND 20005 -i /home/$USER/.ssh/id_rsa $TARGET
+else
+	# Manual SSH with respawning
+	while true; do
+		ssh -qND 20005 -o TCPKeepAlive=yes -i /home/$USER/.ssh/id_rsa $TARGET
+		sleep 10
+	done
+fi
