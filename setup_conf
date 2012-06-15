@@ -3,23 +3,16 @@
 cd "`dirname "$0"`"
 
 BASH_FILE=~/.bashrc
-grep "/bin/conf/bashrc" "${BASH_FILE}" > /dev/null 2>&1
+grep ". '`pwd`/conf/bashrc'" "${BASH_FILE}" > /dev/null 2>&1
 
 if [ $? -ne 0 ]; then
-	echo ". ~$USER/bin/conf/bashrc" >> "${BASH_FILE}"
+	echo ". '`pwd`/conf/bashrc'" >> "${BASH_FILE}"
 fi
 
-rm -f ~/.vimrc
-ln -s "`pwd`/conf/vimrc" ~/.vimrc
-
-rm -rf ~/.vim
-ln -s "`pwd`/conf/vim" ~/.vim
-
-rm -rf ~/.putty
-ln -s "`pwd`/conf/putty" ~/.putty
-
-rm -rf ~/.fonts
-ln -s "`pwd`/conf/fonts" ~/.fonts
+for F in fonts npmrc putty vim vimrc; do
+	rm -rf ~/.$F
+	ln -s "`pwd`/conf/$F" ~/.$F
+done
 
 if [ ! -d ~/.ssh ]; then
 	mkdir ~/.ssh
