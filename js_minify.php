@@ -21,8 +21,8 @@ function minify($filename) {
 			'js_code' => $script,
 			'output_info' => 'compiled_code',  // if 'errors', return errors about JS code
 			'output_format' => 'text',
-			//'compilation_level' => 'SIMPLE_OPTIMIZATIONS' // Safer and works well
-			'compilation_level' => 'ADVANCED_OPTIMIZATIONS',  // More aggressive, can cause errors
+			'compilation_level' => 'SIMPLE_OPTIMIZATIONS' // Safer and works well
+			//'compilation_level' => 'ADVANCED_OPTIMIZATIONS',  // More aggressive, can cause errors
 		));
 	$contents = file_get_contents($url, false, stream_context_create(array(
 				'http' => array(
