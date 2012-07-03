@@ -1,0 +1,14 @@
+#!/bin/bash
+
+BASE="$(dirname "$0")"
+EXEC="$BASE/3rd_party/retext/retext.py"
+
+if [ ! -f "$EXEC" ]; then
+	echo "You need to update git submodules"
+	echo "    cd \"$BASE\""
+	echo "    git submodule init"
+	echo "    git submodule update"
+	exit
+fi
+
+python "$EXEC" ${1+"$@"}
