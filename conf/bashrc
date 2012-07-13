@@ -169,5 +169,4 @@ if $TEST_FOR_PROGRAM 'xdotool'; then
 	xdotool getactivewindow windowsize --usehints 80 100%
 fi
 
-
-cd
+stty stop undef # disable control-s and control-q
