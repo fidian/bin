@@ -1,4 +1,5 @@
-" Zen Coding:  ol#list>li*5>a[href=asdf]    then type Ctrl-y ,
+" Enable bundles/plugins
+call pathogen#infect()
 
 " Turn on syntax highlighting
 if has("syntax")
@@ -81,3 +82,9 @@ set tags=tags;/
 
 " Single-key macros
 nmap Q oecho __FILE__.':'.__LINE__."\n";//NOCOMMIT-DEBUG<esc>
+
+" Configure Syntastic syntax checking
+map <F5> :SyntasticToggleMode<CR>
+let g:syntastic_auto_jump=1
+let g:syntastic_auto_loc_list=1
+let g:syntastic_javascript_jslint_conf = ""
