@@ -1,2 +1,9 @@
-email = fidian@rumkin.com
 _auth = ZmlkaWFuOk11bmNoa2lu
+email = fidian@rumkin.com
+
+[_token]
+AuthSession = ZmlkaWFuOjUwNEE2MEE0OkYG6N79BxvP_qxS0DV18JqufSnH
+version = 1
+expires = 1347087683208
+path = /
+httponly = true
