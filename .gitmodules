@@ -7,3 +7,6 @@
 [submodule "conf/vim/bundle/syntastic"]
 	path = conf/vim/bundle/syntastic
 	url = https://github.com/scrooloose/syntastic.git
+[submodule "conf/vim/bundle/hexmode"]
+	path = conf/vim/bundle/hexmode
+	url = https://github.com/fidian/hexmode.git
