@@ -7,7 +7,7 @@ function move_most_recent {
 
 
 # Add some directories to the path if they exist
-for D in "${HOME}/bin"; do
+for D in "${HOME}/bin" "$HOME"/node_modules/.bin; do
 	if [ -d "$D" ]; then
 		PATH="${PATH}:${D}"
 	fi
