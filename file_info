@@ -1,0 +1,30 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+	echo "Specify filenames"
+	exit
+fi
+
+while [ ! -z "$1" ]; do
+	echo "$1"
+	NAME="${1##*/}"
+	# Do not use ${1%%/*} because it does not work if there is no path
+	FILEPATH="${1:0:-${#NAME}}"
+	if [ -z "$FILEPATH" ]; then
+		# If there's no path, let's assume the current directory like dirname
+		FILEPATH="."
+	elif [ "$FILEPATH" != "/" ]; then
+		# Remove trailing slash, like dirname, but only if there's more content
+		FILEPATH="${FILEPATH%%/}"
+	fi
+	BASE="${NAME%.*}"
+	# Do not use ${NAME##*.} because it does not work if there is no extension
+	EXTENSION="${NAME:${#BASE}+1}"
+	echo "	File path:	$FILEPATH"
+	echo "	.. slower:	$(dirname "$1")" # also removes trailing /
+	echo "	Name:		$NAME"
+	echo "	.. slower:	$(basename "$1")"
+	echo "	Base:		$BASE"
+	echo "	Extension:	$EXTENSION"
+	shift
+done
