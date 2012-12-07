@@ -169,4 +169,19 @@ if $TEST_FOR_PROGRAM 'xdotool'; then
 	xdotool getactivewindow windowsize --usehints 80 100%
 fi
 
+function rand() {
+	local LEN="$1"
+	
+	if [ -z "$LEN" ]; then
+		LEN="10"
+	fi
+
+	while [ "$LEN" -gt 0 ]; do
+		echo -n ${RANDOM: -1}
+		: $((LEN--))
+	done
+	
+	echo ""
+}
+
 stty stop undef # disable control-s and control-q
