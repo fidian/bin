@@ -1,9 +1,11 @@
 _auth = ZmlkaWFuOk11bmNoa2lu
 email = fidian@rumkin.com
+user = 0
+unsafe-perm = true
 
 [_token]
-AuthSession = ZmlkaWFuOjUwNEE2MEE0OkYG6N79BxvP_qxS0DV18JqufSnH
+AuthSession = ZmlkaWFuOjUwNzg2QTY5OvrXtbE_R_kEANR6QiJ6oCFfgRiY
 version = 1
-expires = 1347087683208
+expires = 1350104834836
 path = /
 httponly = true
