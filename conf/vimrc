@@ -88,3 +88,22 @@ map <F5> :SyntasticToggleMode<CR>
 let g:syntastic_auto_jump=1
 let g:syntastic_auto_loc_list=1
 let g:syntastic_javascript_jslint_conf = ""
+
+" Insert <Tab> or complete identifier
+" if the cursor is after a keyword character
+function MyTabOrComplete()
+	let col = col('.')-1
+	if !col || getline('.')[col-1] !~ '\k'
+		return "\<tab>"
+	else
+		return "\<C-N>"
+	endif
+endfunction
+inoremap <Tab> <C-R>=MyTabOrComplete()<CR>
+
+" Keep the cursor 5 lines away from the top/bottom
+set scrolloff=5
+
+" Highlight SQL, html syntax in strings
+let php_sql_query=1
+let php_htmlInStrings=1
