@@ -2,18 +2,41 @@
 
 cd "`dirname "$0"`"
 
-BASH_FILE=~/.bashrc
+# Detect BSD (Mac OS X)
+ls --color=auto > /dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+	GNU="false"
+else
+	GNU="true"
+fi
+
+if $GNU; then
+	BASH_FILE=~/.bashrc
+else
+	BASH_FILE=~/.bash_profile
+fi
+
 grep ". '`pwd`/conf/bashrc'" "${BASH_FILE}" > /dev/null 2>&1
 
 if [ $? -ne 0 ]; then
 	echo ". '`pwd`/conf/bashrc'" >> "${BASH_FILE}"
 fi
 
-for F in fonts npmrc putty vim vimrc; do
+for F in npmrc putty vim vimrc; do
 	rm -rf ~/.$F
 	ln -s "`pwd`/conf/$F" ~/.$F
 done
 
+# Install fonts
+if $GNU; then
+	rm -rf ~/.fonts
+	ln -s "`pwd`/conf/fonts" ~/.$F
+else
+	find conf/fonts -type f -iname \*.ttf -exec cp \{\} ~/Library/Fonts \;
+fi
+
+# Setup SSH configuration and keys
 if [ ! -d ~/.ssh ]; then
 	mkdir ~/.ssh
 	chmod 700 ~/.ssh
