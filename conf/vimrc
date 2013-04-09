@@ -107,3 +107,7 @@ set scrolloff=5
 " Highlight SQL, html syntax in strings
 let php_sql_query=1
 let php_htmlInStrings=1
+
+" Handle mistyped commands
+command! W write
+command! Q quit
