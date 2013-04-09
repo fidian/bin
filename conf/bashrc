@@ -6,6 +6,15 @@ function move_most_recent {
 }
 
 
+# Check for a BSD install (Mac OS X)
+ls --color=auto > /dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+	GNU="false"
+else
+	GNU="true"
+fi
+
 # Add some directories to the path if they exist
 for D in "${HOME}/bin" "$HOME"/node_modules/.bin "$HOME"/android-sdk-linux/platform-tools; do
 	if [ -d "$D" ]; then
@@ -15,12 +24,18 @@ done
 export PATH
 
 
+if $GNU; then
+	alias dir='ls -lF --color=auto'
+	alias ls='ls -F --color=auto'
+else
+	alias dir='ls -lFG'
+	alias ls='ls -FG'
+fi
+
 alias del='gvfs-trash'
-alias dir='ls -lF --color=auto'
 alias grep='grep --color=auto'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
-alias ls='ls -F --color=auto'
 alias mysqlrepair_all='mysqlrepair -A --auto-repair -g -m -o -r'
 alias mysqlcheck_all='mysqlcheck --auto-repair --check --optimize --all-databases'
 alias screen='screen -xRR'
