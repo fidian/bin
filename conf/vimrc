@@ -87,7 +87,7 @@ nmap Q oecho __FILE__.':'.__LINE__."\n";//NOCOMMIT-DEBUG<esc>
 map <F5> :SyntasticToggleMode<CR>
 let g:syntastic_auto_jump=1
 let g:syntastic_auto_loc_list=1
-let g:syntastic_javascript_jslint_conf = ""
+let g:syntastic_javascript_jslint_conf = "--es5=false"
 
 " Insert <Tab> or complete identifier
 " if the cursor is after a keyword character
