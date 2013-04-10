@@ -1,0 +1,20 @@
+#!/bin/bash
+
+ACSM="$1"
+
+if [ -z "$ACSM" ]; then
+	echo "Specify an ACSM file"
+	exit
+fi
+
+if [ ! -f "$ACSM" ]; then
+	echo "Invalid file: $ACSM"
+	exit
+fi
+
+cp "$ACSM" ~/.wine/drive_c/Books
+BASE="$(basename "$ACSM")"
+(
+	cd ~/.wine/drive_c/Program\ Files\ \(x86\)/Adobe/Adobe\ Digital\ Editions
+	wine digitaleditions.exe "C:\\Books\\$BASE"
+)
