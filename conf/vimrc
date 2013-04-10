@@ -109,5 +109,6 @@ let php_sql_query=1
 let php_htmlInStrings=1
 
 " Handle mistyped commands
-command! W write
-command! Q quit
+command W w
+command Wq wq
+command Q q
