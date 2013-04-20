@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Handbrake PPA
+sudo add-apt-repository ppa:stebbins/handbrake-releases
+
+# Medibuntu repository
+sudo -E wget --output-document=/etc/apt/sources.list.d/medibuntu.list http://www.medibuntu.org/sources.list.d/$(lsb_release -cs).list && sudo apt-get --quiet update && sudo apt-get --yes --quiet --allow-unauthenticated install medibuntu-keyring && sudo apt-get --quiet update
+
+# Update packages
+sudo apt-get update && sudo apt-get upgrade -y
+
+# Install DVD libraries and handbrake
+sudo apt-get install -y libdvdread4 libdvdcss2 handbrake-gtk
