@@ -31,7 +31,7 @@ done
 # Install fonts
 if $GNU; then
 	rm -rf ~/.fonts
-	ln -s "`pwd`/conf/fonts" ~/.$F
+	ln -s "`pwd`/conf/fonts" ~/.fonts
 else
 	find conf/fonts -type f -iname \*.ttf -exec cp \{\} ~/Library/Fonts \;
 fi
