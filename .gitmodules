@@ -1,9 +1,6 @@
 [submodule "src/redsocks"]
 	path = src/redsocks
 	url = https://github.com/darkk/redsocks.git
-[submodule "3rd_party/retext"]
-	path = 3rd_party/retext
-	url = http://git.code.sf.net/p/retext/git
 [submodule "conf/vim/bundle/syntastic"]
 	path = conf/vim/bundle/syntastic
 	url = https://github.com/scrooloose/syntastic.git
