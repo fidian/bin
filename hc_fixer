@@ -1,0 +1,20 @@
+#!/bin/bash
+
+cd ~/homeconnections_backend/app
+
+# Make it so one can read/write to these directories as web server
+mkdir -p cache local logs
+chmod g+s cache local logs
+chmod 777 cache local logs
+rm -rf cache/* local/* logs/*
+
+# Stub address
+TMP=$(mktemp);
+grep -v AddressStandardizationStub config/parameters_override.yml >> $TMP
+echo "    address_standardization_class: BBY\AddressStandardizationBundle\Services\AddressStandardizationStub" >> $TMP
+cat $TMP > config/parameters_override.yml
+
+# Make local config writable
+chmod g+s config/parameters_default.yml
+chmod 777 config/parameters_default.yml
+
