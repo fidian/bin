@@ -102,7 +102,7 @@ endfunction
 inoremap <Tab> <C-R>=MyTabOrComplete()<CR>
 
 " Keep the cursor 5 lines away from the top/bottom
-set scrolloff=5
+set scrolloff=2
 
 " Highlight SQL, html syntax in strings
 let php_sql_query=1
@@ -112,3 +112,6 @@ let php_htmlInStrings=1
 command W w
 command Wq wq
 command Q q
+
+" Spell checking toggle with s
+map s :setlocal spell! spelllang=en_us<CR>
