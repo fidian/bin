@@ -4,8 +4,8 @@ user = 0
 unsafe-perm = true
 
 [_token]
-AuthSession = ZmlkaWFuOjUwNzg2QTY5OvrXtbE_R_kEANR6QiJ6oCFfgRiY
+AuthSession = ZmlkaWFuOjUxRUZFRjNBOsIbkmRreJ1RmIA2v-jVoMTCDsmv
 version = 1
-expires = 1350104834836
+expires = 1374714840989
 path = /
 httponly = true
