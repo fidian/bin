@@ -153,6 +153,43 @@ EOF
 		fi
 		;;
 
+	localize)
+		cat <<EOF
+Setting up a dev environment so it runs locally on a laptop or a standard
+Linux installation requires further changes to the permissions of some
+directories, address standardization must be stubbed and other minor tweaks.
+
+Only continue if you are not on your Amazon instance.
+
+EOF
+	    read -p "Make these changes? [y/n] " CONFIRM
+		CONFIRM="${CONFIRM:0:1}"
+		if [ "${CONFIRM^^}" != "Y" ]; then
+			echo "Aborting"
+			exit 0
+		fi
+		(
+			cd homeconnections_backend/app
+
+			echo "Allowing the web server read/write access to cache, local, logs"
+			mkdir -p cache local logs
+			chmod g+s cache local logs
+			chmod 777 cache local logs
+			rm -rf cache/* local/* logs/*
+
+			echo "Stubbing address standardization"
+			TMP="$(mktemp)"
+			grep -v AddressStandardizationStub config/parameters_override.yml >> "$TMP"
+			echo "    address_standardization_class: BBY\\AddressStandardizationBundle\\Services\\AddressStandardizationStub" >> "$TMP"
+			cat "$TMP" > config/parameters_override.yml
+			rm "$TMP"
+
+			echo "Making the local config writable"
+			chmod g+s config/parameters_default.yml
+			chmod 777 config/parameters_default.yml
+		)
+		;;
+		
 	pull)
 		initializedCheck || exit 1
 		for D in homeconnections_backend homeconnections_ui; do
@@ -217,6 +254,7 @@ Specify a command:
 create      Make a new environment
 fix         Run many commands to try to fix an environment
 initialize  Wipe out Home Connections repositories and start new
+localize    Change an installation to work for people with local dev installs
 list        List the prepared environments
 pull        Update the current environment
 remove      Remove an environment (current one or the specified one)
