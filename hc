@@ -104,6 +104,10 @@ EOF
 				git pull
 				# Force hooks to run
 				git checkout .
+
+				if [ "$D" == "homeconnections_backend" ]; then
+					util/bin/cpc_import --env=dev
+				fi
 			) || echo "   ------------------------------- FAIL ------------------------"
 		done
 		;;
