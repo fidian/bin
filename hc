@@ -96,6 +96,8 @@ EOF
 				git checkout-index -a -f
 				# Clean up extra files and directories
 				git clean -X -f -d
+				# Remove npm cache
+				npm cache clean
 				# Remove auto-generated things
 				rm -rf vendor node_modules
 				# Do the updates
