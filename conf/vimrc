@@ -13,6 +13,7 @@ highlight Visual cterm=bold ctermfg=black ctermbg=gray
 highlight StatusLine cterm=NONE ctermfg=yellow ctermbg=blue
 highlight String ctermfg=red
 highlight Normal cterm=NONE ctermfg=white
+highlight MatchParen term=underline,bold cterm=underline,bold ctermbg=NONE
 
 " Set tab and indent preferences
 set noexpandtab tabstop=4 shiftwidth=4 softtabstop=4 smartindent autoindent
