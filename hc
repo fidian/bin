@@ -22,7 +22,7 @@ function initializedCheck {
 }
 
 case "$CMD" in
-    create)
+	 create)
 		set +u
 		NAME="$2"
 		BACKEND="$3"
@@ -32,15 +32,15 @@ case "$CMD" in
 			echo "Specify the branch or branches to use"
 			echo ""
 			echo "$MYSELF create NAME BRANCH"
-			echo "    Checks out a single branch for both the backend and ui"
+			echo "	 Checks out a single branch for both the backend and ui"
 			echo "$MYSELF create NAME BACKEND-BRANCH UI-BRANCH"
-			echo "    Uses different branches for the backend and ui"
+			echo "	 Uses different branches for the backend and ui"
 			echo ""
 			echo "Examples:"
 			echo "  Check out 'develop' for both backend and ui"
-			echo "    $MYSELF create develop develop"
+			echo "	 $MYSELF create develop develop"
 			echo "  Work on CEM errors with backend as develop and ui as errors"
-			echo "    $MYSELF create cem develop errors"
+			echo "	 $MYSELF create cem develop errors"
 			exit 0
 		fi
 		if [ -z "$UI" ]; then
@@ -52,7 +52,7 @@ case "$CMD" in
 				cd "homeconnections_backend-$NAME"
 				cat <<EOF > app/config/parameters_override.yml
 parameters:
-    database_name: ${USER}_homeconnections-${NAME}
+	 database_name: ${USER}_homeconnections-${NAME}
 EOF
 				util/bin/setup_repository
 			)
@@ -110,7 +110,7 @@ EOF
 				if [ "$D" == "homeconnections_backend" ]; then
 					util/bin/cpc_import --env=dev
 				fi
-			) || echo "   ------------------------------- FAIL ------------------------"
+			) || echo "	------------------------------- FAIL ------------------------"
 		done
 		;;
 
@@ -142,7 +142,7 @@ EOF
 		initializedCheck || exit 1
 		COUNT=0
 		for E in homeconnections_ui-*/; do
-			FLAG="   "
+			FLAG="	"
 			E="${E%/}"
 			E="${E#*-}"
 			if [ "$CURRENT" == "$E" ]; then
@@ -160,6 +160,15 @@ EOF
 		;;
 
 	localize)
+		set +u
+		HOST="$2"
+		set -u
+		if [ -z "$HOST" ]; then
+			echo "Specify your local hostname."
+			echo ""
+			echo "hc localize your.hostname.goes.here"
+			exit 0
+		fi
 		cat <<EOF
 Setting up a dev environment so it runs locally on a laptop or a standard
 Linux installation requires further changes to the permissions of some
@@ -168,7 +177,7 @@ directories, address standardization must be stubbed and other minor tweaks.
 Only continue if you are not on your Amazon instance.
 
 EOF
-	    read -p "Make these changes? [y/n] " CONFIRM
+		read -p "Make these changes? [y/n] " CONFIRM
 		CONFIRM="${CONFIRM:0:1}"
 		if [ "${CONFIRM^^}" != "Y" ]; then
 			echo "Aborting"
@@ -185,8 +194,14 @@ EOF
 
 			echo "Stubbing address standardization"
 			TMP="$(mktemp)"
-			grep -v AddressStandardizationStub config/parameters_override.yml >> "$TMP"
+			grep -v AddressStandardizationStub config/parameters_override.yml \
+				| grep -v environment\\..*host \
+				| sed "s/^ *$//g" \
+				| tr -s "\n" \
+				>> "$TMP"
 			echo "    address_standardization_class: BBY\\AddressStandardizationBundle\\Services\\AddressStandardizationStub" >> "$TMP"
+			echo "    environment.client_host: $HOST" >> "$TMP"
+			echo "    environment.api_host: api-$HOST" >> "$TMP"
 			cat "$TMP" > config/parameters_override.yml
 			rm "$TMP"
 
@@ -195,7 +210,7 @@ EOF
 			chmod 777 config/parameters_default.yml
 		)
 		;;
-		
+
 	pull)
 		initializedCheck || exit 1
 		for D in homeconnections_backend homeconnections_ui; do
@@ -252,7 +267,7 @@ EOF
 		ln -s -f -n "homeconnections_ui-$NAME" homeconnections_ui
 		ln -s -f -n "homeconnections_backend-$NAME" homeconnections_backend
 		;;
-	
+
 	*)
 		cat <<EOF
 Specify a command:
