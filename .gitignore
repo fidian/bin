@@ -4,3 +4,4 @@
 /timeout
 /wkhtmltopdf
 /wkhtmltopdf-*
+*.pyc
