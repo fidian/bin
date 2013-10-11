@@ -119,3 +119,8 @@ map s :setlocal spell! spelllang=en_us<CR>
 
 " Automatically use spaces for YAML
 autocmd Filetype yaml setlocal expandtab
+
+" Automatically set up per-filetype settings, like tag matching
+filetype plugin on
+filetype detect
+runtime macros/matchit.vim
