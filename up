@@ -5,33 +5,36 @@ ARGS="${1+"$@"}"
 FILENAME=""
 
 case "$COMMAND" in
-         make)
-                  FILENAME="Makefile"
-                  ;;
-         npm)
-                  FILENAME="package.json"
-                  ;;
+	git)
+		FILENAME=".git"
+		;;
+	make)
+		FILENAME="Makefile"
+		;;
+	npm)
+		FILENAME="package.json"
+		;;
 esac
 
 if [ -z "$FILENAME" ]; then
-         # Check if the command is not in the path
-         if ! test_for_program "$COMMAND"; then
-                  FILENAME="$COMMAND"
-         fi
+	# Check if the command is not in the path
+	if ! test_for_program "$COMMAND"; then
+		FILENAME="$COMMAND"
+	fi
 fi
 
 if [ -z "$FILENAME" ]; then
-         echo "I can't detect when to run \"$COMMAND\""
-         exit 1
+	echo "I can't detect when to run \"$COMMAND\""
+	exit 1
 fi
 
-while [ ! -f "$FILENAME" ]; do
-         if [ "$PWD" = "/" ]; then
-                  echo "Did not detect \"$FILENAME\" in any parent directory"
-                  exit 2
-         fi
+while [ ! -f "$FILENAME" ] && [ ! -d "$FILENAME" ]; do
+	if [ "$PWD" = "/" ]; then
+		echo "Did not detect \"$FILENAME\" in any parent directory"
+		exit 2
+	fi
 
-         cd ..
+	cd ..
 done
 
 $ARGS
