@@ -1,0 +1,520 @@
+#!/bin/sh
+cat <<"EOF"
+Git is a revision control system designed by Linus Torvalds for tracking the Linux kernel.  His goals were to have a completely distributed, fast, and open tool that would work well for projects of any scale.
+
+Git is installed on the utilities server.  Linux systems have a package for it, probably named git-core (Ubuntu / Debian), dev-util/git (Gentoo), or git (Fedora / RedHat).  You will also likely want to get gitk to view the commit tree easily.  Windows users will want to check out http://code.google.com/p/msysgit/ for Git on MSys.
+
+=Related Topics=
+
+[[style_guide/Branching Strategy]]
+
+= Advice
+
+This section is put near the top on purpose.  It is a very good idea to know what to do and why to do it in a specific way before learning how to do things.
+
+== Commit atomic changes
+
+It is best to make your commits deal with one specific thing at a time.  It helps with conflict resolution and is also an aid when reviewing the history of a file.
+
+== Make descriptive commit logs
+
+If people don't understand your commit, usually a human-readable version goes a long way towards enlightenment.  To follow the "git" standard, the first line of your commit should be similar to the subject of an email:  short and to the point.  After that, add a blank line and describe the commit in detail if the subject wasn't enough.
+
+== Review your commit
+
+People will often be committing too many changes or missing files that should be committed.  git assists developers by showing a list of files that are going to be committed, a list of other files that are not going to be committed but are changed, and a list of files that are not tracked.  Make sure you are committing exactly what you want and use "git diff" to review your changes.  When you commit, take a look at the number of lines changed and see if that is reasonable before you "git push" to others.
+
+== Make branches
+
+It is easy to spawn off your own branch to test out somewhat larger changes.  If you deal with more than a couple files or if you could be changing how something works underneath, you may want to branch.  One of git's main strengths is in the easy creation and merging of branches.  It is really cheap to make a branch, plus it can just be thrown away if the work is unneeded.
+
+== Pull and merge constantly
+
+When working for a while without pushing in your changes, doing "git pull" or merging in changes into your branch will make conflicts easier to resolve.  It is far better to resolve smaller conflicts, and constant merging will help to make sure the changes will be smaller.
+
+= Common Terms
+
+== Origin
+
+The main repository from whence you cloned.  To us, it refers to the "git prime" repository on devweb1.
+
+== Master
+
+The main branch on origin.
+
+== Working Copy
+
+The actual files you have and are working on in your repository.
+
+= Initializing Your Configuration
+
+
+You need to set your name and your email address that will be used by git.  It is suggested that you do this globally so that all projects you create and clone won't need to be individually configured.
+
+  git config --global user.name "Firstname Lastname"
+  git config --global user.email "you@example.com"
+
+It is also suggested that you enable the autosetupmerge so that when you work on branches, you will not need to specify --track or need to manually merge remote tracking branches with fetch and then merge.
+
+  git config --global branch.autosetupmerge true
+
+To to able to push back to the master repository, on Ubuntu you need to specify a couple additional config items.
+
+  git config --global push.default matching
+
+If you decide to colorize things, the default colors can be a bit hard to read.  You might like these a bit more.  Edit your ~/.gitconfig file and add these lines.  If you look closely at that file, you'll see what the "git config --global" commands above entered into here.
+
+  [color]
+	ui = true
+	branch = auto
+	interactive = auto
+	diff = auto
+	status = auto
+  [color "branch"]
+	current = yellow reverse
+	local = yellow
+	remote = green
+  [color "diff"]
+	meta = yellow bold
+	frag = magenta bold
+	old = red bold
+	new = green bold
+  [color "status"]
+	added = yellow
+	changed = green
+	untracked = cyan
+
+
+= Aliases
+
+The "alias" section in your ~/.gitconfig allows one to define an shorthand for a git command.  Add a section like this into your ~/.gitconfig to enable a "git unpushed" command.
+
+
+  [alias]
+	unpushed=log --pretty=oneline origin/master..master
+
+
+Now, you can use "git unpushed" to see commits that are in your local repository that you have not pushed to master.  It is the same as though you ran "git log --pretty=oneline origin/master..master".  You can also change "oneline" to "short", "medium", "full", and other formats.  See "man git-log" for further options and determine which format looks best for you.
+
+= Windows Users
+
+If you are using git for Windows or if you are using a virtual machine to access files on your Windows machine (not recommended due to flaky drivers), you will want to run these two commands in the repository.
+
+
+  git config core.autocrlf false
+  git config core.filemode false
+
+
+The automatic detection/conversion of linefeeds in files is disabled to eliminate screw-ups.  We basically treat all files as binary.  Set up your editors to save files in Unix (LF) mode.
+
+We turn off file mode detection because Windows doesn't do file modes like Unix does.  Git has reasonable defaults for files (rw-r--r--) and directories (rwxr-xr-x).  If file permissions need to be changed, do it on devweb or have someone else set the mode appropriately.
+
+= Initializing a New Repository
+
+== Starting From Scratch
+
+If you want to make a brand new repository, you simply make a directory and copy in any files with which you want to start.  Next, you `cd` into the directory and run `git init`.  Your new repository is set and you will have a .git directory in your new repository that contains all of your information.  However, this is not the ideal setup, but it is the easiest.
+
+The better way is to have a bare repository, which can be a common place for people to push and pull from.  If you want to use a bare repository as a central hub for changes, you will likely want to make an empty directory like `projectname.git` (the .git at the end traditionally means the directory contains a bare repository).  Next, `cd` into the directory and run `git init --bare`.  Go back up one directory and now use `git clone projectname.git` to make a projectname directory with a live copy of files.  Copy files into `projectname/` and now you can start committing your changes.  Check out the "Building A Bare Repository" section below for other possible changes you should make to the bare repository.
+
+== Using Another Repository
+
+If you want to copy another repository, you should use `git clone` to pull it over.  You need to pass some sort of URI, as shown in the examples below.
+
+
+  // Get from a local directory
+  git clone /usr/local/git/site.git/
+
+  // Get files via SSH
+  git clone user@hostname:/usr/local/git/site.git/
+
+  // Use the git server
+  git clone git://hostname/usr/local/git/site.git/
+
+
+== Building A Bare Repository
+
+It is good to have a "bare" repository where commits are all transmitted.  This is just another copy of the .git directory but without any of the working files.  You build the bare repository by adding `--bare` to your "git clone" command.  Usually you specify a directory name with ".git" at the end, like we do here:  `git clone /other/repository/project project.git`
+
+If you plan on having other users push and pull with this repository, you should set this up as a shared repository.  Change into the bare repository and run `git config core.sharedRepository true` and it will now make sure files get proper group permissions.  At this point, you will probably want to run a few more commands to set up the shared group for everyone.  Let's pretend that there is a group on the server called gitusers and everyone who should access this repository are in that group.  From the project.git directory, we should run these commands:
+
+
+  // Change the group of all files and directories to gitusers
+  chgrp -R gitusers .
+
+  // Change file and directory permissions so group members can alter things
+  chmod g+rw -R .
+  find . -type d -exec chmod g+x .
+
+
+= Working With Git
+
+== Quick GIT Function Reference
+
+=== git pull
+
+First does a fetch then does a merge on current branch.
+
+=== git fetch
+
+Takes down changes from a branch.
+
+=== git merge
+
+Merges your change history with another change history.
+
+=== git branch
+
+Lists all branches on local repository.
+
+=== git branch -a
+
+Lists all branches in local repository plus all branches in origin,
+
+=== git cherry-pick
+
+Takes a commit and puts it into another branch
+
+=== git log
+
+Gets a list of commits and their messages.
+
+=== git stash
+
+Puts your changes in a stash to keep for later.
+
+=== git stash apply
+
+Applies your changes back to your working copy.
+
+=== git stash apply [stash_name]
+
+apply specific stash
+
+== Adding Files / Tracking Changes
+
+When you make changes to the source files, you have a few routes down which you may travel.  They all end up putting your changes into your local git repository, so you still need to share your changes for other people to get them.
+
+=== git commit -a
+
+This command will commit all changes you have made to any files that git is already tracking.  It bundles them all up into one changeset, leaving just one entry in the history, so try to only work on one thing at a time.
+
+=== git commit [filename]
+
+Commits the changes for a specific file.  This file must already be tracked by git.  Committing this way lets you explain the changes that were made to each file, making sure the description is relevant to the commit.
+
+=== git add [filename/directory]
+
+Stages the indicated filename/directory. This will move the changes out of the diff and into the change set. 
+
+=== git add -p (--patch) [filename/directory]
+
+Allows you to enter an interactive mode where you cycle through the diff hunks of the file(s) and decide whether to add it to a commit or not instead of having to accept the entire file change. See the --patch section of the [[http://www.kernel.org/pub/software/scm/git/docs/git-add.html | git-add documentation]] for more information.
+
+=== git commit
+
+Using "git add" will either add a file to the repository or add the changes you made to the file.  If you specify a directory, all files under that directory will be added or their changes will be tracked.  Once you do a "git add" and git starts to track changes, these are not committed yet to your local repository.  Instead, the changes you track with "git add" are staged.  You can even do other "git commit [filename]" commands to commit other things while these changes are staged.  This way you can build a big patch while working on other minor things.  Once your staged commits are good to commit, "git commit" will record the changes in your repository.
+
+== Keeping Current / Sharing History
+
+One of git's strengths is that everyone can have a complete copy of the repository.  When you work on stuff, you are working in just your repository.  To get the changes from another repository, you use "git pull" (it automatically pulls from where you cloned) or "git pull [repository [branch]]".  Using "git pull" when you were at the latest revision of the files will cause your working files to be updated.
+
+To add your changes into another repository, you use "git push" to send them to "origin" or you can specify "git push [repository]".  If you have one main repository to which everyone will be using "git push", it is recommended to have it be a bare repository (.../project.git/ instead of .../project/).  Pushing to someone else's repository won't change their files, so they will need to do a "git checkout" to update their working files to include the changes you pushed to them.
+
+== Viewing Changes
+
+Using "git status" will show you the status of the files in your git repository.  You can see what files need to be committed, what files are staged, what things are untracked.
+
+To see the changes you have made, a "git diff" will display a patch file.  You can also "git diff [filename]" to see the changes made to just a specific file.  To view the changes made in a particular commit (the logged message, who made it, and the patch file), use "git show HASH" where HASH is the SHA1 hash or abbreviation.  You can get the SHA1 hash with "git log".
+
+You can review a file's history with "git log".  To see recent stats use `git log --stat`.  To see commits by one author, use `git log --author=author_name`.  To see the diffs as well, `git log -p` will show you them. Another way is to use `git log --since`.  This allows you to specify certain time frames. Terms can be by specific date, "2009-07-22" or as verbose as "2 weeks ago" or "yesterday".  Time can also be included in 24 hour, HH:MM:SS or with AM and PM if set after time. Example `git log --since='yesterday 14:30:50'`.
+
+You can also see some information with "git diff".  Annotations can be seen by "git annotate"and "git blame".  However, it all might be easier for you to use a GUI and try out "gitk".
+
+If you want to see a list of changes across all repositories, use `--all`.  A command that we use for our code review script to review the last two weeks of a person's work looks like this:
+
+
+  git log --since="2 weeks ago" --author="Justin" -p --reverse --all
+
+
+== ... The Rest
+
+If you have uncommitted changes that you do not wish to keep, "git checkout [filename]" will revert the file to the latest version.  You can do this to the whole repository with "git checkout -f".
+
+To see what changes you committed to your repository but did not push to our //git prime//, use "git log origin/master..master".
+
+If you wish to move files, "git mv" will move the file for you and preserve history (see "git log --follow [FILENAME]").  "git rm" will delete a file from the repository.  You'll still need to "git commit" these changes for them to be tracked and pushable to others.
+
+If you feel that git is running too slowly, it is possible that you should run a garbage collection by using "git gc".  It can severely reduce the size of your .git directory, thus speeding up access times.
+
+= Advanced Usage
+
+== Branches
+
+Branches are a way to test a new chunk of code and work on it without impacting the main revision (called "master").  To see what branch you are on, use "git branch" and the line with the * designates the branch you are using.  Any other branches listed show available branches that you have in your history.
+
+To create your own new branch, "git checkout -b my_branch master" will create a branch called "my_branch" (a really bad name).  You are now left in the "my_branch" branch.  To switch back, "git checkout master".  To return, "git checkout my_branch".
+
+To see branches on origin, use "git pull" and "git branch -r" to show remote branches.  You can pull a branch from origin with "git checkout --track -b my_branch origin/branch_name" and that will take the "branch_name" branch from origin and copy it into your repository as "my_branch" branch.  Again, you are now switched into "my_branch".  You can update with "git pull" and now do work on this branch.  When you want to send your changes on their way, "git push origin my_branch" to send this branch's contents back to origin/branch_name.
+
+If you use the --track option as detailed above, then you can use "git pull" and "git push" as usual to keep up to date with origin.  Otherwise, you need to make sure you are still in your branch with "git checkout my_branch" and then "git merge master" or "git merge origin/master" to pull in changes.  Pushing your changes would need you to "git checkout master" to switch back to the master branch (not your local branch) and "git merge my_branch" to merge your history back to origin.
+
+To copy your branch to a remote location, "git push origin my_branch:refs/head/branch_name".  When other people update their clones, they will automatically get this branch in their remote branches list.  Branch names must be unique, so "branch_name" must not yet exist as a branch in the remote repository.  You can remove the branch names from your remote branch listing by using "git branch -d -r origin/remote_branch_name"".  If you want to delete the remote branch you can use "git push origin :branch_to_delete".
+
+You use "git fetch" to pull in another person's branch and **not** have the files merged into yours.  This is important when you want to be able to switch between branches instead of merging history together accidentally.  "git fetch" works best if you are not in the branch and you want to slurp in other peoples' branches.
+
+You can pull in commits between branches with "git cherry-pick -x XXXXXXX", where XXXXXXX is the SHA1 of the other commit in another local branch.  Don't forget to "git pull" when done.
+
+When you are done, you can delete local branches with "git branch -D XXXXXXX" and they will be gone.
+
+== Creating and Using Your Own Branch - Quick Guide
+
+=== Creating
+
+  // To create a new branch from the branch you are currently in. 
+  git checkout -b [branch_name]
+
+  // To create a branch locally from a specific branch
+  git checkout -b [branch_name] [source_branch_name]
+
+  // To create a local branch that tracks an existing origin branch.
+  git checkout -b [branch_name] origin/[branch_name]
+
+=== Getting your branch on origin
+
+  // Create a copy of your branch on the origin repository.
+  git push origin [branch_name]:refs/heads/[branch_name]
+
+  // Delete local copy of branch
+  git branch -d [branch_name]
+
+  // Recreates a local copy of the branch which tracks the origin branch.
+  git checkout -b [branch_name] origin/[branch_name]
+
+=== Removing
+
+  // Only deletes the branch if all of your changes have been merged into master
+  git branch -d [branch_name] 
+
+  // Deletes branch
+  git branch -D [branch_name]
+
+  // Deletes branch on origin
+  git push origin :refs/heads/[branch_name]
+
+=== Differences Between Branches
+
+  // View the differences between branches
+  git diff [branch_name1]..[branch_name2]
+
+  // View the differences between branches for a specific file
+  git diff [branch_name1]..[branch_name2] [file_name]
+
+=== Cleaning Up Branches
+
+  // Clean up the list of branches you see
+  git remote prune origin
+
+
+== Cherry Picking
+
+# "git log" To get your commit hash. Use --author=[author_name] to get only commits by you. (where author name is your name)
+# Copy the commit hash
+# Make sure all of your changes are committed or stashed
+# Check out the destination branch with "git checkout [destination_branch]"
+# Use "git cherry-pick -x <commit_hash>" -x to preserves the commit history.
+
+== Conflicts
+
+If you do a "git pull" and are left in a conflict state, you must manually decide what bits of code to keep and what to eliminate.
+
+You can use "git mergetool" to interactively decide what chunks to keep and what chunks go away.  The merged result is staged for commit.
+
+Use "git status" to see what things are left in a conflict state and what modified files exist.  For each file that has changes but is not staged, you need to edit that file and look for the conflict markup (designated with ">>>>>>>", "=======" and "<<<<<<<".  Merge the two blocks of code together (ask others and look at the logs if you need more information about what each block does) and then "git add" the change.
+
+Once all changes are staged, a "git commit" will record what was needed to resolve the conflict and will drop you out of a conflict state.
+
+If you use `git config --global merge.conflictstyle diff3` it will change your markup to look more like this:
+
+    <<<<<<<
+        our changes
+    |||||||
+        common ancestor
+    =======
+        their changes
+    >>>>>>>
+
+Useful commands:
+
+* `git checkout --ours someFile` - keep our version
+* `git checkout --theirs someFile` - keep their version
+* `git log --merge -p someFile` - show all commits since a common ancestor
+* `git show :1:someFile` - show the common ancestor
+* `git show :2:someFile` - show our version
+* `git show :3:someFile` - show their version
+
+== Cleanup
+
+You can delete all untracked files from your repository with "git clean".  It can also remove directories with "git clean -d".
+
+To clean up your .git directory, which makes it much smaller, use "git gc".
+
+== Unstage Files
+
+If you used "git add", "git rm", or "git mv" and have not yet committed the changes, you can use "git reset HEAD [filename_or_directory]" to unstage.  If you want to go back to the contents of the original file, you will need to also run "git checkout [filename_or_directory]"
+
+== Revert or change a commit
+
+Use "git revert [sha1]" to pull a commit out.  You can get the sha1 hash with "git log", "git reflog" and "gitk" pretty easily.
+
+If you totally messed up something with a broken merge, you can use "git reset --hard" to go back to your last commit.  This command can be dangerous, handle with care.  Alternatively, use "git reflog" to find where you want to be.  Use "git reset --hard HEAD@{1}" to go back one commit.  You can change the number to go back further.  Also, you can refer to this as HEAD^1, which means one commit ago.
+
+If you forgot something in your last commit, "git reset --soft HEAD^" will undo it but keep the changes in the index for editing.
+
+"git commit --amend" will let you edit your commit message.
+
+== Stashing
+
+You can save changes into "stashes" with "git stash save [optional_name]".  This will potentially let you "git pull".  "git stash apply" restores the changes, "git stash pop" will restore changes and remove it from the list of stashes, and "git stash list" shows the stack of stashes.  "git stash show stash_name -p" shows the stash "stash_name" and the differences to the files.
+
+== Finding differences
+
+=== ... since branch diversion
+
+One can review code changes between two arbitrary points in history by using `git diff FROM TO` where FROM and TO can be branch names, tags, or commit hashes.  Let's say you have branch AAA.  Branch BBB was diverged from AAA previously, and both AAA and BBB have had additional commmits since then.  It is also possible that people have merged in changes from AAA into BBB at times.  What we want to know is the differences between AAA and BBB since the last time AAA was merged into BBB.  To do that, we use `git merge-base AAA BBB`, which gives us a hash.  This is the point where git will start to merge history if we were to merge AAA into BBB.  This may be a different hash than if we use `git merge-base BBB AAA`.
+
+So, now we can figure out what was added to BBB and what would be merged into AAA if we were to merge BBB into AAA by using that hash.  This command will actually show you the differences in files:   `git diff $(git merge-base AAA BBB) BBB`
+
+=== ... between branches
+
+The easiest way is to make a new branch, merge AAA and BBB together, then see the differences.
+
+  git checkout AAA
+  git branch MergeAAABBB
+  git checkout MergeAAABBB
+  git merge BBB
+  # resolve conflicts and commit if necessary
+  git diff AAA MergeAAABBB
+
+
+From here you will likely merge MergeAAABBB into AAA with `git checkout AAA ; git merge MergeAAABBB ; git pull ; git push`.  Don't forget to clean up the temporary branch when you are done; `git checkout master; git branch -D MergeAAABBB`.
+
+=== ... between repositories
+
+This is similar to finding differences between branches, but we'll use a scratch repository to do the merging.  Let's assume you intend to see the differences between RepoAAA's BranchAAA and RepoBBB's BranchBBB.
+
+  git clone /path/to/RepoAAA MergeRepo
+  cd MergeRepo
+  git checkout -b BranchAAA origin/BranchAAA
+  git branch MergeBranch
+  git checkout MergeBranch
+  git pull /path/to/RepoBBB BranchBBB
+  # resolve conflicts and commit if necessary
+  git diff BranchAAA MergeBranch
+
+
+From here you may wish to accept the changes and push them into RepoAAA's BranchAAA:  `git checkout BranchAAA ; git merge MergeBranch ; git pull ; git push`.  Wipe the temporary repository when you are done to free up disk space again.
+
+== "Merge branch master" messages
+
+When you do a "git pull" and you have local changes committed but not yet pushed to origin, git will automatically merge in the changes and mark a commit.  To avoid this message, you need to rebase.
+
+Method 1:  "git pull --rebase" and hope that it works.
+
+Method 2:  Manual rebasing.  Running "git fetch" will update your history and "git rebase remotes/origin/master" will apply your changes to the updated history, which can cause conflicts.  If there is a conflict, you will need to continue the rebase by running the "git rebase remotes/origin/master" command after resolving the problem.  "git rebase --continue" will skip the commit for the conflict, "git rebase --abort" will rewind the rebase back to where you started.
+
+To avoid this in the future, you can make "git pull" default to --rebase with "git config branch.autosetuprebase always" (you can also use --global).  We don't use this because rebasing during pulling doesn't run our postmerge hook.
+
+== Copy a file to another repository
+
+Sometimes you start working on a file in one repository and realize it would be a better fit in another repository.  You now want to move the file and preserve the history.  This also can handle a whole directory path if you wish.
+
+# Go into the FROM repository
+# "git format-patch --stdout --root -- THE_PATH/MORE_PATH/THE_FILE.EXT" &gt; ~/my_patch_file.txt
+# If you want to change the file path, do something like this, substituring the right paths as appropriate.
+#* "perl -pi -e 's~THE_PATH/MORE_PATH/THE_FILE.EXT~NEW_PATH/NEW_FILE.EXT~g' ~/my_patch_file.txt"
+# Go into the DESTINATION repository
+# "git am ~/my_patch_file.txt"
+
+At this point, there will be a bunch of commits who will retain the original author and will have you as the committer.  The original file or path still exists in the FROM repository, and it is preferred that you use "git rm" to keep the history there, especially since you can say that you moved the file/path to the DESTINATION repository.
+
+== Removing all traces of a file
+
+First off, this is only possible if you can do this to all of the repositories or if all of the other repositories reclone from your source.  It is a bad idea to do this procedure.  Use caution.  Make a backup.
+
+# Add and commit all changes
+# "git filter-branch --tree-filter" 'rm -f the/path/to/your-file.txt' HEAD
+# "git reset --hard"
+# "rm -rf .git/refs/original"
+# Edit .git/packed-refs and remove the line that refers to refs/original and the file you want to delete.  This may not be needed with linear history, no tags, and nothing special in your repository.
+# "git reflog expire --all --expire-unreachable=0"
+# You probably want to have a history file and add a comment that files were erased from the repository.  This will be just a normal text file.  Add and commit the change (if desired).
+# "git gc -prune"
+
+This is viewed as "undesireable" by the people who wrote git.  They'd prefer these steps.
+
+# Add and commit all changes
+# "git filter-branch --tree-filter" 'rm -f the/path/to/your-file.txt' HEAD
+# "git reset --hard"
+# "rm -rf .git/refs/original"
+# Clone to a new repository.  Make sure you don't use a "-l" flag and specify the other repository with a "file:///" url.
+# "git gc" in the new repository
+
+== Combining repositories
+
+If you have two (or more) separate repositories and you wish to merge them into one and preserve branches (they might have common branches) and file histories, it is a little involved but not too difficult.
+
+# Make a new directory.  Let's call it work:  mkdir work
+# Inside that directory, clone your other repositories and rename the resulting directory.  For each repository to merge, run "git clone source_to_REPO".
+# For each newly cloned repository you intend to merge, follow these commands.  Make sure to replace REPO appropriately.
+## cd REPO
+## Just to be sure, switch to master
+## git checkout master
+## git reset --hard
+## Changes status from dirty to clean
+## git status
+## Rewrite all paths -- all on one line
+## git filter-branch --index-filter 'git ls-files -s | sed "s-\t-&REPO/-" | GIT_INDEX_FILE=$GIT_INDEX_FILE.new git update-index --index-info && mv $GIT_INDEX_FILE.new $GIT_INDEX_FILE' -- --all
+## Check out each branch, prepending REPO
+## You do not need to do this with "master"
+## git checkout -b "REPO_branchName" "origin/branchName"
+## cd ..
+# Make a new directory, let's call this one merged:  mkdir merged
+# Initialize the merged repository:
+## cd merged
+## git init
+## git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+## For each REPO, ...
+## git config remote.origin.url "`pwd`/../REPO/"
+## git fetch
+## git pull . remotes/origin/master
+## git branch -d -r origin/master
+# Now you need to merge together the branches.  Right now they are called REPO_branchName and you will want to merge together all of the "branchName" branches together.  Use "git branch" to see the branches, then follow these steps to merge the histories together.
+## For the first REPO_branchName you see, just rename it
+## git checkout -b branchName origin/REPO_branchName
+## git branch -d -r origin/REPO_branchName
+## For the rest of the REPOs, we merge into this branch
+## git merge origin/REPO/branchName
+## git branch -d -r origin/REPO_branchName
+# Return to master with 3 checkout master"
+# Done.  The current directory is where your merged repository lives.
+
+= Common Problems
+
+== You cannot fast forward
+
+* There are changes on a branch that have not yet been updated on your repository.
+* Commit all changes (or stash them), checkout the other branch, do your pull and push, then checkout your original branch.
+
+= Further Information
+
+On systems that have git installed, a simple "man git" will let you know an overview of the commands.  For more information on a command, such as "git pull", you use "man git-pull".
+
+Also, perhaps these links will help you out:
+
+* http://www.sourcemage.org/Git_Guide - SourceMage Git Guide
+* http://git.or.cz/gitwiki/GitFaq - Git FAQ
+* http://cheat.errtheblog.com/s/git - git cheat sheet
+* http://www-cs-students.stanford.edu/~blynn/gitmagic/index.html - Git Magic
+* http://cworth.org/hgbook-git/tour/ - A tour of git: the basics
+EOF
