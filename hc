@@ -52,7 +52,7 @@ case "$CMD" in
 				cd "homeconnections_backend-$NAME"
 				cat <<EOF > app/config/parameters_override.yml
 parameters:
-	 database_name: ${USER}_homeconnections-${NAME}
+    database_name: ${USER}_homeconnections-${NAME}
 EOF
 				util/bin/setup_repository
 			)
