@@ -142,7 +142,7 @@ EOF
 		initializedCheck || exit 1
 		COUNT=0
 		for E in homeconnections_ui-*/; do
-			FLAG="	"
+			FLAG="   "
 			E="${E%/}"
 			E="${E#*-}"
 			if [ "$CURRENT" == "$E" ]; then
