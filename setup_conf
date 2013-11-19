@@ -51,3 +51,13 @@ for F in config storage; do
 	cp "ssh/$F" "$HOME/.ssh/$F"
 	chmod 600 "$HOME/.ssh/$F"
 done
+
+# Setup git configuration
+if [ ! -f ~/.gitconfig ]; then
+	git config --global user.name "Tyler Akins"
+	git config --global user.email "fidian@rumkin.com"
+	git config --global push.default simple
+	git config --global color.diff auto
+	git config --global color.interactive auto
+	git config --global alias.unpushed "log @{u}.. --pretty=format:'%h %an %s'"
+fi
