@@ -1,5 +1,5 @@
 " Enable bundles/plugins
-if has("call")
+if has("autocmd")
 	call pathogen#infect()
 endif
 
@@ -41,7 +41,7 @@ if has("extra_search")
 
 	" Unhighlight your search automatically when editing
 	" Alternately, the following map will clear your search
-	" map \ :noh<cr> 
+	" map \ :noh<cr>
 	nnoremap a :noh<CR>a
 	nnoremap A :noh<CR>A
 	nnoremap i :noh<CR>i
@@ -86,7 +86,7 @@ set tags=tags;/
 " Single-key macros
 nmap Q oecho __FILE__.':'.__LINE__."\n";//NOCOMMIT-DEBUG<esc>
 
-if has("call")
+if has("autocmd")
 	" Configure Syntastic syntax checking
 	map <F5> :SyntasticToggleMode<CR>
 	let g:syntastic_auto_jump=1
