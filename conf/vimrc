@@ -1,5 +1,7 @@
 " Enable bundles/plugins
-call pathogen#infect()
+if has("autocmd")
+	call pathogen#infect()
+endif
 
 " Turn on syntax highlighting
 if has("syntax")
@@ -39,7 +41,7 @@ if has("extra_search")
 
 	" Unhighlight your search automatically when editing
 	" Alternately, the following map will clear your search
-	" map \ :noh<cr> 
+	" map \ :noh<cr>
 	nnoremap a :noh<CR>a
 	nnoremap A :noh<CR>A
 	nnoremap i :noh<CR>i
@@ -84,43 +86,49 @@ set tags=tags;/
 " Single-key macros
 nmap Q oecho __FILE__.':'.__LINE__."\n";//NOCOMMIT-DEBUG<esc>
 
-" Configure Syntastic syntax checking
-map <F5> :SyntasticToggleMode<CR>
-let g:syntastic_auto_jump=1
-let g:syntastic_auto_loc_list=1
-let g:syntastic_javascript_jslint_conf = "--es5=false"
+if has("autocmd")
+	" Configure Syntastic syntax checking
+	map <F5> :SyntasticToggleMode<CR>
+	let g:syntastic_auto_jump=1
+	let g:syntastic_auto_loc_list=1
+	let g:syntastic_javascript_jslint_conf = "--es5=false"
 
-" Insert <Tab> or complete identifier
-" if the cursor is after a keyword character
-function MyTabOrComplete()
-	let col = col('.')-1
-	if !col || getline('.')[col-1] !~ '\k'
-		return "\<tab>"
-	else
-		return "\<C-N>"
-	endif
-endfunction
-inoremap <Tab> <C-R>=MyTabOrComplete()<CR>
+	" Insert <Tab> or complete identifier
+	" if the cursor is after a keyword character
+	function MyTabOrComplete()
+		let col = col('.')-1
+		if !col || getline('.')[col-1] !~ '\k'
+			return "\<tab>"
+		else
+			return "\<C-N>"
+		endif
+	endfunction
+	inoremap <Tab> <C-R>=MyTabOrComplete()<CR>
+
+	" Highlight SQL, html syntax in strings
+	let php_sql_query=1
+	let php_htmlInStrings=1
+endif
 
 " Keep the cursor 5 lines away from the top/bottom
 set scrolloff=2
 
-" Highlight SQL, html syntax in strings
-let php_sql_query=1
-let php_htmlInStrings=1
-
 " Handle mistyped commands
-command W w
-command Wq wq
-command Q q
+if has("command")
+	command W w
+	command Wq wq
+	command Q q
+endif
 
 " Spell checking toggle with s
 map s :setlocal spell! spelllang=en_us<CR>
 
-" Automatically use spaces for YAML
-autocmd Filetype yaml setlocal expandtab
+if has("filetype")
+	" Automatically use spaces for YAML
+	autocmd Filetype yaml setlocal expandtab
 
-" Automatically set up per-filetype settings, like tag matching
-filetype plugin on
-filetype detect
-runtime macros/matchit.vim
+	" Automatically set up per-filetype settings, like tag matching
+	filetype plugin on
+	filetype detect
+	runtime macros/matchit.vim
+endif
