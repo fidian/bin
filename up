@@ -8,9 +8,6 @@ case "$COMMAND" in
 	git)
 		FILENAME=".git"
 		;;
-	grunt)
-		FILENAME="Gruntfile.*"
-		;;
 	make)
 		FILENAME="Makefile"
 		;;
