@@ -60,4 +60,5 @@ if [ ! -f ~/.gitconfig ]; then
 	git config --global color.diff auto
 	git config --global color.interactive auto
 	git config --global alias.unpushed "log @{u}.. --pretty=format:'%h %an %s'"
+	git config --global merge.conflictstyle diff3
 fi
