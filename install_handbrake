@@ -2,9 +2,12 @@
 
 # Handbrake PPA
 sudo add-apt-repository ppa:stebbins/handbrake-releases
+#sudo add-apt-repository ppa:stebbins/handbrake-snapshots
 
-# Medibuntu repository
-sudo -E wget --output-document=/etc/apt/sources.list.d/medibuntu.list http://www.medibuntu.org/sources.list.d/$(lsb_release -cs).list && sudo apt-get --quiet update && sudo apt-get --yes --quiet --allow-unauthenticated install medibuntu-keyring && sudo apt-get --quiet update
+# VideoLAN repository for libdvdcss (Medibuntu is dead)
+wget -qO - ftp://ftp.videolan.org/pub/debian/videolan-apt.asc | sudo apt-key add -
+echo "deb ftp://ftp.videolan.org/pub/debian/stable ./" | sudo tee /etc/apt/sources.list.d/libdvdcss.list
+sudo apt-get update
 
 # Update packages
 sudo apt-get update && sudo apt-get upgrade -y
