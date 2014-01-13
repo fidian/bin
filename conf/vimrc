@@ -132,3 +132,6 @@ if has("autocmd")
 	filetype detect
 	runtime macros/matchit.vim
 endif
+
+" Turn off search wrapping
+set nowrapscan
