@@ -120,8 +120,8 @@ if has("autocmd")
 	command Q q
 endif
 
-" Spell checking toggle with s
-map s :setlocal spell! spelllang=en_us<CR>
+" Spell checking toggle with S
+map S :setlocal spell! spelllang=en_us<CR>
 
 if has("autocmd")
 	" Automatically use spaces for YAML
