@@ -1,5 +1,8 @@
-" Enable bundles/plugins
 if has("autocmd")
+    " Make .less appear as "less"
+    autocmd BufRead,BufNewFile *.less set filetype=less
+
+    " Enable bundles/plugins
 	call pathogen#infect()
 endif
 
@@ -92,7 +95,7 @@ if has("autocmd")
 	let g:syntastic_auto_jump=1
 	let g:syntastic_auto_loc_list=1
 	let g:syntastic_javascript_jslint_conf = "--es5=false"
-
+    
 	" Insert <Tab> or complete identifier
 	" if the cursor is after a keyword character
 	function MyTabOrComplete()
