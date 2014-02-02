@@ -138,3 +138,10 @@ endif
 
 " Turn off search wrapping
 set nowrapscan
+
+" Set a custom status line
+" %< = trim from left, %f = filename, %h = [help], %r = [RO]
+" %= = right align, %b = char decimal, %B = char hex
+" %c = column number, %V = virtual column number,
+" %l = line, %L = total lines, %P = percentage through file
+set statusline=%<%f\ %h%m%r%=%b\ 0x%B\ \ \ %c%V,%l/%L\ %P
