@@ -22,44 +22,7 @@ function initializedCheck {
 }
 
 case "$CMD" in
-	autocomplete)
-			cat <<EOF
-__hc_complete () {
-	# 1 is the current
-	# 2 are options, space separated
-	local CURRENT="\$1"
-	local OPTION
-	for OPTION in \$2; do
-		if [[ "\$OPTION" == "\$CURRENT"* ]]; then
-			COMPREPLY+=("\$OPTION")
-		fi
-	done
-}
-__hc () {
-	# 1 is the command, "hc"
-	# 2 is the last argument, partial or missing
-	# 3 is the last argument that is complete
-
-	case "\$3" in
-		remove | rm | use)
-			for E in homeconnections_ui-*/; do
-				E="\${E%/}"
-				E="\${E#*-}"
-				__hc_complete "\$2" "\$E"
-			done
-			;;
-
-		hc)
-			__hc_complete "\$2" "autocomplete create fix initialize localize list pull remove update use"
-			;;
-	esac
-}
-
-complete -F __hc hc
-EOF
-		;;
-
-	create)
+	 create)
 		set +u
 		NAME="$2"
 		BACKEND="$3"
@@ -97,7 +60,14 @@ EOF
 			(
 				cd "homeconnections_ui-$NAME"
 				util/bin/setup_repository
-				make
+
+                if [ -f Makefile ]; then
+                    make
+                fi
+
+                if [ -f Gruntfile.js ]; then
+                    grunt
+                fi
 			)
 		) || (
 			echo "Error detected"
@@ -179,7 +149,7 @@ EOF
 		initializedCheck || exit 1
 		COUNT=0
 		for E in homeconnections_ui-*/; do
-			FLAG="   "
+			FLAG="	"
 			E="${E%/}"
 			E="${E#*-}"
 			if [ "$CURRENT" == "$E" ]; then
@@ -309,16 +279,15 @@ EOF
 		cat <<EOF
 Specify a command:
 
-autocomplete  Generate bash/zsh completion - 'eval "\$(hc autocomplete)"'
-create        Make a new environment
-fix           Run many commands to try to fix an environment
-initialize    Wipe out Home Connections repositories and start new
-localize      Change an installation to work for people with local dev installs
-list          List the prepared environments
-pull          Update the current environment
-remove        Remove an environment (current one or the specified one)
-update        Get a new version of this script
-use           Switch to a given environment
+create      Make a new environment
+fix         Run many commands to try to fix an environment
+initialize  Wipe out Home Connections repositories and start new
+localize    Change an installation to work for people with local dev installs
+list        List the prepared environments
+pull        Update the current environment
+remove      Remove an environment (current one or the specified one)
+update      Get a new version of this script
+use         Switch to a given environment
 EOF
 		;;
 esac
