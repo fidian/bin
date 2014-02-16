@@ -210,4 +210,3 @@ function rand() {
 }
 
 stty stop undef # disable control-s and control-q
-eval "$(hc autocomplete)"
