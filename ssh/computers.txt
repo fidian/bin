@@ -1,14 +1,7 @@
 anise - Silver laptop
 bay - HP 15" laptop, silver-gray, 2.3 ghz
-bby-laptop - Work laptop
-build.pub
-clove.pub
 macbook - White MacBook (the one from Nathan)
 marjoram
 saffron - Acer netbook (the one from Gareth)
 sumac - Toshiba netbook (the one from Jacek)
-tarragon - Media server at home
 thyme.pub
-tumeric - Acer laptop (3680, one from Gutzke)
-utilities - utilities.bbymwl.com
-vubuntu - Work virtual machine "Vubuntu"

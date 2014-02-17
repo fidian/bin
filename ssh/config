@@ -1,7 +1,0 @@
-Host utilities
-User storage
-Hostname utilities.bbymwl.com
-IdentityFile ~/.ssh/storage
-
-Host vpnproxy
-Hostname ec2-184-72-248-64.compute-1.amazonaws.com
