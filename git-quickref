@@ -1,189 +1,199 @@
 #!/bin/sh
-cat <<"EOF"
+cat <<"EOF" | $PAGER
 Git is a revision control system designed by Linus Torvalds for tracking the Linux kernel.  His goals were to have a completely distributed, fast, and open tool that would work well for projects of any scale.
 
 Git is installed on the utilities server.  Linux systems have a package for it, probably named git-core (Ubuntu / Debian), dev-util/git (Gentoo), or git (Fedora / RedHat).  You will also likely want to get gitk to view the commit tree easily.  Windows users will want to check out http://code.google.com/p/msysgit/ for Git on MSys.
 
-=Related Topics=
 
-[[style_guide/Branching Strategy]]
-
-= Advice
+Advice
+======
 
 This section is put near the top on purpose.  It is a very good idea to know what to do and why to do it in a specific way before learning how to do things.
 
-== Commit atomic changes
+Commit atomic changes
+---------------------
 
 It is best to make your commits deal with one specific thing at a time.  It helps with conflict resolution and is also an aid when reviewing the history of a file.
 
-== Make descriptive commit logs
+Make descriptive commit logs
+----------------------------
 
 If people don't understand your commit, usually a human-readable version goes a long way towards enlightenment.  To follow the "git" standard, the first line of your commit should be similar to the subject of an email:  short and to the point.  After that, add a blank line and describe the commit in detail if the subject wasn't enough.
 
-== Review your commit
+Review your commit
+------------------
 
-People will often be committing too many changes or missing files that should be committed.  git assists developers by showing a list of files that are going to be committed, a list of other files that are not going to be committed but are changed, and a list of files that are not tracked.  Make sure you are committing exactly what you want and use "git diff" to review your changes.  When you commit, take a look at the number of lines changed and see if that is reasonable before you "git push" to others.
+People will often be committing too many changes or missing files that should be committed.  git assists developers by showing a list of files that are going to be committed, a list of other files that are not going to be committed but are changed, and a list of files that are not tracked.  Make sure you are committing exactly what you want and use `git diff` to review your changes.  When you commit, take a look at the number of lines changed and see if that is reasonable before you `git push` to others.
 
-== Make branches
+Make branches
+-------------
 
 It is easy to spawn off your own branch to test out somewhat larger changes.  If you deal with more than a couple files or if you could be changing how something works underneath, you may want to branch.  One of git's main strengths is in the easy creation and merging of branches.  It is really cheap to make a branch, plus it can just be thrown away if the work is unneeded.
 
-== Pull and merge constantly
+Pull and merge constantly
+-------------------------
 
-When working for a while without pushing in your changes, doing "git pull" or merging in changes into your branch will make conflicts easier to resolve.  It is far better to resolve smaller conflicts, and constant merging will help to make sure the changes will be smaller.
+When working for a while without pushing in your changes, doing `git pull` or merging in changes into your branch will make conflicts easier to resolve.  It is far better to resolve smaller conflicts, and constant merging will help to make sure the changes will be smaller.
 
-= Common Terms
 
-== Origin
+Common Terms
+============
 
-The main repository from whence you cloned.  To us, it refers to the "git prime" repository on devweb1.
+Origin
+------
 
-== Master
+The main repository from whence you cloned.
+
+Master
+------
 
 The main branch on origin.
 
-== Working Copy
+Working Copy
+------------
 
 The actual files you have and are working on in your repository.
 
-= Initializing Your Configuration
 
+Initializing Your Configuration
+===============================
 
 You need to set your name and your email address that will be used by git.  It is suggested that you do this globally so that all projects you create and clone won't need to be individually configured.
 
-  git config --global user.name "Firstname Lastname"
-  git config --global user.email "you@example.com"
+    git config --global user.name "Firstname Lastname"
+    git config --global user.email "you@example.com"
 
 It is also suggested that you enable the autosetupmerge so that when you work on branches, you will not need to specify --track or need to manually merge remote tracking branches with fetch and then merge.
 
-  git config --global branch.autosetupmerge true
+    git config --global branch.autosetupmerge true
 
 To to able to push back to the master repository, on Ubuntu you need to specify a couple additional config items.
 
-  git config --global push.default matching
+    git config --global push.default matching
 
-If you decide to colorize things, the default colors can be a bit hard to read.  You might like these a bit more.  Edit your ~/.gitconfig file and add these lines.  If you look closely at that file, you'll see what the "git config --global" commands above entered into here.
+If you decide to colorize things, the default colors can be a bit hard to read.  You might like these a bit more.  Edit your `~/.gitconfig` file and add these lines.  If you look closely at that file, you'll see what the `git config --global` commands above entered into here.
 
-  [color]
-	ui = true
-	branch = auto
-	interactive = auto
-	diff = auto
-	status = auto
-  [color "branch"]
-	current = yellow reverse
-	local = yellow
-	remote = green
-  [color "diff"]
-	meta = yellow bold
-	frag = magenta bold
-	old = red bold
-	new = green bold
-  [color "status"]
-	added = yellow
-	changed = green
-	untracked = cyan
-
-
-= Aliases
-
-The "alias" section in your ~/.gitconfig allows one to define an shorthand for a git command.  Add a section like this into your ~/.gitconfig to enable a "git unpushed" command.
+    [color]
+	    ui = true
+	    branch = auto
+	    interactive = auto
+	    diff = auto
+	    status = auto
+    [color "branch"]
+	    current = yellow reverse
+	    local = yellow
+	    remote = green
+    [color "diff"]
+	    meta = yellow bold
+	    frag = magenta bold
+	    old = red bold
+	    new = green bold
+    [color "status"]
+	    added = yellow
+	    changed = green
+	    untracked = cyan
 
 
-  [alias]
-	unpushed=log --pretty=oneline origin/master..master
+Aliases
+-------
+
+The "alias" section in your `~/.gitconfig` allows one to define an shorthand for a git command.  Add a section like this into your `~/.gitconfig` to enable a `git unpushed` command to show things you didn't push back to origin.
 
 
-Now, you can use "git unpushed" to see commits that are in your local repository that you have not pushed to master.  It is the same as though you ran "git log --pretty=oneline origin/master..master".  You can also change "oneline" to "short", "medium", "full", and other formats.  See "man git-log" for further options and determine which format looks best for you.
+    [alias]
+	    unpushed=log --pretty=oneline origin/master..master
 
-= Windows Users
+Once added, you can use `git unpushed` to see commits that are in your local repository that you have not pushed to master.  It is the same as though you ran `git log --pretty=oneline origin/master..master`.  You can also change "oneline" to "short", "medium", "full", and other formats.  See `man git-log` for further options and determine which format looks best for you.
+
+Windows Users
+-------------
 
 If you are using git for Windows or if you are using a virtual machine to access files on your Windows machine (not recommended due to flaky drivers), you will want to run these two commands in the repository.
 
-
-  git config core.autocrlf false
-  git config core.filemode false
-
+    git config core.autocrlf false
+    git config core.filemode false
 
 The automatic detection/conversion of linefeeds in files is disabled to eliminate screw-ups.  We basically treat all files as binary.  Set up your editors to save files in Unix (LF) mode.
 
 We turn off file mode detection because Windows doesn't do file modes like Unix does.  Git has reasonable defaults for files (rw-r--r--) and directories (rwxr-xr-x).  If file permissions need to be changed, do it on devweb or have someone else set the mode appropriately.
 
-= Initializing a New Repository
 
-== Starting From Scratch
+Initializing a New Repository
+=============================
+
+Starting From Scratch
+---------------------
 
 If you want to make a brand new repository, you simply make a directory and copy in any files with which you want to start.  Next, you `cd` into the directory and run `git init`.  Your new repository is set and you will have a .git directory in your new repository that contains all of your information.  However, this is not the ideal setup, but it is the easiest.
 
 The better way is to have a bare repository, which can be a common place for people to push and pull from.  If you want to use a bare repository as a central hub for changes, you will likely want to make an empty directory like `projectname.git` (the .git at the end traditionally means the directory contains a bare repository).  Next, `cd` into the directory and run `git init --bare`.  Go back up one directory and now use `git clone projectname.git` to make a projectname directory with a live copy of files.  Copy files into `projectname/` and now you can start committing your changes.  Check out the "Building A Bare Repository" section below for other possible changes you should make to the bare repository.
 
-== Using Another Repository
+Using Another Repository
+------------------------
 
 If you want to copy another repository, you should use `git clone` to pull it over.  You need to pass some sort of URI, as shown in the examples below.
 
+    // Get from a local directory
+    git clone /usr/local/git/site.git/
 
-  // Get from a local directory
-  git clone /usr/local/git/site.git/
+    // Get files via SSH
+    git clone user@hostname:/usr/local/git/site.git/
 
-  // Get files via SSH
-  git clone user@hostname:/usr/local/git/site.git/
+    // Use the git server
+    git clone git://hostname/usr/local/git/site.git/
 
-  // Use the git server
-  git clone git://hostname/usr/local/git/site.git/
-
-
-== Building A Bare Repository
+Building A Bare Repository
+--------------------------
 
 It is good to have a "bare" repository where commits are all transmitted.  This is just another copy of the .git directory but without any of the working files.  You build the bare repository by adding `--bare` to your "git clone" command.  Usually you specify a directory name with ".git" at the end, like we do here:  `git clone /other/repository/project project.git`
 
 If you plan on having other users push and pull with this repository, you should set this up as a shared repository.  Change into the bare repository and run `git config core.sharedRepository true` and it will now make sure files get proper group permissions.  At this point, you will probably want to run a few more commands to set up the shared group for everyone.  Let's pretend that there is a group on the server called gitusers and everyone who should access this repository are in that group.  From the project.git directory, we should run these commands:
 
+    // Change the group of all files and directories to gitusers
+    chgrp -R gitusers .
 
-  // Change the group of all files and directories to gitusers
-  chgrp -R gitusers .
-
-  // Change file and directory permissions so group members can alter things
-  chmod g+rw -R .
-  find . -type d -exec chmod g+x .
+    // Change file and directory permissions so group members can alter things
+    chmod g+rw -R .
+    find . -type d -exec chmod g+x .
 
 
-= Working With Git
+Working With Git
+================
 
-== Quick GIT Function Reference
+Quick Function Reference
+------------------------
 
-=== git pull
+    git pull
 
-First does a fetch then does a merge on current branch.
+First does a fetch then does a merge on current branch.  This is the typical way you update your copy of a repository.
 
-=== git fetch
+    git fetch
 
-Takes down changes from a branch.
+Adds additional history into your repository.  Essentially it takes changes that were committed elsewhere and sticks them into your history.  Working files are not updated.
 
-=== git merge
+    git merge
 
-Merges your change history with another change history.
+Merges your change history with your working files.
 
-=== git branch
+    git branch       # Local branches only
+	git branch -a    # All branches
 
-Lists all branches on local repository.
+Lists local branches or all branches in a repository.
 
-=== git branch -a
+    git cherry-pick COMMIT      # Pull a commit from another branch
+	git cherry-pick -x COMMIT   # Pull a commit and preserve some more info
 
-Lists all branches in local repository plus all branches in origin,
+Takes a commit and puts it into another branch.  I'd recommend using `-x`
 
-=== git cherry-pick
-
-Takes a commit and puts it into another branch
-
-=== git log
+    git log
 
 Gets a list of commits and their messages.
 
-=== git stash
+    git stash
 
 Puts your changes in a stash to keep for later.
 
-=== git stash apply
+    git stash apply
 
 Applies your changes back to your working copy.
 
@@ -205,7 +215,7 @@ Commits the changes for a specific file.  This file must already be tracked by g
 
 === git add [filename/directory]
 
-Stages the indicated filename/directory. This will move the changes out of the diff and into the change set. 
+Stages the indicated filename/directory. This will move the changes out of the diff and into the change set.
 
 === git add -p (--patch) [filename/directory]
 
@@ -271,7 +281,7 @@ When you are done, you can delete local branches with "git branch -D XXXXXXX" an
 
 === Creating
 
-  // To create a new branch from the branch you are currently in. 
+  // To create a new branch from the branch you are currently in.
   git checkout -b [branch_name]
 
   // To create a branch locally from a specific branch
@@ -294,7 +304,7 @@ When you are done, you can delete local branches with "git branch -D XXXXXXX" an
 === Removing
 
   // Only deletes the branch if all of your changes have been merged into master
-  git branch -d [branch_name] 
+  git branch -d [branch_name]
 
   // Deletes branch
   git branch -D [branch_name]
