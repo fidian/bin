@@ -210,3 +210,5 @@ function rand() {
 }
 
 stty stop undef # disable control-s and control-q
+
+test_for_program grunt && eval "$(grunt --completion=bash)"
