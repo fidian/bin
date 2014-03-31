@@ -10,3 +10,6 @@
 [submodule "conf/vim/bundle/matchit"]
 	path = conf/vim/bundle/matchit
 	url = https://github.com/benjifisher/matchit.zip.git
+[submodule "conf/vim/bundle/markdown"]
+	path = conf/vim/bundle/markdown
+	url = https://github.com/tpope/vim-markdown.git

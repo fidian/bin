@@ -127,13 +127,16 @@ endif
 map S :setlocal spell! spelllang=en_us<CR>
 
 if has("autocmd")
-	" Automatically use spaces for YAML
-	autocmd Filetype yaml setlocal expandtab
-
 	" Automatically set up per-filetype settings, like tag matching
 	filetype plugin on
 	filetype detect
 	runtime macros/matchit.vim
+
+	" Automatically use spaces for YAML
+	autocmd Filetype yaml setlocal expandtab
+
+    " Turn on spell checking for Markdown
+    autocmd Filetype markdown setlocal spell! spelllang=en_us
 endif
 
 " Turn off search wrapping
