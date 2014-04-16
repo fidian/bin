@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Immediately stop on any command that fails
+set -e
+
+# Get our current ref
+REF=$(git symbolic-ref HEAD)
+
+# Get just the branch
+HEAD=${REF#refs/heads/}
+
+# Determine the remote
+REMOTE=$(git config branch.$HEAD.remote)
+REMOTE_REF=$(git config branch.$HEAD.merge)
+REMOTE_BRANCH=${REMOTE_REF#refs/heads/}
+
+# Update history
+echo "Fetching history from $REMOTE/$REMOTE."
+git fetch
+
+# Attempt to rebase
+if ! git rebase $REMOTE/$REMOTE_BRANCH; then
+	echo "Falling back to a merge"
+	git merge $REMOTE/$REMOTE_BRANCH
+else
+	git push
+fi
