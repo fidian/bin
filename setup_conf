@@ -44,7 +44,7 @@ fi
 rm -rf ~/.ssh/authorized_keys
 cat ssh/*.pub > ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
-for F in config storage; do
+for F in config; do
 	if [ -f "$HOME/.ssh/$F" ]; then
 		mv "$HOME/.ssh/$F" "$HOME/.ssh/${F}.old";
 	fi
