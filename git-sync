@@ -10,12 +10,20 @@ REF=$(git symbolic-ref HEAD)
 HEAD=${REF#refs/heads/}
 
 # Determine the remote
-REMOTE=$(git config branch.$HEAD.remote)
+REMOTE=$(git config branch.$HEAD.remote || echo "")
+
+if [ -z "$REMOTE" ]; then
+	echo "No remote is set for this branch.  Perhaps you should push it first?"
+	echo ""
+	echo "    git push -u origin $HEAD"
+	exit
+fi
+
 REMOTE_REF=$(git config branch.$HEAD.merge)
 REMOTE_BRANCH=${REMOTE_REF#refs/heads/}
 
 # Update history
-echo "Fetching history from $REMOTE/$REMOTE."
+echo "Fetching history from $REMOTE."
 git fetch
 
 # Attempt to rebase
