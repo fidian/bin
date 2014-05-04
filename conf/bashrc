@@ -1,4 +1,6 @@
-function move_most_recent {
+#!/bin/bash
+
+move_most_recent() {
 	FROM="${1:-$HOME/Desktop}"
 	FILE="`ls -rt --indicator-style=none "$FROM" | tail -n 1`"
 	echo "$FILE"
@@ -136,24 +138,24 @@ PRPL='\[\033[00;35m\]'
 RED='\[\033[00;31m\]'
 
 # add info about git branch to the prompt
-function bash_prompt_git {
-	local branch ref
-	ref="$(git rev-parse --short HEAD 2> /dev/null)"
+bash_prompt_git() {
+	local BRANCH REF
+	REF="$(git rev-parse --short HEAD 2> /dev/null)"
 
-	if [ ! -z "$ref" ]; then
-		branch="$(git symbolic-ref HEAD 2> /dev/null)"
+	if [ ! -z "$REF" ]; then
+		BRANCH="$(git symbolic-ref HEAD 2> /dev/null)"
 
-		if [ ! -z "$branch" ]; then
-			echo -n ' ('${branch#refs/heads/}')'
+		if [ ! -z "$BRANCH" ]; then
+			echo -n ' ('${BRANCH#refs/heads/}')'
 		else
-			echo -n ' (detached '$ref')'
+			echo -n ' (detached '$REF')'
 		fi
 	fi
 }
 
 # add shortened path to the prompt
-function bash_prompt_path {
-	P="${PWD/#${HOME}/~}"
+bash_prompt_path() {
+	P="${PWD/#${HOME}/"~"}"
 	if [ "${#P}" -gt 35 ]; then
 		echo -n "...${P: -32}"
 	else
@@ -194,7 +196,7 @@ if $TEST_FOR_PROGRAM 'xdotool'; then
 	xdotool getactivewindow windowsize --usehints 80 100%
 fi
 
-function rand() {
+rand() {
 	local LEN="$1"
 
 	if [ -z "$LEN" ]; then
