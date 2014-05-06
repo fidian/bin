@@ -147,4 +147,4 @@ set nowrapscan
 " %= = right align, %b = char decimal, %B = char hex
 " %c = column number, %V = virtual column number,
 " %l = line, %L = total lines, %P = percentage through file
-set statusline=%<%f\ %h%m%r%=%b\ 0x%B\ \ \ %c%V,%l/%L\ %P
+set statusline=%<%f\ %h%m%r%=%b\ 0x%B\ \ \ c%c%V\ +%l/%L\ %P
