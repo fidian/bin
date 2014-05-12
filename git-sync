@@ -27,11 +27,18 @@ echo "Fetching history from $REMOTE."
 git fetch
 
 # Attempt to rebase
-if ! git rebase $REMOTE/$REMOTE_BRANCH; then
+if git rebase $REMOTE/$REMOTE_BRANCH; then
+	git push
+else
 	echo ""
-	echo "Falling back to a merge"
+	echo "Falling back to a merge."
 	git rebase --abort
-	git merge $REMOTE/$REMOTE_BRANCH
+
+	if git merge $REMOTE/$REMOTE_BRANCH; then
+		git push
+	else
+		echo ""
+		echo "Resolve merge conflicts, commit, then sync again."
+	fi
 fi
 
-git push
