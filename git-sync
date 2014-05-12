@@ -28,8 +28,10 @@ git fetch
 
 # Attempt to rebase
 if ! git rebase $REMOTE/$REMOTE_BRANCH; then
+	echo ""
 	echo "Falling back to a merge"
+	git rebase --abort
 	git merge $REMOTE/$REMOTE_BRANCH
-else
-	git push
 fi
+
+git push
