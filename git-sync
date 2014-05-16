@@ -26,8 +26,12 @@ REMOTE_BRANCH=${REMOTE_REF#refs/heads/}
 echo "Fetching history from $REMOTE."
 git fetch
 
-# Attempt to rebase
-if git rebase $REMOTE/$REMOTE_BRANCH; then
+# Check if we can just pull because we have no changes
+if [ "$(git merge-base $REMOTE/$REMOTE_BRANCH HEAD)" == "$(git rev-parse HEAD)" ]; then
+	# No local changes - use a standard merge (fast-forward)
+	git merge --ff $REMOTE/$REMOTE_BRANCH
+elif git rebase $REMOTE/$REMOTE_BRANCH; then
+    # Rebase successful
 	git push
 else
 	echo ""
@@ -41,4 +45,3 @@ else
 		echo "Resolve merge conflicts, commit, then sync again."
 	fi
 fi
-
