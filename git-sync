@@ -36,7 +36,7 @@ elif git rebase $REMOTE/$REMOTE_BRANCH; then
 else
 	echo ""
 	echo "Falling back to a merge."
-	git rebase --abort
+	git rebase --abort || git checkout $HEAD
 
 	if git merge $REMOTE/$REMOTE_BRANCH; then
 		git push
