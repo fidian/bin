@@ -1,0 +1,5 @@
+#!/bin/bash
+
+HASH=$(git merge-base "$1" "$2")
+
+git diff $HASH "$2"
