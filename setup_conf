@@ -28,6 +28,12 @@ for F in gitconfig npmrc putty vim vimrc; do
 	ln -s "`pwd`/conf/$F" ~/.$F
 done
 
+for F in netrc; do
+	echo "Decrypting $F"
+	./secret $F > ~/.$F
+	chmod 600 ~/.$F
+done
+
 # Install fonts
 if $GNU; then
 	rm -rf ~/.fonts
