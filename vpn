@@ -1,0 +1,4 @@
+#!/bin/bash
+set -e
+cd ~/Vault/Jobs/Carphone\ Warehouse/Accenture\ VPN
+sudo openvpn --config client.ovpn
