@@ -1,3 +1,14 @@
 Host nas
 Hostname 192.168.0.36
+Port 2222
 User admin
+
+Host *.eu-west-1.compute.amazonaws.com
+User ec2-user
+CheckHostIP no
+StrictHostKeyChecking no
+UserKnownHostsFile /dev/null
+
+Host github.com
+Hostname ssh.github.com
+Port 443
