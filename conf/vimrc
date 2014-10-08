@@ -148,3 +148,7 @@ set nowrapscan
 " %c = column number, %V = virtual column number,
 " %l = line, %L = total lines, %P = percentage through file
 set statusline=%<%f\ %h%m%r%=%b\ 0x%B\ \ \ c%c%V\ +%l/%L\ %P
+
+" Make a copy when making a backup file, then overwrite original
+" Works around karma issue #974
+set backupcopy=yes
