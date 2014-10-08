@@ -1,0 +1,140 @@
+#!/bin/bash
+#
+# Based on open code from Amazon to get metadata
+
+function print_help() {
+cat<<"EOF"
+Tool to get EC2 instance metadata from inside a running EC2 instance.
+
+Show the block mapping:   ec2-info block-device-mapping
+
+Show the public keys:     ec2-info public-keys
+
+Show the user data:       ec2-info user-data
+    Show one setting:         ec2-info user-data KEY_NAME
+
+List all other keys:      ec2-info list
+    Show a specific key:      ec2-info KEY_NAME
+    eg. retrieve the AMI ID:  ec2-info ami-id
+    Get the placement zone:   ec2-info placement/availability-zone
+EOF
+}
+
+# Assign a variable to a parent scope
+function indirect() {
+    unset -v "$1"
+    eval $1=\"\$2\"
+}
+
+# Show an error message when communication fails
+function call_api() {
+    local URI="$2"
+    local RESULT=$(curl -fs http://169.254.169.254/$URI)
+
+    if [ $? -ne 0 ]; then
+		echo '[ERROR] Command not valid outside EC2 instance. Please run this command within a running EC2 instance.' >> /dev/stderr
+		exit 1
+	fi
+
+    local "$1" && indirect $1 "$RESULT"
+}
+
+function print_block_device_mapping() {
+	local x=$(print_value block-device-mapping/)
+	local i
+
+	for i in $x; do
+		echo $i: $(print_value block-device-mapping/$i)
+	done
+}
+
+function print_list() {
+	local prefix="$1"
+	local x=$(print_value $prefix)
+	local i
+
+	for i in $x; do
+		echo "$prefix$i"
+
+		if [ "${i: -1}" == '/' ]; then
+			print_list "$prefix$i"
+		fi
+	done
+}
+
+function print_public_keys() {
+	local x=$(print_value public-keys/)
+	local i index keyname format
+
+	for i in $x; do
+		index=$(echo $i|cut -d = -f 1)
+		keyname=$(echo $i|cut -d = -f 2)
+		echo "keyname: $keyname"
+		echo "index: $index"
+		format=$(print_value public-keys/$index/)
+		echo "format: $format"
+		echo "key: --- Start of Key --- Begins on next line ---"
+		print_value public-keys/$index/$format
+		echo "--- End Of Key ---"
+		echo ""
+	done
+}
+
+# Get all of the user data or a specific key from user data
+function print_user_data() {
+    local RESULT
+    call_api RESULT latest/user-data
+
+    if [ ! -z "$1" ]; then
+        echo "$x" | grep "^${1}=" | cut -d = -f 2-
+    else
+        echo "$x"
+    fi
+}
+
+# Get a specific meta-data value
+function print_value() {
+    local RESULT
+
+    call_api RESULT "latest/meta-data/$1"
+    echo "$RESULT"
+}
+
+
+if [ "$#" -eq 0 ]; then
+    print_help
+    exit 0
+fi
+
+while [ "$1" != "" ]; do
+	case $1 in
+		block-device-mapping)
+			print_block_device_mapping
+			;;
+
+		list)
+			print_list ''
+			;;
+
+		public-keys)
+			print_public_keys
+			;;
+
+		user-data)
+			print_user_data "$2"
+
+			if [ ! -z "$2" ]; then
+				shift
+			fi
+			;;
+
+		--help)
+			print_help
+			;;
+
+		*)
+			print_value "$1"
+			;;
+	esac
+	shift
+done

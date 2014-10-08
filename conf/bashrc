@@ -214,3 +214,7 @@ rand() {
 stty stop undef # disable control-s and control-q
 
 test_for_program grunt && eval "$(grunt --completion=bash)"
+
+if [ -f ~/bin/conf/git-flow-completion/git-flow-completion.bash ]; then
+	source ~/bin/conf/git-flow-completion/git-flow-completion.bash
+fi
