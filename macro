@@ -1,5 +1,9 @@
 #!/bin/bash
 
+reset_proxy() {
+    gsettings set org.gnome.system.proxy mode 'none'
+}
+
 case $1 in
     mouse-down)
         xte "mousedown 1"
@@ -21,8 +25,8 @@ case $1 in
         gsettings set org.gnome.system.proxy.socks host 'localhost'
         gsettings set org.gnome.system.proxy.socks port 9892
         gsettings set org.gnome.system.proxy mode 'manual'
+        trap reset_proxy SIGINT SIGTERM
         ssh -ND 9892 rumkin.com
-        gsettings set org.gnome.system.proxy mode 'none'
         ;;
 
     window-move-left)
