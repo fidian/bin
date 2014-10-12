@@ -2,40 +2,49 @@
 
 case $1 in
     mouse-down)
-		xte "mousedown 1"
-		;;
+        xte "mousedown 1"
+        ;;
 
     play-next)
-	    rhythmbox-client --next
-		;;
+        rhythmbox-client --next
+        ;;
 
     play-pause)
-		rhythmbox-client --play-pause
-		;;
+        rhythmbox-client --play-pause
+        ;;
 
     play-previous)
-	    rhythmbox-client --previous
-		;;
+        rhythmbox-client --previous
+        ;;
+
+    ssh-proxy)
+        gsettings set org.gnome.system.proxy.socks host 'localhost'
+        gsettings set org.gnome.system.proxy.socks port 9892
+        gsettings set org.gnome.system.proxy mode 'manual'
+        ssh -ND 9892 rumkin.com
+        gsettings set org.gnome.system.proxy mode 'none'
+        ;;
 
     window-move-left)
-	    xdotool windowmove --relative $(xdotool getwindowfocus) -9999 y
-		;;
+        xdotool windowmove --relative $(xdotool getwindowfocus) -9999 y
+        ;;
 
-	window-move-right)
-		xdotool windowmove --relative $(xdotool getwindowfocus) 9999 y
-		;;
+    window-move-right)
+        xdotool windowmove --relative $(xdotool getwindowfocus) 9999 y
+        ;;
 
-	*)
-		cat <<'EOF'
+    *)
+        cat <<'EOF'
 Syntax:
     macro <command>
 
 Commands:
     mouse-down         Simulate holding down the left mouse button
-	play-next          Move to next song in Rhythmbox
+    play-next          Move to next song in Rhythmbox
     play-pause         Toggle the play/pause of Rhythmbox
-	play-previous      Move to previous song in Rhythmbox
+    play-previous      Move to previous song in Rhythmbox
+    ssh-proxy          Make and use a SOCKS proxy over ssh to rumkin.com
     window-move-left   Move current window to left edge of screen
-	window-move-right  Move current window to right edge of screen
+    window-move-right  Move current window to right edge of screen
 EOF
 esac
