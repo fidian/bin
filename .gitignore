@@ -1,5 +1,6 @@
 /ipof
 /newlines
+/packer*
 /redsocks
 /timeout
 /wkhtmltopdf
