@@ -191,11 +191,6 @@ export PS3=$YEL'#?'$NONE' '
 export PS4=$YEL'+'$NONE' '
 
 
-# Sets the window size to 100% of height if xdotool is found
-if $TEST_FOR_PROGRAM 'xdotool'; then
-	xdotool getactivewindow windowsize --usehints 80 100%
-fi
-
 rand() {
 	local LEN="$1"
 
