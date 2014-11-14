@@ -17,6 +17,36 @@ case $1 in
         rhythmbox-client --previous
         ;;
 
+    record)
+        remove_temp_dir() {
+            rm -rf "$D"
+        }
+
+        if ! test_for_program ttyrec; then
+            echo "Missing ttyrec"
+            exit
+        fi
+        if [ ! -f ~/repo/ttygif ]; then
+            echo "Missing ~/repo/ttygif"
+            exit
+        fi
+        if ! test_for_program gifsicle; then
+            echo "Missing gifsicle"
+            exit
+        fi
+        D=$(tempfile -d)
+        trap remove_temp_dir SIGINT SIGTERM
+        ttyrec "$D/ttyrecord"
+        (
+            cd "$D"
+            ~/repo/ttygif ttyrecord
+            ~/repo/concat.sh ttyrecord.gif
+            gifsicle --optimise=3 ttyrecord.gif
+            mv ttyrecord.gif ~
+        )
+        echo "Created ~/ttyrecord.gif"
+        ;;
+
     ssh-proxy)
         reset_proxy() {
             echo "Removing proxy from Gnome network settings"
@@ -52,6 +82,7 @@ Commands:
     play-next          Move to next song in Rhythmbox
     play-pause         Toggle the play/pause of Rhythmbox
     play-previous      Move to previous song in Rhythmbox
+    record             Record terminal and output animated gif
     ssh-proxy          Make and use a SOCKS proxy over ssh to rumkin.com
     window-move-left   Move current window to left edge of screen
     window-move-right  Move current window to right edge of screen
