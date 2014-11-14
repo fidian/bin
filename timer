@@ -1,0 +1,31 @@
+#!/bin/bash
+
+cleanup() {
+    # Restore the cursor
+    # Make sure this has a newline
+    echo -e "\e[?25h"
+    exit
+}
+
+# Set a trap to restore the terminal
+trap 'cleanup' SIGINT SIGTERM
+
+# Hide the cursor
+echo -en "\e[?25l"
+START=$(date +"%s")
+
+while true; do
+    NOW=$(date +"%s")
+
+    if [ "$LAST" != "$NOW" ]; then
+        DIFF=$(( $NOW - $START ))
+        SEC=00$(( $DIFF % 60 ))
+        DIFF=$(( $DIFF / 60 ))
+        MIN=00$(( $DIFF % 60 ))
+        HOUR=00$(( $DIFF / 60 ))
+        echo -en "\r${HOUR: -2}:${MIN: -2}:${SEC: -2}\r"
+        LAST=$NOW
+    fi
+
+    sleep 0.1
+done
