@@ -1,25 +1,24 @@
 /*
 @(#)File:           $RCSfile: timeout.c,v $
-@(#)Version:        $Revision: 4.9 $
-@(#)Last changed:   $Date: 2009/03/02 16:15:14 $
+@(#)Version:        $Revision: 5.1 $
+@(#)Last changed:   $Date: 2011/02/12 00:55:52 $
 @(#)Purpose:        Run command with timeout monitor
 @(#)Author:         J Leffler
-@(#)Copyright:      (C) JLSS 1989,1997,2003,2005-09
+@(#)Copyright:      (C) JLSS 1989,1997,2003,2005-11
 */
 
-#if __STDC_VERSION__ >= 199901L
-#define _XOPEN_SOURCE 600
-#else
-#define _XOPEN_SOURCE 500
-#endif /* __STDC_VERSION__ */
+/*TABSTOP=4*/
 
+#include "posixver.h"
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
-#include <errno.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 #include "stderr.h"
 
 /*
@@ -43,12 +42,67 @@
 #define CHILD       0
 #define FORKFAIL    -1
 
-static const char usestr[] = "[-vV] -t time [-s signal] cmd [arg ...]";
+static const char optstr[] = "hvVt:s:";
+static const char usestr[] = "[-hvV] -t time [-s signal] cmd [arg ...]";
+static const char hlpstr[] =
+    "  -V         Print version and exit\n"
+    "  -h         Print help and exit\n"
+    "  -v         Verbose output\n"
+    "  -t time    Timeout (in seconds: 2m = 2 minutes; 3h = 3 hours, 4d = 4 days)\n"
+    "  -s signal  Signal to send to process (default SIGTERM)\n"
+    ;
 
 #ifndef lint
 /* Prevent over-aggressive optimizers from eliminating ID string */
-const char jlss_id_timeout_c[] = "@(#)$Id: timeout.c,v 4.9 2009/03/02 16:15:14 jleffler Exp $";
+const char jlss_id_timeout_c[] = "@(#)$Id: timeout.c,v 5.1 2011/02/12 00:55:52 jleffler Exp $";
 #endif /* lint */
+
+static int eval_timeout(const char *arg)
+{
+    static const struct
+    {
+        char    letter;
+        long    multiplier;
+    } units[] =
+    {
+        { 's',     1 }, /* Seconds */
+        { 'm',    60 }, /* Minutes */
+        { 'h',  3600 }, /* Hours */
+        { 'd', 86400 }, /* Days */
+    };
+    enum { NUM_UNITS = sizeof(units)/sizeof(units[0]) };
+    long  tm_out;
+    char *end;
+
+    errno = 0;
+    tm_out = strtol(arg, &end, 0);
+    if (errno != 0 || tm_out <= 0)
+        err_error("Invalid timeout %s (positive number required)\n", arg);
+    if (tm_out >= INT_MAX)
+        err_error("Timeout %s is too large\n", arg);
+    if (*end != '\0')
+    {
+        int i;
+        char letter = *end;
+        if (!isalpha(letter))
+            err_error("Invalid character '%c' in timeout %s\n", letter, arg);
+        letter = tolower(letter);
+        for (i = 0; i < NUM_UNITS; i++)
+        {
+            if (units[i].letter == letter)
+            {
+                if (tm_out >= INT_MAX / units[i].multiplier)
+                    err_error("Timeout %s is too large\n", arg);
+                tm_out *= units[i].multiplier;
+                break;
+            }
+        }
+        if (i >= NUM_UNITS)
+            err_error("Invalid time unit %c (s seconds, m minutes, h hours, d days)\n", letter);
+    }
+
+    return tm_out;
+}
 
 /*
 ** On MacOS X, the signal() function is implemented using sigaction()
@@ -94,12 +148,15 @@ int main(int argc, char **argv)
     opterr = 0;
     tm_out = 0;
     kill_signal = SIGTERM;
-    while ((opt = getopt(argc, argv, "vVt:s:")) != -1)
+    while ((opt = getopt(argc, argv, optstr)) != -1)
     {
         switch(opt)
         {
+        case 'h':
+            err_help(usestr, hlpstr);
+            break;
         case 'V':
-            err_version("TIMEOUT", &"@(#)$Revision: 4.9 $ ($Date: 2009/03/02 16:15:14 $)"[4]);
+            err_version("TIMEOUT", &"@(#)$Revision: 5.1 $ ($Date: 2011/02/12 00:55:52 $)"[4]);
             break;
         case 's':
             kill_signal = atoi(optarg);
@@ -107,12 +164,11 @@ int main(int argc, char **argv)
                 err_error("signal number must be between 1 and %d\n", SIGRTMIN - 1);
             break;
         case 't':
-            tm_out = atoi(optarg);
-            if (tm_out <= 0)
-                err_error("time must be greater than zero (%s)\n", optarg);
+            tm_out = eval_timeout(optarg);
             break;
         case 'v':
             vflag = 1;
+            err_setlogopts(ERR_STAMP);  /* Timestamp each output */
             break;
         default:
             err_usage(usestr);
