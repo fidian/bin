@@ -21,5 +21,3 @@ for D in */; do (
         make clean
     fi
 ); done
-
-rm -rf redsocks/gen

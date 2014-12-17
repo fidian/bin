@@ -1,6 +1,3 @@
-[submodule "src/redsocks"]
-	path = src/redsocks
-	url = https://github.com/darkk/redsocks.git
 [submodule "conf/vim/bundle/syntastic"]
 	path = conf/vim/bundle/syntastic
 	url = https://github.com/scrooloose/syntastic.git
