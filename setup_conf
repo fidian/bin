@@ -23,7 +23,7 @@ if [ $? -ne 0 ]; then
 	echo ". '`pwd`/conf/bashrc'" >> "${BASH_FILE}"
 fi
 
-for F in gitconfig npmrc putty vim vimrc; do
+for F in npmrc putty vim vimrc; do
 	rm -rf ~/.$F
 	ln -s "`pwd`/conf/$F" ~/.$F
 done
