@@ -155,7 +155,9 @@ bash_prompt_git() {
 
 # add shortened path to the prompt
 bash_prompt_path() {
-	P="${PWD/#${HOME}/"~"}"
+    local P TILDE
+    TILDE='~'
+	P="${PWD/#${HOME}/$TILDE}"
 	if [ "${#P}" -gt 35 ]; then
 		echo -n "...${P: -32}"
 	else
