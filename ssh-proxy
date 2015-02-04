@@ -1,0 +1,15 @@
+#!/bin/bash
+reset_proxy() {
+    echo "Removing proxy from Gnome network settings"
+    gsettings set org.gnome.system.proxy mode 'none'
+}
+
+echo "Configuring Gnome network settings"
+gsettings set org.gnome.system.proxy.socks host 'localhost'
+gsettings set org.gnome.system.proxy.socks port 9892
+gsettings set org.gnome.system.proxy mode 'manual'
+trap reset_proxy SIGINT SIGTERM
+echo "Using tunnel with Java:"
+echo "    java -DsocksProxyHost=127.0.0.1 -DsocksProxyPort=9892 ..."
+echo "Starting SSH tunnel"
+ssh -ND 9892 rumkin.com
