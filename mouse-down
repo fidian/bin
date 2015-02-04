@@ -1,0 +1,2 @@
+#!/bin/bash
+xte "mousedown 1"

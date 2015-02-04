@@ -1,0 +1,2 @@
+#!/bin/bash
+xdotool windowmove --relative $(xdotool getwindowfocus) 9999 y
