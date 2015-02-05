@@ -13,4 +13,7 @@ sudo apt-get update
 sudo apt-get update && sudo apt-get upgrade -y
 
 # Install DVD libraries and handbrake
-sudo apt-get install -y libdvdread4 libdvdcss2 handbrake-gtk
+sudo apt-get install -y libdvdread4
+# installs libdvdcss2
+sudo /usr/share/doc/libdvdread4/install-css.sh
+sudo apt-get install -y handbrake-gtk
