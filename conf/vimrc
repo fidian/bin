@@ -3,7 +3,11 @@ if has("autocmd")
     autocmd BufRead,BufNewFile *.less set filetype=less
 
     " Enable bundles/plugins
-	call pathogen#infect()
+    runtime! autoload/pathogen.vim
+
+    if exists("g:loaded_pathogen")
+        call pathogen#infect()
+    endif
 endif
 
 " Turn on syntax highlighting
