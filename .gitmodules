@@ -13,3 +13,6 @@
 [submodule "src/ansi"]
 	path = src/ansi
 	url = https://github.com/fidian/ansi.git
+[submodule "conf/vim/bundle/tcomment"]
+	path = conf/vim/bundle/tcomment
+	url = https://github.com/tomtom/tcomment_vim.git
