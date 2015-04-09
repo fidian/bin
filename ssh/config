@@ -1,8 +1,17 @@
+ForwardX11 yes
+
 Host *.eu-west-1.compute.amazonaws.com
 User ec2-user
 CheckHostIP no
 StrictHostKeyChecking no
 UserKnownHostsFile /dev/null
+LogLevel quiet
+ControlMaster auto
+ControlPath /tmp/ssh_mux_%h_%p_%r
+ControlPersist 30m
+TCPKeepAlive no
+ServerAliveInterval 60
+ServerAliveCountMax 10
 
 Host github.com
 Hostname ssh.github.com
