@@ -1,13 +1,5 @@
 #!/bin/bash
 
-move_most_recent() {
-	FROM="${1:-$HOME/Desktop}"
-	FILE="`ls -rt --indicator-style=none "$FROM" | tail -n 1`"
-	echo "$FILE"
-	mv "$FROM/$FILE" .
-}
-
-
 # Check for a BSD install (Mac OS X)
 ls --color=auto > /dev/null 2>&1
 
@@ -122,11 +114,22 @@ for T in aac au flac mid midi mka mp3 mpc ogg ra wav; do
 done
 export LS_COLORS
 
+
+# History and searching history
 HISTCONTROL=ignoreboth
 HISTFILE=${HOME}/.bash_history
 HISTFILESIZE=500
+HISTIGNORE="&:[ ]*:exit"
 HISTSIZE=500
-export HISTCONTROL HISTFILE HISTFILESIZE HISTSIZE
+export HISTCONTROL HISTFILE HISTFILESIZE HISTIGNORE HISTSIZE
+shopt -s histappend # Always append to the history, never overwrite
+shopt -s cmdhist # Save multi-line commands as a single command
+stty stop "" # Prevent Ctrl-S from being software flow control XOFF
+bind space:magic-space # Press space to expand all ! expansions
+
+# Up and down will search history.  Just type some letters and press up/down
+bind '"\e[A"':history-search-backward
+bind '"\e[B"':history-search-forward
 
 # Color Variables for Prompt
 # Lots of info at http://networking.ringofsaturn.com/Unix/Bash-prompts.php
