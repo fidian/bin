@@ -34,7 +34,7 @@ alias mysqlrepair_all='mysqlrepair -A --auto-repair -g -m -o -r'
 alias mysqlcheck_all='mysqlcheck --auto-repair --check --optimize --all-databases'
 alias screen='screen -xRR'
 alias ppid='ps -o ppid --no-headers -p'
-
+alias cws='. ~/cws-cloud/cws.sh'
 
 # Check for our program checker, then check for programs
 TEST_FOR_PROGRAM=test_for_program
