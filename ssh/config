@@ -1,18 +1,23 @@
-ForwardX11 yes
+# Keep connections to servers open for a few minutes.  This speeds up
+# subsequent connections to the same server.
+ControlMaster auto
+ControlPath /tmp/ssh_mux_%h_%p_%r
+ControlPersist 5m
 
+# Keep connections alive even when I'm not typing in a shell.
+TCPKeepAlive no
+ServerAliveInterval 60
+ServerAliveCountMax 10
+
+# Amazon AWS:  Login as ec2-user and do not cache the host key
 Host *.eu-west-1.compute.amazonaws.com
 User ec2-user
 CheckHostIP no
 StrictHostKeyChecking no
 UserKnownHostsFile /dev/null
 LogLevel quiet
-ControlMaster auto
-ControlPath /tmp/ssh_mux_%h_%p_%r
-ControlPersist 30m
-TCPKeepAlive no
-ServerAliveInterval 60
-ServerAliveCountMax 10
 
+# GitHub:  Tunnel SSH through their HTTPS tunnel
 Host github.com
 Hostname ssh.github.com
 Port 443
