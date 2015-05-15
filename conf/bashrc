@@ -37,10 +37,10 @@ alias ppid='ps -o ppid --no-headers -p'
 alias cws='. ~/cws-cloud/cws.sh'
 
 # Check for our program checker, then check for programs
-TEST_FOR_PROGRAM=test_for_program
+TEST_FOR_PROGRAM=test-for-program
 
 if [ ! -z "$BASH_SOURCE" ]; then
-	P="`dirname "$BASH_SOURCE"`/../test_for_program";
+	P="`dirname "$BASH_SOURCE"`/../test-for-program";
 	if [ -f "$P" ]; then
 		TEST_FOR_PROGRAM="$P"
 	fi
@@ -54,7 +54,12 @@ fi
 
 if $TEST_FOR_PROGRAM 'vim'; then
 	alias vi='vim'
-	export EDITOR="vim +0"
+
+    if [[ -x "$HOME/bin/editor" ]]; then
+        export EDITOR="$HOME/bin/editor"
+    else
+        export EDITOR=vim
+    fi
 else
 	export EDITOR=vi
 fi
@@ -215,7 +220,7 @@ rand() {
 
 stty stop undef # disable control-s and control-q
 
-test_for_program grunt && eval "$(grunt --completion=bash)"
+$TEST_FOR_PROGRAM grunt && eval "$(grunt --completion=bash)"
 
 if [ -f ~/bin/conf/git-flow-completion/git-flow-completion.bash ]; then
 	source ~/bin/conf/git-flow-completion/git-flow-completion.bash

@@ -24,7 +24,7 @@ esac
 
 if [ -z "$FILENAME" ]; then
 	# Check if the command is not in the path
-	if ! test_for_program "$COMMAND"; then
+	if ! test-for-program "$COMMAND"; then
 		FILENAME="$COMMAND"
 	fi
 fi

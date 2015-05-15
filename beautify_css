@@ -20,10 +20,10 @@ csstidy "$INFILE" --sort_properties=true --template=${HOME}/bin/conf/csstidy.tem
 
 # Lint check
 LINT=""
-if test_for_program 'csslint'; then
+if test-for-program 'csslint'; then
 	LINT="csslint";
 else
-	if test_for_program 'csslint-0.6'; then
+	if test-for-program 'csslint-0.6'; then
 		LINT="csslint-0.6"
 	fi
 fi

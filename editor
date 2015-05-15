@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if "${0%/*}/test-for-program" vim; then
+    vim +0 "$@"
+else
+    vi "$@"
+fi

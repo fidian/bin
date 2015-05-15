@@ -3,7 +3,7 @@ remove_temp_dir() {
     rm -rf "$D"
 }
 
-if ! test_for_program ttyrec; then
+if ! test-for-program ttyrec; then
     echo "Missing ttyrec"
     exit
 fi
@@ -11,7 +11,7 @@ if [ ! -f ~/repo/ttygif ]; then
     echo "Missing ~/repo/ttygif"
     exit
 fi
-if ! test_for_program gifsicle; then
+if ! test-for-program gifsicle; then
     echo "Missing gifsicle"
     exit
 fi
