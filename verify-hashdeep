@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+# This audits a hashdeep.txt file that was created using the following
+# command:
+#
+#     hashdeep -rl . > hashdeep.txt
+set -e
+
+move-back() {
+    mv "$TEMP" hashdeep.txt
+}
+
+TEMP=$(mktemp)
+mv hashdeep.txt "$TEMP"
+trap move-back EXIT
+touch hashdeep.txt
+hashdeep -alr . -k "$TEMP"
