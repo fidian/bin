@@ -37,7 +37,7 @@ alias ppid='ps -o ppid --no-headers -p'
 alias cws='. ~/cws-cloud/cws.sh'
 
 # Check for our program checker, then check for programs
-TEST_FOR_PROGRAM=test-for-program
+TEST_FOR_PROGRAM=~/bin/test-for-program
 
 if [ ! -z "$BASH_SOURCE" ]; then
 	P="`dirname "$BASH_SOURCE"`/../test-for-program";
