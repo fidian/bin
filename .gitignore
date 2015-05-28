@@ -3,7 +3,6 @@
 /newlines
 /packer/
 /redsocks
-/timeout
 /wkhtmltopdf
 /wkhtmltopdf-*
 *.pyc

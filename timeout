@@ -1,0 +1,34 @@
+#!/bin/bash
+
+TIMER="$1"
+shift
+
+# Disable monitor mode
+set +m
+
+# The program to execute
+(
+    "$@"
+) &
+PROGRAM_PID=$!
+
+# The timer
+(
+    sleep $TIMER
+    kill "$PROGRAM_PID"
+) > /dev/null 2>&1 &
+TIMER_PID=$!
+
+# Delay until one of the processes finish.
+# Avoid "wait -n" because older bash doesn't support it
+# This also hides a "Terminated" message
+wait $PROGRAM_PID > /dev/null 2>&1
+RESULT=$?
+
+# Kill the timeout process if it isn't already killed
+kill $TIMER_PID > /dev/null 2>&1
+
+# Clean up, hide the "Terminated" message, prevent bash from dying
+wait $TIMER_PID > /dev/null 2>&1
+
+exit $RESULT
