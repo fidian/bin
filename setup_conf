@@ -67,6 +67,7 @@ if [ ! -f ~/.gitconfig ]; then
     git config --global color.diff auto
     git config --global color.interactive auto
     git config --global alias.unpushed "log @{u}.. --pretty=format:'%h %an %s'"
+    git config --global alias.get '!git pull --rebase && git submodule update --init --recursive'
     git config --global merge.conflictstyle diff3
     git config --global alias.squash '!f() { git reset --mixed "$1"; git merge --squash HEAD@{1}; git commit }; f'
     git config --global alias.get "!git pull --rebase && git submodule update --init --recursive"
