@@ -52,7 +52,7 @@ cat ssh/*.pub > ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 for F in config; do
     if [ -f "$HOME/.ssh/$F" ]; then
-            mv "$HOME/.ssh/$F" "$HOME/.ssh/${F}.old";
+        mv "$HOME/.ssh/$F" "$HOME/.ssh/${F}.old";
     fi
 
     cp "ssh/$F" "$HOME/.ssh/$F"
@@ -69,4 +69,5 @@ if [ ! -f ~/.gitconfig ]; then
     git config --global alias.unpushed "log @{u}.. --pretty=format:'%h %an %s'"
     git config --global merge.conflictstyle diff3
     git config --global alias.squash '!f() { git reset --mixed "$1"; git merge --squash HEAD@{1}; git commit }; f'
+    git config --global alias.get "!git pull --rebase && git submodule update --init --recursive"
 fi
