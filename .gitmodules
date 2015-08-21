@@ -16,3 +16,6 @@
 [submodule "conf/vim/bundle/tcomment"]
 	path = conf/vim/bundle/tcomment
 	url = https://github.com/tomtom/tcomment_vim.git
+[submodule "conf/vim/bundle/xterm-color-table.vim"]
+	path = conf/vim/bundle/xterm-color-table.vim
+	url = https://github.com/guns/xterm-color-table.vim.git
