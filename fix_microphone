@@ -1,3 +1,0 @@
-#!/bin/bash
-amixer set "Mic Boost",0 100%,0%
-amixer set "Capture",0 100%,0%

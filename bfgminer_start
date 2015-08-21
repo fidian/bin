@@ -1,7 +1,0 @@
-#!/bin/sh -e
-#
-# add-apt-repository ppa:unit3/bfgminer
-# apt-get update
-# apt-get install bfgminer
-#
-sudo bfgminer -S all --cpu-threads=0 -o stratum+tcp://stratum.mining.eligius.st:3334 -O 1EX7txZ62fddiKRcw7L3QjPNHyN4PxUtaH_`hostname`
