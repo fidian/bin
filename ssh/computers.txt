@@ -1,7 +1,4 @@
-anise - Silver laptop
-bay - HP 15" laptop, silver-gray, 2.3 ghz
 macbook - White MacBook (the one from Nathan)
-marjoram
-saffron - Acer netbook (the one from Gareth)
-sumac - Toshiba netbook (the one from Jacek)
-thyme.pub
+razer - Razer laptop
+rumkin - Web server (2015-10)
+slate - Convertable Acer laptop
