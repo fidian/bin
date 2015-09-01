@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# Run a job in the background and redirect all output to /dev/null
+background() {
+    "$@" > /dev/null 2>&1 &
+}
+
+# Syntax
+if [ $# = 0 ]; then
+    echo "Specify one or more files to process."
+    exit 0
+fi
+
+# Process each file
+while [ $# != 0 ]; do
+    FILE="$1"
+    MIME=$(file --mime-type -b "$FILE")
+
+    # Determine true location
+    while [ "$MIME" = "inode/symlink" ]; do
+        FILE=$(readlink "$FILE")
+        MIME=$(file --mime-type -b "$FILE")
+    done
+
+    # Open the file
+    case "$MIME" in
+        application/xml)
+            background gvim "$FILE"
+            ;;
+
+        inode/x-empty)
+            echo "$FILE: empty file"
+            ;;
+
+        inode/directory)
+            background xdg-open "$FILE"
+            ;;
+
+        text/plain|text/x-shellscript)
+            background gvim "$FILE"
+            ;;
+
+        video/x-matroska|video/x-msvideo)
+            background totem "$FILE"
+            ;;
+
+        *)
+            echo "($1) Unknown mime type: $MIME"
+            ;;
+    esac
+
+    shift
+done
