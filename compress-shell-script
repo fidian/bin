@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [[ ! -f "$1" ]]; then
+    echo "You need to specify a script to compress"
+fi
+
+cat <<'EOF'
+#!/bin/bash
+eval "`tail -n +3 "$0"|base64 -d|gzip -d`"; exit
+EOF
+
+# Piping into gzip reduces the size a small amount
+cat "$1" | gzip -9 | base64
