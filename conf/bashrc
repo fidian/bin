@@ -34,6 +34,7 @@ alias mysqlrepair_all='mysqlrepair -A --auto-repair -g -m -o -r'
 alias mysqlcheck_all='mysqlcheck --auto-repair --check --optimize --all-databases'
 alias screen='screen -xRR'
 alias ppid='ps -o ppid --no-headers -p'
+alias ..='~/bin/dot-dot'
 alias cws='. ~/cws-cloud/cws.sh'
 
 # Check for our program checker, then check for programs
@@ -225,3 +226,7 @@ $TEST_FOR_PROGRAM grunt && eval "$(grunt --completion=bash)"
 if [ -f ~/bin/conf/git-flow-completion/git-flow-completion.bash ]; then
 	source ~/bin/conf/git-flow-completion/git-flow-completion.bash
 fi
+
+# For package building in PPAs
+export DEBFULLNAME="Tyler Akins"
+export DEBEMAIL="fidian@rumkin.com"
