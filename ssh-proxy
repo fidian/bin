@@ -4,6 +4,12 @@ reset_proxy() {
     gsettings set org.gnome.system.proxy mode 'none'
 }
 
+if [[ $# -eq 0 ]]; then
+    echo "Specify hostname that will be the endpoint of the SSH proxy."
+    echo "Additional ssh options may also be used."
+    exit 0
+fi
+
 echo "Configuring Gnome network settings"
 gsettings set org.gnome.system.proxy.socks host 'localhost'
 gsettings set org.gnome.system.proxy.socks port 9892
@@ -12,4 +18,4 @@ trap reset_proxy SIGINT SIGTERM
 echo "Using tunnel with Java:"
 echo "    java -DsocksProxyHost=127.0.0.1 -DsocksProxyPort=9892 ..."
 echo "Starting SSH tunnel"
-ssh -ND 9892 rumkin.com
+ssh -ND 9892 "$@"
