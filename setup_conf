@@ -23,9 +23,15 @@ if [ $? -ne 0 ]; then
     echo ". '`pwd`/conf/bashrc'" >> "${BASH_FILE}"
 fi
 
-for F in npmrc putty vim vimrc XCompose xinputrc xsession; do
+for F in putty vim vimrc XCompose xinputrc xsession; do
     rm -rf ~/.$F
     ln -s "`pwd`/conf/$F" ~/.$F
+done
+
+for F in npmrc; do
+    if [[ -h ~/."$F" ]]; then
+        rm ~/."$F"
+    fi
 done
 
 for F in netrc; do
