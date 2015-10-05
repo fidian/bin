@@ -43,5 +43,8 @@ else
 	else
 		echo ""
 		echo "Resolve merge conflicts, commit, then sync again."
+        exit 1
 	fi
 fi
+
+git submodule update --init --recursive

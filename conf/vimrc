@@ -10,19 +10,27 @@ if has("autocmd")
     endif
 endif
 
-" Turn on syntax highlighting
+" Turn on syntax highlighting and modelines
 if has("syntax")
 	syntax on
+    set modeline
 endif
 
 " Set some colors - http://vimdoc.sourceforge.net/htmldoc/syntax.html#E421
-highlight Search term=underline cterm=underline ctermfg=green ctermbg=darkblue gui=NONE guifg=white guibg=yellow
-highlight Comment cterm=NONE ctermfg=cyan
-highlight Visual cterm=bold ctermfg=black ctermbg=gray
-highlight StatusLine cterm=NONE ctermfg=yellow ctermbg=blue
-highlight String ctermfg=red
-highlight Normal cterm=NONE ctermfg=white
-highlight MatchParen term=underline,bold cterm=underline,bold ctermbg=NONE
+" To test:  :runtime syntax/hitest.vim
+" To list:  :hi [Group - optional]
+colorscheme koehler
+" highlight Search term=underline cterm=underline ctermfg=green ctermbg=darkblue gui=NONE guifg=white guibg=yellow
+highlight Comment cterm=NONE ctermfg=cyan gui=NONE guifg=cyan
+" highlight Visual cterm=bold ctermfg=black ctermbg=gray
+highlight StatusLine cterm=NONE ctermfg=yellow ctermbg=blue gui=bold guifg=yellow guibg=blue
+" highlight String ctermfg=red
+ highlight Normal cterm=NONE ctermfg=white guifg=white
+" highlight MatchParen term=underline,bold cterm=underline,bold ctermbg=NONE
+
+" GUI options
+set gfn=Anonymous\ Pro\ 14
+" colorscheme torte
 
 " Set tab and indent preferences
 set expandtab tabstop=4 shiftwidth=4 softtabstop=4 smartindent autoindent
@@ -99,7 +107,7 @@ if has("autocmd")
 	let g:syntastic_auto_jump=1
 	let g:syntastic_auto_loc_list=1
 	let g:syntastic_javascript_jslint_conf = "--es5=false"
-    
+
 	" Insert <Tab> or complete identifier
 	" if the cursor is after a keyword character
 	function MyTabOrComplete()
@@ -179,3 +187,22 @@ set backupcopy=yes
 " \uffff  zero width non-breaking space
 highlight ErrorWhitespace ctermbg=red guibg=red
 match ErrorWhitespace "[\u00a0|\u1680|\u180e|\u2000-\u200b|\u202f|\u205f|\u3000|\uffff]"
+
+" Fold and unfold by using Control-Space.  vim in console sees
+" it as Control-@
+inoremap <C-Space> <C-O>za
+nnoremap <C-Space> za
+onoremap <C-Space> <C-C>za
+vnoremap <C-Space> zf
+inoremap <C-@> <C-O>za
+nnoremap <C-@> za
+onoremap <C-@> <C-C>za
+vnoremap <C-@> zf
+
+" Autocomplete with Supertab
+let g:SuperTabLongestEnhanced = 1
+let g:SuperTabLeadingSpaceCompletion = 0
+let g:SuperTabClosePreviewOnPopupClose = 1
+let g:SuperTabDefaultCompletionType = "context"
+let g:SuperTabContextDefaultCompletionType ="<C-X><C-O>"
+autocmd FileType * if &omnifunc != '' | call SuperTabChain(&omnifunc, "<c-p>") | endif
