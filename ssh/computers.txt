@@ -1,4 +1,4 @@
+blade - Razer laptop
 macbook - White MacBook (the one from Nathan)
-razer - Razer laptop
 rumkin - Web server (2015-10)
 slate - Convertable Acer laptop
