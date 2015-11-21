@@ -34,12 +34,6 @@ for F in npmrc; do
     fi
 done
 
-for F in netrc; do
-    echo "Decrypting $F"
-    ./secret $F > ~/.$F
-    chmod 600 ~/.$F
-done
-
 # Install fonts
 if $GNU; then
     rm -rf ~/.fonts
