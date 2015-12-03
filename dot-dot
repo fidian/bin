@@ -24,6 +24,10 @@ while [ $# != 0 ]; do
 
     # Open the file
     case "$MIME" in
+        application/pdf)
+            background xdg-open "$FILE"
+            ;;
+
         application/xml)
             background gvim "$FILE"
             ;;
