@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Yes, I love Minecraft.
+
+cd ~/Minecraft
+
+if [[ ! -e ~/.minecraft ]]; then
+    ln -s "$PWD/minecraft" ~/.minecraft
+fi
+
+# Cert errors?
+# sudo update-ca-certificates -f
+
+java -jar Minecraft.jar
