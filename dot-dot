@@ -40,6 +40,10 @@ while [ $# != 0 ]; do
             background xdg-open "$FILE"
             ;;
 
+        text/html)
+            background xdg-open "$FILE"
+            ;;
+
         text/plain|text/x-shellscript)
             background gvim "$FILE"
             ;;
