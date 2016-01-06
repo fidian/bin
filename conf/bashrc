@@ -10,7 +10,7 @@ else
 fi
 
 # Add some directories to the path if they exist
-for D in "$HOME/bin" "$HOME/bin/packer" "$HOME/node_modules/.bin" "$HOME/android-sdk-linux/platform-tools" "$HOME/pebble-dev/PebbleSDK-"*"/bin"; do
+for D in "$HOME/bin" "$HOME/.local/bin" "$HOME/bin/packer" "$HOME/node_modules/.bin" "$HOME/android-sdk-linux/platform-tools" "$HOME/pebble-dev/PebbleSDK-"*"/bin"; do
 	if [ -d "$D" ]; then
 		PATH="${PATH}:${D}"
 	fi
