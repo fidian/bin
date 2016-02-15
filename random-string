@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+randomString() {
+    local charSet len
+
+    len=${1:-10}
+    charSet=${2:-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789}
+
+    for (( ; len > 0; len -- )); do
+        echo -n "${charSet:$RANDOM % ${#charSet}:1}"
+    done
+
+    echo ""
+}
+
+if [[ "$0" == "$BASH_SOURCE" ]] || ! [[ -n "$BASH_SOURCE" ]]; then
+    randomString "$@"
+fi

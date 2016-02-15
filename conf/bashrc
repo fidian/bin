@@ -203,22 +203,6 @@ export PS2=$YEL'>'$NONE' '
 export PS3=$YEL'#?'$NONE' '
 export PS4=$YEL'+'$NONE' '
 
-
-rand() {
-	local LEN="$1"
-
-	if [ -z "$LEN" ]; then
-		LEN="10"
-	fi
-
-	while [ "$LEN" -gt 0 ]; do
-		echo -n ${RANDOM: -1}
-		: $((LEN--))
-	done
-
-	echo ""
-}
-
 stty stop undef # disable control-s and control-q
 
 $TEST_FOR_PROGRAM grunt && eval "$(grunt --completion=bash)"
