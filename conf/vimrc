@@ -106,7 +106,8 @@ if has("autocmd")
 	map <F5> :SyntasticToggleMode<CR>
 	let g:syntastic_auto_jump=1
 	let g:syntastic_auto_loc_list=1
-	let g:syntastic_javascript_jslint_conf = "--es5=false"
+	let g:syntastic_javascript_jslint_conf="--es5=false"
+    let g:syntastic_javascript_checkers=['eslint']
 
 	" Insert <Tab> or complete identifier
 	" if the cursor is after a keyword character
