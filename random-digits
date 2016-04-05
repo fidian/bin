@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+randomNumber() {
+    local len
+
+    len=${1:-10}
+
+    for (( ; len > 0; len -- )); do
+        echo -n "${RANDOM: -1}"
+    done
+
+    echo ""
+}
+
+if [[ "$0" == "$BASH_SOURCE" ]] || ! [[ -n "$BASH_SOURCE" ]]; then
+    randomNumber "$@"
+fi

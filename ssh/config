@@ -9,6 +9,9 @@ TCPKeepAlive no
 ServerAliveInterval 60
 ServerAliveCountMax 10
 
+# Hotfix for CVE-2016-777 and CVE-2016-778
+UseRoaming no
+
 # Amazon AWS:  Login as ec2-user and do not cache the host key
 Host *.eu-west-1.compute.amazonaws.com
 User ec2-user

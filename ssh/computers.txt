@@ -1,4 +1,3 @@
-blade - Razer laptop
-macbook - White MacBook (the one from Nathan)
+cajun - Desktop for work
 rumkin - Web server (2015-10)
 slate - Convertable Acer laptop

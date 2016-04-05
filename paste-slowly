@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+sleep 1
+
+xclip -o -sel c | while read -N 1; do
+    sleep 0.001
+    xdotool type --clearmodifiers "$REPLY"
+done
