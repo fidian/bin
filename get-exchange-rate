@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+fromDate="last sunday -7 days"
+toDate="last saturday"
+fromCurrency=GBP
+toCurrency=USD
+
+curl 'http://www.usforex.com/forex-tools/historical-rate-tools/historical-exchange-rates' -H 'X-Requested-With: XMLHttpRequest' --data "baseCurrency=$fromCurrency&termCurrency=$toCurrency&roundTo=6&fixedPeriod=91&periodOptions=range&fromDate=$(date --date="$fromDate" +"%d+%b+%Y")&toDate=$(date --date="$toDate" +"%d+%b+%Y")&X-Requested-With=XMLHttpRequest"
