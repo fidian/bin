@@ -1,4 +1,6 @@
 # This requires "uim" to be installed
+#
+# Allows use of custom compose keys
 if [ -f /usr/bin/uim-xim ]; then
     export GTK_IM_MODULE='uim'  # Instructs the GTK immodule to use uim
     export QT_IM_MODULE='uim'   # Instructs the Qt immodule to use uim
