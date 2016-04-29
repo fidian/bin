@@ -25,3 +25,6 @@
 [submodule "src/gg"]
 	path = src/gg
 	url = https://github.com/fidian/gg.git
+[submodule "conf/vim/bundle/typescript-vim"]
+	path = conf/vim/bundle/typescript-vim
+	url = https://github.com/leafgarland/typescript-vim.git
