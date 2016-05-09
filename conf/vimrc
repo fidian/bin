@@ -182,12 +182,13 @@ set backupcopy=yes
 " \u2009  thin space
 " \u200a  hair space
 " \u200b  zero width space
+" \u2014  hyphen (not really whitespace)
 " \u202f  narrow non-breaking space
 " \u205f  medium mathematical space
 " \u3000  ideographic space
 " \uffff  zero width non-breaking space
-highlight ErrorWhitespace ctermbg=red guibg=red
-match ErrorWhitespace "[\u00a0|\u1680|\u180e|\u2000-\u200b|\u202f|\u205f|\u3000|\uffff]"
+highlight ErrorCharacters ctermbg=red guibg=red
+match ErrorCharacters "[\u00a0\u1680\u180e\u2000-\u200b\u2014\u202f\u205f\u3000\uffff]"
 
 " Fold and unfold by using Control-Space.  vim in console sees
 " it as Control-@
