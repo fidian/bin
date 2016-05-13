@@ -125,9 +125,10 @@ export LS_COLORS
 HISTCONTROL=ignoreboth
 HISTFILE=${HOME}/.bash_history
 HISTFILESIZE=500
-HISTIGNORE="&:[ ]*:exit"
+HISTIGNORE="&:[ ]*:exit:ls:[bf]g:history"
 HISTSIZE=500
-export HISTCONTROL HISTFILE HISTFILESIZE HISTIGNORE HISTSIZE
+HISTTIMEFORMAT="%h %d %H:%M:%S> "
+export HISTCONTROL HISTFILE HISTFILESIZE HISTIGNORE HISTSIZE HiSTTIMEFORMAT
 shopt -s histappend # Always append to the history, never overwrite
 shopt -s cmdhist # Save multi-line commands as a single command
 stty stop "" # Prevent Ctrl-S from being software flow control XOFF
