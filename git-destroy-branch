@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [[ -z "$1" ]]; then
+    echo "Specify branch to destroy"
+    exit 0
+fi
+
+git branch -D "$1"
+git push origin ":$1"
+git remote prune origin
