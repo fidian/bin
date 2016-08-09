@@ -1,0 +1,15 @@
+#!/bin/bash
+# Send markdown to GitHub
+
+if [[ -z "$1" ]]; then
+    echo "Specify a filename"
+    exit 1
+fi
+
+if [[ ! -f "$1" ]]; then
+    echo "File does not exist"
+    exit 2
+fi
+
+jq --slurp --raw-input '{"text": "\(.)", "mode": "markdown"}' < "$1" | \
+    curl --data @- https://api.github.com/markdown > "${1%.md}.html"
