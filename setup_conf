@@ -72,4 +72,5 @@ if [ ! -f ~/.gitconfig ]; then
     git config --global alias.squash '!f() { git reset --mixed "$1"; git merge --squash HEAD@{1}; git commit }; f'
     git config --global alias.get "!git pull --rebase && git submodule update --init --recursive"
     git config --global user.signingkey 2F4393BD
+    git config --global commit.gpgsign true
 fi
