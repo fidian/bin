@@ -28,8 +28,16 @@ while [ $# != 0 ]; do
             background xdg-open "$FILE"
             ;;
 
+        application/pgp)
+            gpg --decrypt "$FILE"
+            ;;
+
         application/xml)
             background gvim "$FILE"
+            ;;
+
+        image/*)
+            background xdg-open "$FILE"
             ;;
 
         inode/x-empty)
