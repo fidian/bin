@@ -41,7 +41,7 @@ alias cws='. ~/cws-cloud/cws.sh'
 TEST_FOR_PROGRAM=~/bin/test-for-program
 
 if [ ! -z "$BASH_SOURCE" ]; then
-	P="`dirname "$BASH_SOURCE"`/../test-for-program";
+	P="$(dirname "$BASH_SOURCE")/../test-for-program";
 	if [ -f "$P" ]; then
 		TEST_FOR_PROGRAM="$P"
 	fi
@@ -156,9 +156,9 @@ bash_prompt_git() {
 		BRANCH="$(git symbolic-ref HEAD 2> /dev/null)"
 
 		if [ ! -z "$BRANCH" ]; then
-			echo -n ' ('${BRANCH#refs/heads/}')'
+			echo -n " (${BRANCH#refs/heads/})"
 		else
-			echo -n ' (detached '$REF')'
+			echo -n " (detached '$REF')"
 		fi
 	fi
 }
