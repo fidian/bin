@@ -1,3 +1,4 @@
 cajun - Desktop for work
 rumkin - Web server (2015-10)
 slate - Convertable Acer laptop
+pi-nas-backup - Raspberry Pi that's used to backup the NAS
