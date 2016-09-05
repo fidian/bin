@@ -1,9 +1,11 @@
 /ansi
 /conf/putty/randomseed
+/exercism
 /ipof
 /newlines
 /packer/
+/phpunit
+*.pyc
 /redsocks
 /wkhtmltopdf
 /wkhtmltopdf-*
-*.pyc
