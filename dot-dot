@@ -32,6 +32,10 @@ while [ $# != 0 ]; do
             gpg --decrypt "$FILE"
             ;;
 
+        application/vnd.oasis.opendocument.text)
+            background soffice "$FILE"
+            ;;
+
         application/xml)
             background gvim "$FILE"
             ;;
