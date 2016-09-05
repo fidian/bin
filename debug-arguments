@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+output() {
+    printf "[%d] %q\n" "$1" "$2"
+}
+
+echo "Aguments: $#"
+output 0 "$0"
+I=1
+
+while [[ $# -gt 0 ]]; do
+    output "$I" "$1"
+    shift
+    I=$(($I + 1))
+done
