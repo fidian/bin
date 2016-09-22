@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd "`dirname "$0"`"
+cd "${0%/*}"
 
 # Detect BSD (Mac OS X)
 ls --color=auto > /dev/null 2>&1
@@ -17,15 +17,15 @@ else
     BASH_FILE=~/.bash_profile
 fi
 
-grep ". '`pwd`/conf/bashrc'" "${BASH_FILE}" > /dev/null 2>&1
+grep ". '$(pwd)/conf/bashrc'" "${BASH_FILE}" > /dev/null 2>&1
 
 if [ $? -ne 0 ]; then
-    echo ". '`pwd`/conf/bashrc'" >> "${BASH_FILE}"
+    echo ". '$(pwd)/conf/bashrc'" >> "${BASH_FILE}"
 fi
 
 for F in putty vim vimrc XCompose xinputrc xsession; do
     rm -rf ~/.$F
-    ln -s "`pwd`/conf/$F" ~/.$F
+    ln -s "$(pwd)/conf/$F" ~/.$F
 done
 
 for F in npmrc; do
@@ -37,7 +37,7 @@ done
 # Install fonts
 if $GNU; then
     rm -rf ~/.fonts
-    ln -s "`pwd`/conf/fonts" ~/.fonts
+    ln -s "$(pwd)/conf/fonts" ~/.fonts
 else
     find conf/fonts -type f -iname \*.ttf -exec cp \{\} ~/Library/Fonts \;
 fi
