@@ -31,3 +31,6 @@
 [submodule "conf/vim/bundle/vim-javascript-syntax"]
 	path = conf/vim/bundle/vim-javascript-syntax
 	url = https://github.com/jelera/vim-javascript-syntax.git
+[submodule "src/git-squash"]
+	path = src/git-squash
+	url = https://github.com/jnothman/git-squash.git
