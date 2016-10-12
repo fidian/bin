@@ -134,10 +134,6 @@ shopt -s cmdhist # Save multi-line commands as a single command
 stty stop "" # Prevent Ctrl-S from being software flow control XOFF
 bind space:magic-space # Press space to expand all ! expansions
 
-# Up and down will search history.  Just type some letters and press up/down
-bind '"\e[A"':history-search-backward
-bind '"\e[B"':history-search-forward
-
 # Color Variables for Prompt
 # Lots of info at http://networking.ringofsaturn.com/Unix/Bash-prompts.php
 NONE='\[\033[00m\]'
