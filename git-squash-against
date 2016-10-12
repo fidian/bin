@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Simulate a merge from the current branch into the target.  Squash that merge
+# into a single commit.  Make that commit the new HEAD of the current branch.
+#
+# Based on work from the following sites:
+#   https://gist.github.com/patik/b8a9dc5cd356f9f6f980
+#   http://stackoverflow.com/questions/3697178/git-merge-all-changes-from-another-branch-as-a-single-commit
+#   https://makandracards.com/makandra/527-squash-several-git-commits-into-a-single-commit
 
 against=$1
 
