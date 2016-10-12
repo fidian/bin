@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+against=$1
+
+if [[ -z "$against" ]]; then
+    echo "Missing branch or commit we squash against" >&2
+    exit 1
+fi
+
+against=$(git rev-parse "$against" 2> /dev/null)
+current=$(git symbolic-ref HEAD 2> /dev/null)
+undoCommit=$(git rev-parse HEAD 2> /dev/null)
+
+if [[ -z "$against" ]]; then
+    echo "Unable to find commit to squash against" >&2
+    exit 1
+fi
+
+if [[ -z "$current" ]]; then
+    echo "Unable to find reference to current branch" >&2
+    exit 1
+fi
+
+current=${current#refs/heads/}
+echo "Squashing $current against $against"
+
+# Check if this is a clean repository
+if git status | grep "^nothing to commit, working" -q; then
+    stashed=false
+else
+    stashed=true
+    git stash save -a -u
+fi
+
+git checkout -b "squash-$against" "$against"
+git merge --squash "$current"
+git commit
+squashedCommit=$(git rev-parse HEAD)
+git checkout "$current"
+git reset --hard "$squashedCommit"
+git branch -D "squash-$against"
+
+if $stashed; then
+    git stash pop
+fi
+
+echo "To undo this action, run this command:"
+echo "    git reset --hard $undoCommit"
