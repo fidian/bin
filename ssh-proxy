@@ -11,11 +11,13 @@ if [[ $# -eq 0 ]]; then
 fi
 
 echo "Configuring Gnome network settings"
+trap reset_proxy EXIT
 gsettings set org.gnome.system.proxy.socks host 'localhost'
 gsettings set org.gnome.system.proxy.socks port 9892
 gsettings set org.gnome.system.proxy mode 'manual'
-trap reset_proxy SIGINT SIGTERM
 echo "Using tunnel with Java:"
 echo "    java -DsocksProxyHost=127.0.0.1 -DsocksProxyPort=9892 ..."
 echo "Starting SSH tunnel"
+
+# shellcheck disable=SC2029
 ssh -ND 9892 "$@"
