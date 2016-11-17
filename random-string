@@ -43,7 +43,7 @@ randomString() {
     fi
 
     len=${1:-10}
-    charSet=${charset:-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789}
+    charSet=${charSet:-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789}
 
     if [[ ! -z "${2-}" ]]; then
         charSet=$2
