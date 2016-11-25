@@ -26,6 +26,10 @@ randomString() {
             return 0
             ;;
 
+        --hex)
+            charSet+=0123456789abcdef
+            ;;
+
         --lower)
             charSet+=abcdefghijklmnopqrstuvwxyz
             ;;
