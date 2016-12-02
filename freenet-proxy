@@ -1,3 +1,6 @@
 #!/usr/bin/env bash
 
-ssh -L 18888:localhost:8889 -L 18080:localhost:8080 rumkin.com
+# 8888 = Freenet web UI
+# 8080 = FMS web UI
+# 9481 = FCP port
+ssh -L 18888:localhost:8889 -L 18080:localhost:8080 -L 9481:localhost:9481 rumkin.com
