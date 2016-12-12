@@ -1,4 +1,5 @@
 cajun - Desktop for work
 jerk - Netbook from Kyle
 oregano - Convertable Acer laptop
+jerk - Netbook from Kyle
 rumkin - Web server (2015-10)
