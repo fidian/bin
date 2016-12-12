@@ -1,5 +1,5 @@
 if has("autocmd")
-    " Make .less appear as "less"
+    " Make *.less appear as "less"
     autocmd BufRead,BufNewFile *.less set filetype=less
 
     " Enable bundles/plugins
@@ -201,3 +201,21 @@ inoremap <C-@> <C-O>za
 nnoremap <C-@> za
 onoremap <C-@> <C-C>za
 vnoremap <C-@> zf
+
+" Grammar checking options.  Enable grammar checking by using
+" `:GrammarousCheck` and turn it off with `:GrammarousReset`.
+let g:grammarous#default_comments_only_filetypes={
+    \ 'javascript': 1,
+    \ 'less': 1,
+    \ 'vim': 1,
+    \ '*' : 0
+    \ }
+let g:grammarous#hooks = {}
+function! g:grammarous#hooks.on_check(errs)
+    nmap <buffer><C-n> <Plug>(grammarous-move-to-next-error)
+    nmap <buffer><C-p> <Plug>(grammarous-move-to-previous-error)
+endfunction
+function! g:grammarous#hooks.on_reset(errs)
+    nunmap <buffer><C-n>
+    nunmap <buffer><C-p>
+endfunction
