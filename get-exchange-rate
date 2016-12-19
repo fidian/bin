@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
-fromDate="last sunday -7 days"
-toDate="last saturday"
+fromDate=$(date --date="last saturday -6 days" +%s)000
+toDate=$(date --date="last saturday" +%s)000
 fromCurrency=GBP
 toCurrency=USD
 
-curl 'http://www.usforex.com/forex-tools/historical-rate-tools/historical-exchange-rates' -H 'X-Requested-With: XMLHttpRequest' --data "baseCurrency=$fromCurrency&termCurrency=$toCurrency&roundTo=6&fixedPeriod=91&periodOptions=range&fromDate=$(date --date="$fromDate" +"%d+%b+%Y")&toDate=$(date --date="$toDate" +"%d+%b+%Y")&X-Requested-With=XMLHttpRequest"
+curl "https://api.ofx.com/PublicSite.ApiService/SpotRateHistory/${fromCurrency}/${toCurrency}/${fromDate}/${toDate}?DecimalPlaces=6&ReportingInterval=daily" | \
+    tr "," "\n" | \
+    grep "^\"Average\":[.0-9]*"
