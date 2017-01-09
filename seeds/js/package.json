@@ -1,0 +1,31 @@
+{
+    "name": "",
+    "version": "1.0.0",
+    "description": "",
+    "main": "lib/index.js",
+    "scripts": {
+        "test": "script/test",
+        "watch": "script/watch"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/tests-always-included/xxxxxx.git"
+    },
+    "keywords": [
+    ],
+    "author": "",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/tests-always-included/xxxxxx/issues"
+    },
+    "homepage": "https://github.com/tests-always-included/xxxxxx#readme",
+    "devDependencies": {
+        "codecov": "~1.0.1",
+        "eslint": "~3.12.2",
+        "istanbul": "~0.4.5",
+        "jasmine-node": "~1.14.5",
+        "jasmine-test-helpers": "~1.1.0"
+    },
+    "dependencies": {
+    }
+}
