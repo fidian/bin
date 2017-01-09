@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
+PATH="node_modules/.bin/:$PATH"
+
 # Turn on strict mode.
 set -eEo pipefail
 
 # Run the tests.
-node_modules/.bin/istanbul cover node_modules/.bin/jasmine-node node_modules/jasmine-test-helpers/lib/ --captureExceptions spec/
+istanbul cover jasmine-node node_modules/jasmine-test-helpers/lib/ --captureExceptions spec/
 
 # Check the code coverage.
 if [[ "$CI" == "true" ]]; then

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 
+PATH="node_modules/.bin/:$PATH"
+
 # Set up a watcher
 jasmine-node node_modules/jasmine-test-helpers/lib/ lib spec --autotest --watch
