@@ -4,7 +4,7 @@
 set -eEo pipefail
 
 # Run the tests.
-istanbul cover jasmine-node node_modules/jasmine-test-helpers/lib/ --captureExceptions spec/
+node_modules/.bin/istanbul cover jasmine-node node_modules/jasmine-test-helpers/lib/ --captureExceptions spec/
 
 # Check the code coverage.
 if [[ "$CI" == "true" ]]; then
