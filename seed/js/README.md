@@ -50,13 +50,13 @@ This software is licensed under a [MIT license][LICENSE] that contains an additi
 
 [codecov-badge]: https://codecov.io/github/tests-always-included/xxxxxx/coverage.svg?branch=master
 [codecov-link]: https://codecov.io/github/tests-always-included/xxxxxx?branch=master
-[dependencies-badge]: https://david-dm.org/tests-always-included/xxxxxx.png
+[dependencies-badge]: https://david-dm.org/tests-always-included/xxxxxx.svg
 [dependencies-link]: https://david-dm.org/tests-always-included/xxxxxx
-[devdependencies-badge]: https://david-dm.org/tests-always-included/xxxxxx/dev-status.png
+[devdependencies-badge]: https://david-dm.org/tests-always-included/xxxxxx/dev-status.svg
 [devdependencies-link]: https://david-dm.org/tests-always-included/xxxxxx#info=devDependencies
 [LICENSE]: LICENSE.md
 [npm-badge]: https://badge.fury.io/js/xxxxxx.svg
 [npm-link]: https://npmjs.org/package/xxxxxx
-[travis-badge]: https://secure.travis-ci.org/tests-always-included/xxxxxx.png
+[travis-badge]: https://secure.travis-ci.org/tests-always-included/xxxxxx.svg
 [travis-link]: http://travis-ci.org/tests-always-included/xxxxxx
 
