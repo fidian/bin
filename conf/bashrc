@@ -211,3 +211,7 @@ fi
 # For package building in PPAs
 export DEBFULLNAME="Tyler Akins"
 export DEBEMAIL="fidian@rumkin.com"
+
+# Load nvm
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
