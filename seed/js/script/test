@@ -11,7 +11,7 @@ PATH="$(pwd)/node_modules/.bin:$PATH"
 export PATH
 
 # Run the tests.
-istanbul cover jasmine-node node_modules/jasmine-test-helpers/lib/ --captureExceptions spec/
+istanbul cover jasmine
 
 # Check the code coverage.
 if [[ "$CI" == "true" ]]; then
