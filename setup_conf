@@ -19,7 +19,7 @@ fi
 
 grep ". '$(pwd)/conf/bashrc'" "${BASH_FILE}" > /dev/null 2>&1
 
-if [ $? -ne 0 ]; then
+if [[ $? -ne 0 ]]; then
     echo ". '$(pwd)/conf/bashrc'" >> "${BASH_FILE}"
 fi
 
@@ -47,11 +47,13 @@ if [ ! -d ~/.ssh ]; then
     mkdir ~/.ssh
     chmod 700 ~/.ssh
 fi
+
 rm -rf ~/.ssh/authorized_keys
 cat ssh/*.pub > ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
+
 for F in config; do
-    if [ -f "$HOME/.ssh/$F" ]; then
+    if [[ -f "$HOME/.ssh/$F" ]]; then
         mv "$HOME/.ssh/$F" "$HOME/.ssh/${F}.old";
     fi
 
@@ -60,7 +62,7 @@ for F in config; do
 done
 
 # Setup git configuration
-if [ ! -f ~/.gitconfig ]; then
+if [[ ! -f ~/.gitconfig ]]; then
     git config --global user.name "Tyler Akins"
     git config --global user.email "fidian@rumkin.com"
     git config --global push.default simple
