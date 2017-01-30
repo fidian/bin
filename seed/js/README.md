@@ -45,7 +45,7 @@ Could include project goals, examples, reasoning, API overview, methods, etc.
 License
 -------
 
-This software is licensed under a [MIT license][LICENSE] that contains an additional non-advertising clause.  [Read full license terms][LICENSE]
+This software is licensed under a [MIT license][LICENSE] that contains additional non-advertising and patent-related clauses.  [Read full license terms][LICENSE]
 
 
 [codecov-badge]: https://img.shields.io/codecov/c/github/tests-always-included/xxxxxx/master.svg
