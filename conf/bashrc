@@ -143,6 +143,14 @@ YEL='\[\033[00;33m\]'
 PRPL='\[\033[00;35m\]'
 RED='\[\033[00;31m\]'
 
+# When the previous command showed an error, report it.
+bash_prompt_error() {
+    if [[ $1 -ne 0 ]]; then
+        echo "[ERR $1] "
+    fi
+}
+
+
 # add info about git branch to the prompt
 bash_prompt_git() {
 	local BRANCH REF
@@ -191,7 +199,7 @@ case "${TERM}" in
 	*)
 		;;
 esac
-PS1=$PS1$GRN'\A'$NONE' '$PRPL'\h'$NONE':'$HBLU'$(bash_prompt_path)'$YEL'$(bash_prompt_git)'$NONE
+PS1=$RED'$(bash_prompt_error $?)'$NONE$PS1$GRN'\A'$NONE' '$PRPL'\h'$NONE':'$HBLU'$(bash_prompt_path)'$YEL'$(bash_prompt_git)'$NONE
 if [ ${UID} -eq 0 ]; then
 	PS1=$PS1$RED
 fi
