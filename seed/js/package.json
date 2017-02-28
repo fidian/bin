@@ -21,10 +21,13 @@
     "homepage": "https://github.com/tests-always-included/xxxxxx#readme",
     "devDependencies": {
         "codecov": "~1.0.1",
-        "eslint": "~3.13.1",
+        "eslint": "~3.16.1",
         "istanbul": "~0.4.5",
-        "jasmine": "~2.5.2"
+        "jasmine": "~2.5.3"
     },
     "dependencies": {
+    },
+    "engines": {
+        "node": ">= 4.0.0"
     }
 }
