@@ -1,9 +1,3 @@
-# Keep connections to servers open for a few minutes.  This speeds up
-# subsequent connections to the same server.
-ControlMaster auto
-ControlPath /tmp/ssh_mux_%h_%p_%r
-ControlPersist 5m
-
 # Keep connections alive even when I'm not typing in a shell.
 TCPKeepAlive no
 ServerAliveInterval 60
