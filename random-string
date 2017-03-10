@@ -12,14 +12,14 @@ randomString() {
             ;;
 
         --help)
-            echo "random-string LENGTH [CHARSET]"
+            echo "random-string [OPTIONS] LENGTH [ALLOWED_CHARACTERS]"
             echo ""
             echo "By default it uses a-z, A-Z and numbers."
             echo ""
             echo "Different sets can be created by using these flags.  You can use multiple"
             echo "flags together."
             echo ""
-            echo "--base64 --lower --num --upper"
+            echo "--base64 --hex --lower --num --upper"
             echo ""
             echo "The default is the same as using --lower --num --upper"
 
