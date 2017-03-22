@@ -1,0 +1,6 @@
+To install:
+
+    cd ~/.local/share/gnome-shell/extensions
+    tar xvfz ~/bin/alternate-tab.tar.gz
+
+This is the modified version that contains the only-cycle-on-apps-on-current-monitor option.
