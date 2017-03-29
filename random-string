@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
+randomStringDir="${0%/*}"
+
 randomString() {
     local charSet len
 
     charSet=
+    words=false
 
     if [[ "$1" == -* ]]; then
         case "$1" in
@@ -41,6 +44,9 @@ randomString() {
         --upper)
             charSet+=ABCDEFGHIJKLMNOPQRSTUVWXYZ
             ;;
+
+        --words)
+            words=true
         esac
 
         shift
@@ -48,6 +54,12 @@ randomString() {
 
     len=${1:-10}
     charSet=${charSet:-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789}
+
+    if $words; then
+        cut -f 2 "$randomStringDir/eff-large-wordlist.txt" | shuf | head -n "$len" | tr "\n" " " | sed "s/ $/\n/"
+
+        return
+    fi
 
     if [[ ! -z "${2-}" ]]; then
         charSet=$2
