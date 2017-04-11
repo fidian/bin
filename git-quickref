@@ -509,6 +509,25 @@ If you have two (or more) separate repositories and you wish to merge them into 
 # Return to master with 3 checkout master"
 # Done.  The current directory is where your merged repository lives.
 
+== Signing Commits
+
+Get your GPG key:
+
+    gpg --list-keys --keyid-format LONG
+
+Enable signing by default:
+
+    git config --global user.signingkey YOUR_LONG_KEY_ID
+    git config --global commit.gpgsign true
+
+Verify signatures:
+
+    git log --show-signature
+
+Creating an empty commit, which is most useful for adding an audit trail. The `-S` forces `commit.gpgsign` to `true`.
+
+    git commit -S --allow-empty -m "Looks good to me"
+
 = Common Problems
 
 == You cannot fast forward
