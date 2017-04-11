@@ -7,22 +7,22 @@ if ! test-for-program ttyrec; then
     echo "Missing ttyrec"
     exit
 fi
-if [ ! -f ~/repo/ttygif ]; then
-    echo "Missing ~/repo/ttygif"
+if [ ! -f ~/repo/ttygif/ttygif ]; then
+    echo "Missing ~/repo/ttygif/ttygif"
     exit
 fi
 if ! test-for-program gifsicle; then
     echo "Missing gifsicle"
     exit
 fi
-D=$(tempfile -d)
+D=$(mktemp -d)
 trap remove_temp_dir SIGINT SIGTERM
 ttyrec "$D/ttyrecord"
 (
     cd "$D"
-    ~/repo/ttygif ttyrecord
-    ~/repo/concat.sh ttyrecord.gif
-    gifsicle --optimise=3 ttyrecord.gif
+    ~/repo/ttygif/ttygif ttyrecord
+    ~/repo/ttygif/concat.sh ttyrecord.gif
+    gifsicle --optimize=3 ttyrecord.gif
     mv ttyrecord.gif ~
 )
 echo "Created ~/ttyrecord.gif"
