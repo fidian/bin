@@ -70,6 +70,6 @@ if [[ ! -f ~/.gitconfig ]]; then
     git config --global color.interactive auto
     git config --global alias.unpushed "log @{u}.. --pretty=format:'%h %an %s'"
     git config --global merge.conflictstyle diff3
-    git config --global user.signingkey 2F4393BD
+    git config --global user.signingkey 8F3B8C432F4393BD
     git config --global commit.gpgsign true
 fi
