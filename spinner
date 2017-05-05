@@ -1,29 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/env bash
+chars="-\\|/-\\|/"
 
-# exit if (fork() > 0);
-
-$| = 1;
-$sleep = 1;
-
-if ($#ARGV >= 0) {
-	$sleep = @ARGV[0] * 1;
-}
-
-if ($sleep < 0) {
-	$sleep = 1;
-}
-
-@chars = split(//, '-\\|/-\\|/');
-while (1) {
-	if ($sleep >= 1) {
-		sleep $sleep;
-	} else {
-		# Use the select trick to effect a delay less than 1 second
-		select(undef, undef, undef, $sleep);
-	}
-    $c = shift(@chars);
-	# I'm keeping the backspace in here in case the terminal does not support
-	# save and restore of cursor position.
-    print "\e[s\e[0;0f$c\x08\e[u";
-    push(@chars, $c);
-}
+while true; do
+    printf "\e[s\e[0;0f%s\x08\e[u" "${chars:0:1}"
+    chars="${chars:1}${chars:0:1}"
+    sleep 1
+done
