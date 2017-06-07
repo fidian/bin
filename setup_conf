@@ -73,3 +73,8 @@ if [[ ! -f ~/.gitconfig ]]; then
     git config --global user.signingkey 8F3B8C432F4393BD
     git config --global commit.gpgsign true
 fi
+
+# Install node modules if npm exists
+if hash npm; then
+    npm install
+fi
