@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+THUMBNAIL_DIR=.thumbnails
+if [[ ! -d "$THUMBNAIL_DIR" ]]; then
+    mkdir "$THUMBNAIL_DIR"
+fi
+
+echo "<html><head><title>Thumbnails</title></head><body>"
+
+while [[ -n "$1" ]]; do
+    thumbnail="$THUMBNAIL_DIR/$(echo "$1" | md5sum | cut -b 1-32).jpg"
+    convert "$1" -resize 600x400 -quality 65 "$thumbnail"
+    echo "<a href=\"$1\"><img src=\"$thumbnail\"></a>"
+    shift
+done
+
+echo "</body></html>"
