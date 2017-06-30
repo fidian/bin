@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Source this file to start profiling.
+# https://stackoverflow.com/questions/5014823/how-to-profile-a-bash-shell-script-slow-startup
+exec 3>&2 2> >(
+    echo "Profiling to /tmp/sample-$$.log and /tmp/sample-$$.tim" >&2
+    tee /tmp/sample-$$.log |
+        sed -u 's/^.*$/now/' |
+        date -f - +%s.%N > /tmp/sample-$$.tim
+)
+set -x
+
+# In case you copy and paste the above lines, these turn it off.
+# set +x
+# exec 2>&3 3>&-
