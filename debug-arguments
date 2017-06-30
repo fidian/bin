@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 
-output() {
-    printf "[%d] %q\n" "$1" "$2"
+debug-arguments() {
+    echo "Aguments: $#"
+    printf "[%d] %q\n" "0" "$0"
+    I=1
+
+    while [[ $# -gt 0 ]]; do
+        printf "[%d] %q\n" "$I" "$1"
+        shift
+        I=$((I + 1))
+    done
 }
 
-echo "Aguments: $#"
-output 0 "$0"
-I=1
-
-while [[ $# -gt 0 ]]; do
-    output "$I" "$1"
-    shift
-    I=$(($I + 1))
-done
+if [[ "$0" == "$BASH_SOURCE" ]] || ! [[ -n "$BASH_SOURCE" ]]; then
+    debug-arguments "$@"
+fi
