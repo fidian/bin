@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+sleep 1
+xdotool type "eval \"\$(curl public.rumkin.com/jump)\""$'\n'
