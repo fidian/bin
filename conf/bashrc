@@ -9,12 +9,13 @@ else
 	GNU="true"
 fi
 
-# Add some directories to the path if they exist
+# Add some directories to the path if they exist.
 for D in "$HOME/bin" "$HOME/.local/bin" "$HOME/bin/packer" "$HOME/bin/node_modules/.bin" "$HOME/node_modules/.bin" "$HOME/android-sdk-linux/platform-tools" "$HOME/pebble-dev/PebbleSDK-"*"/bin"; do
-	if [ -d "$D" ]; then
-		PATH="${PATH}:${D}"
+	if [[ -d "$D" ]]; then
+		PATH+=":$D"
 	fi
 done
+
 export PATH
 
 
@@ -74,49 +75,49 @@ fi
 # 30=black 31=red 32=green 33=yellow 34=blue 35=magenta 36=cyan 37=white
 # Background color codes:
 # 40=black 41=red 42=green 43=yellow 44=blue 45=magenta 46=cyan 47=white
-LS_COLORS="no=00" # global default; everything should override this
-LS_COLORS="${LS_COLORS}:fi=00" # file
-LS_COLORS="${LS_COLORS}:di=01;34" # directory
-LS_COLORS="${LS_COLORS}:ln=01;36" # symbolic link; if set to "target" then it inherits the color of the file to which it points
-LS_COLORS="${LS_COLORS}:pi=40;33" # pipe / FIFO
-LS_COLORS="${LS_COLORS}:so=01;35" # socket
-LS_COLORS="${LS_COLORS}:do=40;33;01" # door
-LS_COLORS="${LS_COLORS}:bd=40;33;01" # block devide driver
-LS_COLORS="${LS_COLORS}:cd=40;33;01" # character device driver
-LS_COLORS="${LS_COLORS}:or=01;05;37;41" # symlink to non-stat'able file
-LS_COLORS="${LS_COLORS}:mi=01;05;37;41" # missing?
-LS_COLORS="${LS_COLORS}:su=37;41" # setuid (u+s)
-LS_COLORS="${LS_COLORS}:sg=30;43" # setgid (g+s)
-LS_COLORS="${LS_COLORS}:tw=30;42" # sticky, other-writable dir (+t,o+w)
-LS_COLORS="${LS_COLORS}:ow=30;42" # other-writable dir (o+w)
-LS_COLORS="${LS_COLORS}:st=37;44" # sticky dir (+t)
-LS_COLORS="${LS_COLORS}:ex=01;32" # executable file
-#LS_COLORS="${LS_COLORS}:lc=" # LEFTCODE
-#LS_COLORS="${LS_COLORS}:rc=" # RIGHTCODE
-#LS_COLORS="${LS_COLORS}:ec=" # ENDCODE
-#LS_COLORS="${LS_COLORS}:wo=" # WRITEOTHERS (dirs)
-#LS_COLORS="${LS_COLORS}:wt=" # WRITEOTHERSTICKY
+LS_COLORS="bd=40;33;01" # block devide driver
+LS_COLORS+=":cd=40;33;01" # character device driver
+LS_COLORS+=":di=01;34" # directory
+LS_COLORS+=":do=40;33;01" # door
+#LS_COLORS+=":ec=" # ENDCODE
+LS_COLORS+=":ex=01;32" # executable file
+LS_COLORS+=":fi=00" # file
+#LS_COLORS+=":lc=" # LEFTCODE
+LS_COLORS+=":ln=01;36" # symbolic link; if set to "target" then it inherits the color of the file to which it points
+LS_COLORS+=":mi=01;05;37;41" # missing?
+LS_COLORS+=":no=00" # global default; everything should override this
+LS_COLORS+=":or=01;05;37;41" # symlink to non-stat'able file
+LS_COLORS+=":ow=30;42" # other-writable dir (o+w)
+LS_COLORS+=":pi=40;33" # pipe / FIFO
+#LS_COLORS+=":rc=" # RIGHTCODE
+LS_COLORS+=":sg=30;43" # setgid (g+s)
+LS_COLORS+=":so=01;35" # socket
+LS_COLORS+=":st=37;44" # sticky dir (+t)
+LS_COLORS+=":su=37;41" # setuid (u+s)
+LS_COLORS+=":tw=30;42" # sticky, other-writable dir (+t,o+w)
+#LS_COLORS+=":wo=" # WRITEOTHERS (dirs)
+#LS_COLORS+=":wt=" # WRITEOTHERSTICKY
 
 # per extension settings
 # -- executables are bright green
 for T in bat btm cmd com csh exe sh; do
-	LS_COLORS="${LS_COLORS}:*.${T}=01;32"
+	LS_COLORS+=":*.${T}=01;32"
 done
 # -- archives are bright red
 for T in 7z ace arj bz bz2 cpio deb dz gz jar lzh lzma rar rpm rz svgz tar taz tbz2 tgz tz z Z zip zoo; do
-	LS_COLORS="${LS_COLORS}:*.${T}=01;31"
+	LS_COLORS+=":*.${T}=01;31"
 done
 # -- images are bright magenta
 for T in asf avi bmp dl flc fli gif gl jpeg jpg m2v m4v mkv mng mov mp4 mp4v mpeg mpg nuv ogm pbm pcx pgm png ppm qt rm rmvb svg tga tif tiff vob wmv xbm xcf xpm xwd yuv; do
-	LS_COLORS="${LS_COLORS}:*.${T}=01;35"
+	LS_COLORS+=":*.${T}=01;35"
 done
 # -- html, php are bright yellow
 for T in htm html php; do
-	LS_COLORS="${LS_COLORS}:*.${T}=01;33"
+	LS_COLORS+=":*.${T}=01;33"
 done
 # -- audio files are bright cyan
 for T in aac au flac mid midi mka mp3 mpc ogg ra wav; do
-	LS_COLORS="${LS_COLORS}:*.${T}=01;36"
+	LS_COLORS+=":*.${T}=01;36"
 done
 export LS_COLORS
 
