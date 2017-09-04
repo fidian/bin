@@ -76,5 +76,6 @@ fi
 
 # Install node modules if npm exists
 if hash npm; then
+    npm run clean
     npm install
 fi

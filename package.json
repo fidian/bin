@@ -1,6 +1,7 @@
 {
     "private": true,
     "dependencies": {
+        "PrettyCSS": "latest",
         "babel-cli": "latest",
         "broken-link-checker": "latest",
         "checkref": "latest",
@@ -14,7 +15,6 @@
         "npm": "latest",
         "npm-check-updates": "latest",
         "PrettyCSS": "latest",
-        "redis-commander": "https://github.com/MegaGM/redis-commander.git",
         "reformat-markdown-table": "latest",
         "tiddlywiki": "latest",
         "uglifyjs": "latest",

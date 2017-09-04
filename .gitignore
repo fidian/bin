@@ -4,7 +4,8 @@
 /ipof
 /node_modules/
 /newlines
-/packer/
+package-lock.json
+/packer
 /phpunit
 *.pyc
 /redsocks
