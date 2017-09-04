@@ -1,5 +1,4 @@
 cajun - Desktop for work
-jerk - Netbook from Kyle
-oregano - Convertable Acer laptop
-jerk - Netbook from Kyle
+nas - NAS at home
+oregano - Convertable Acer laptop (really called cinnamon now)
 rumkin - Web server (2015-10)
