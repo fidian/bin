@@ -14,7 +14,6 @@
         "node-gitio": "latest",
         "npm": "latest",
         "npm-check-updates": "latest",
-        "PrettyCSS": "latest",
         "reformat-markdown-table": "latest",
         "tiddlywiki": "latest",
         "uglifyjs": "latest",
