@@ -23,7 +23,7 @@ if [[ $? -ne 0 ]]; then
     echo ". '$(pwd)/conf/bashrc'" >> "${BASH_FILE}"
 fi
 
-for F in putty vim vimrc XCompose xsession; do
+for F in gitmessage putty vim vimrc XCompose xsession; do
     rm -rf ~/.$F
     ln -s "$(pwd)/conf/$F" ~/.$F
 done
@@ -72,6 +72,7 @@ if [[ ! -f ~/.gitconfig ]]; then
     git config --global merge.conflictstyle diff3
     git config --global user.signingkey 8F3B8C432F4393BD
     git config --global commit.gpgsign true
+    git config --global commit.template "~/.gitmessage"
 fi
 
 # Install node modules if npm exists
