@@ -10,6 +10,13 @@ else
 fi
 
 # Add some directories to the path if they exist.
+# Add BPM first, in front of /usr/bin
+for D in "$HOME/bin/bpm"; do
+    if [[ -d "$D" ]]; then
+        PATH="$D:$PATH"
+    fi
+done
+
 for D in "$HOME/bin" "$HOME/.local/bin" "$HOME/bin/packer" "$HOME/bin/node_modules/.bin" "$HOME/node_modules/.bin" "$HOME/android-sdk-linux/platform-tools" "$HOME/pebble-dev/PebbleSDK-"*"/bin"; do
 	if [[ -d "$D" ]]; then
 		PATH+=":$D"
