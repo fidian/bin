@@ -37,3 +37,6 @@
 [submodule "conf/vim/bundle/vim-grammarous"]
 	path = conf/vim/bundle/vim-grammarous
 	url = https://github.com/rhysd/vim-grammarous.git
+[submodule "conf/vim/bundle/vim-terraform"]
+	path = conf/vim/bundle/vim-terraform
+	url = https://github.com/hashivim/vim-terraform.git
