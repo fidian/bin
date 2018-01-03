@@ -8,6 +8,7 @@
         "eslint": "latest",
         "eslint_d": "latest",
         "handlebars": "latest",
+        "js-yaml-cli": "latest",
         "jsdoc-to-markdown": "latest",
         "jsonlint": "latest",
         "light-server": "latest",
@@ -20,6 +21,7 @@
         "webpack": "latest"
     },
     "scripts": {
-        "clean": "rm -rf package-lock.json node_modules/"
+        "clean": "rm -rf package-lock.json node_modules/",
+        "reinstall": "npm run clean ; npm install"
     }
 }
