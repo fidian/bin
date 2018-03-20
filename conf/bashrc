@@ -218,8 +218,6 @@ export PS4=$YEL'+'$NONE' '
 
 stty stop undef # disable control-s and control-q
 
-$TEST_FOR_PROGRAM grunt && eval "$(grunt --completion=bash)"
-
 if [ -f ~/bin/conf/git-flow-completion/git-flow-completion.bash ]; then
 	source ~/bin/conf/git-flow-completion/git-flow-completion.bash
 fi
@@ -231,3 +229,7 @@ export DEBEMAIL="fidian@rumkin.com"
 # Load nvm
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+# Command completions
+$TEST_FOR_PROGRAM grunt && eval "$(grunt --completion=bash)"
+$TEST_FOR_PROGRAM aws_completer && complete -C '/usr/local/bin/aws_completer' aws
