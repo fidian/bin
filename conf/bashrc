@@ -170,7 +170,7 @@ bash_prompt_git() {
 		if [ ! -z "$BRANCH" ]; then
 			echo -n " (${BRANCH#refs/heads/})"
 		else
-			echo -n " (detached '$REF')"
+			echo -n " (detached $REF)"
 		fi
 	fi
 }
