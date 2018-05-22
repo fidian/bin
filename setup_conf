@@ -76,7 +76,7 @@ if [[ ! -f ~/.gitconfig ]]; then
 fi
 
 # Install node modules if npm exists
-if hash npm; then
+if hash npm &> /dev/null; then
     npm run clean
     npm install
 fi
