@@ -17,6 +17,8 @@
         "npm-check-updates": "latest",
         "reformat-markdown-table": "latest",
         "tiddlywiki": "latest",
+        "tslint": "latest",
+        "typescript": "latest",
         "uglifyjs": "latest",
         "webpack": "latest"
     },
