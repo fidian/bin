@@ -103,6 +103,10 @@ set tags=tags;/
 nmap Q oecho __FILE__.':'.__LINE__."\n";//NOCOMMIT-DEBUG<esc>
 
 if has("autocmd")
+    " Disable quickfix for TypeScript files and enable a tooltip
+    let g:tsuquyomi_disable_quickfix = 1
+    autocmd FileType typescript nnoremap <silent> <C-?> :echo tsuquyomi#hint()<CR>
+
 	" Configure Syntastic syntax checking
 	map <F5> :SyntasticToggleMode<CR>
 	let g:syntastic_auto_jump=1
