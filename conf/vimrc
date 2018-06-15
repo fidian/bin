@@ -27,6 +27,7 @@ highlight StatusLine cterm=NONE ctermfg=yellow ctermbg=blue gui=bold guifg=yello
 " highlight String ctermfg=red
  highlight Normal cterm=NONE ctermfg=white guifg=white
 " highlight MatchParen term=underline,bold cterm=underline,bold ctermbg=NONE
+highlight ErrorMsg term=standout cterm=bold ctermfg=white ctermbg=darkred guifg=Black guibg=Red
 
 " GUI options
 set gfn=Anonymous\ Pro\ 14
@@ -110,7 +111,7 @@ if has("autocmd")
 	let g:syntastic_javascript_jslint_args="--es5=false"
     let g:syntastic_javascript_checkers=['eslint']
     let g:syntastic_javascript_eslint_exec='eslint_d'
-    let g:syntastic_typescript_checkers=['tslint']
+    let g:syntastic_typescript_checkers=['tsuquyomi', 'tslint']
     let g:syntastic_html_checkers=['']
 
 	" Insert <Tab> or complete identifier
@@ -145,8 +146,7 @@ map S :setlocal spell! spelllang=en_us<CR>
 
 if has("autocmd")
 	" Automatically set up per-filetype settings, like tag matching
-	filetype plugin on
-	filetype detect
+	filetype plugin indent on
 	runtime macros/matchit.vim
 
 	" Automatically use spaces for YAML
@@ -225,3 +225,15 @@ endfunction
 
 " Automatically format Terraform and other HCL files
 let g:terraform_fmt_on_save = 1
+
+" Control-letter moves to another split
+nnoremap <silent> <C-L> <c-w>l
+nnoremap <silent> <C-H> <c-w>h
+nnoremap <silent> <C-K> <c-w>k
+nnoremap <silent> <C-J> <c-w>j
+
+" Control-arrow resizes splits
+nnoremap <silent> <C-Right> <c-w>>
+nnoremap <silent> <C-Left> <c-w><
+nnoremap <silent> <C-Down> <c-w>+
+nnoremap <silent> <C-Up> <c-w>-
