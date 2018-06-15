@@ -57,9 +57,9 @@ void countResults(int type, unsigned int count) {
 }
 
 int doCount(FILE *in, int dest, int quiet) {
-	unsigned int unx = 0, mac = 0, dos = 0;
+	unsigned int unix = 0, mac = 0, dos = 0;
 	int c = 0, lastC = 0;
-	
+
 	while (! feof(in)) {
 		lastC = c;
 		c = fgetc(in);
@@ -70,15 +70,15 @@ int doCount(FILE *in, int dest, int quiet) {
 				mac --;
 				dos ++;
 			} else {
-				unx ++;
+				unix ++;
 			}
 		}
 	}
-	
+
 	if (! quiet) {
 		if (unix >= mac) {
 			if (unix >= dos) {
-				countResults(COUNT_UNIX, unx);
+				countResults(COUNT_UNIX, unix);
 				if (dos >= mac) {
 					countResults(COUNT_DOS, dos);
 					countResults(COUNT_MAC, mac);
@@ -88,34 +88,34 @@ int doCount(FILE *in, int dest, int quiet) {
 				}
 			} else {
 				countResults(COUNT_DOS, dos);
-				countResults(COUNT_UNIX, unx);
+				countResults(COUNT_UNIX, unix);
 				countResults(COUNT_MAC, mac);
 			}
 		} else {
 			countResults(COUNT_MAC, mac);
 			if (unix >= dos) {
-				countResults(COUNT_UNIX, unx);
+				countResults(COUNT_UNIX, unix);
 				countResults(COUNT_DOS, dos);
 			} else {
 				countResults(COUNT_DOS, dos);
-				countResults(COUNT_UNIX, unx);
+				countResults(COUNT_UNIX, unix);
 			}
 		}
-		if (! unx && ! dos && ! mac) {
+		if (! unix && ! dos && ! mac) {
 			printf("No newlines detected.\n");
 		}
 	}
-	
+
 	if (dest == DEST_UNIX && ! dos && ! mac) {
 		return 0;
 	}
-	if (dest == DEST_DOS && ! unx && ! mac) {
+	if (dest == DEST_DOS && ! unix && ! mac) {
 		return 0;
 	}
-	if (dest == DEST_MAC && ! unx && ! dos) {
+	if (dest == DEST_MAC && ! unix && ! dos) {
 		return 0;
 	}
-	
+
 	return 1;
 }
 
@@ -123,7 +123,7 @@ size_t doConvert(FILE *in, FILE *out, int dest) {
 	int c = 0, lastC = 0;
 	static char *newlines[] = {"\n", "\r", "\r\n"};
 	size_t length = 0;
-	
+
 	while (! feof(in)) {
 		lastC = c;
 		c = fgetc(in);
@@ -148,7 +148,7 @@ size_t doConvert(FILE *in, FILE *out, int dest) {
 			}
 		}
 	}
-	
+
 	return length;
 }
 
@@ -186,7 +186,7 @@ size_t doStrip(FILE *in, FILE *out, int dest) {
 			}
 		}
 	}
-	
+
 	return length;
 }
 
@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
 	int filesProcessed = 0, quiet = 0;
 	char buffer[CHUNK_SIZE];
 	size_t length = 0, left, chunk, confirm;
-	
+
 	for (i = 1; i < argc; i ++) {
 		if (strcmp(argv[i], "-c") == 0) {
 			mode = MODE_COUNT;
@@ -224,7 +224,7 @@ int main(int argc, char **argv) {
 			argv[i][0] = '\0';
 		}
 	}
-	
+
 	for (i = 1; i < argc; i ++) {
 		if (argv[i][0] != '\0') {
 			in = fopen(argv[i], "rb+");
@@ -277,7 +277,7 @@ int main(int argc, char **argv) {
 			filesProcessed ++;
 		}
 	}
-	
+
 	if (filesProcessed == 0) {
 		if (inplace) {
 			fprintf(stderr, "When using -i, you must also specify at least one file.");
@@ -289,6 +289,6 @@ int main(int argc, char **argv) {
 			doConvert(stdin, stdout, dest);
 		}
 	}
-	
+
 	return retcode;
 }
