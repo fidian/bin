@@ -231,10 +231,10 @@ endfunction
 let g:terraform_fmt_on_save = 1
 
 " Control-letter moves to another split
-nnoremap <silent> <C-L> <c-w>l
-nnoremap <silent> <C-H> <c-w>h
-nnoremap <silent> <C-K> <c-w>k
-nnoremap <silent> <C-J> <c-w>j
+" nnoremap <silent> <C-L> <c-w>l
+" nnoremap <silent> <C-H> <c-w>h
+" nnoremap <silent> <C-K> <c-w>k
+" nnoremap <silent> <C-J> <c-w>j
 
 " Control-arrow resizes splits
 nnoremap <silent> <C-Right> <c-w>>
