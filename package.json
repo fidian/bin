@@ -15,6 +15,7 @@
         "node-gitio": "latest",
         "npm": "latest",
         "npm-check-updates": "latest",
+        "prettier": "latest",
         "reformat-markdown-table": "latest",
         "tiddlywiki": "latest",
         "tslint": "latest",
