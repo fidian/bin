@@ -28,6 +28,9 @@ highlight StatusLine cterm=NONE ctermfg=yellow ctermbg=blue gui=bold guifg=yello
  highlight Normal cterm=NONE ctermfg=white guifg=white
 " highlight MatchParen term=underline,bold cterm=underline,bold ctermbg=NONE
 highlight ErrorMsg term=standout cterm=bold ctermfg=white ctermbg=darkred guifg=Black guibg=Red
+highlight Search ctermfg=black ctermbg=yellow cterm=NONE
+highlight SpellBad ctermfg=white ctermbg=darkred
+highlight MatchParen ctermbg=darkblue ctermfg=gray
 
 " GUI options
 set gfn=Anonymous\ Pro\ 14
