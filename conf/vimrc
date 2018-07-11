@@ -31,6 +31,7 @@ highlight ErrorMsg term=standout cterm=bold ctermfg=white ctermbg=darkred guifg=
 highlight Search ctermfg=black ctermbg=yellow cterm=NONE
 highlight SpellBad ctermfg=white ctermbg=darkred
 highlight MatchParen ctermbg=darkblue ctermfg=gray
+highlight StatusLineNC ctermfg=black ctermbg=gray cterm=NONE
 
 " GUI options
 set gfn=Anonymous\ Pro\ 14
