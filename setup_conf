@@ -68,6 +68,9 @@ if [[ ! -f ~/.gitconfig ]]; then
     git config --global push.default simple
     git config --global color.diff auto
     git config --global color.interactive auto
+    git config --global alias.branch-name '!git rev-parse --abbrev-ref HEAD'
+    git config --global alias.publish '!git push -u origin $(git branch-name)'
+    git config --global alias.unpublish '!git push origin :$(git branch-name)'
     git config --global alias.unpushed "log @{u}.. --pretty=format:'%h %an %s'"
     git config --global merge.conflictstyle diff3
     git config --global user.signingkey 8F3B8C432F4393BD

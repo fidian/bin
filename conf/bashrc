@@ -157,10 +157,10 @@ bash_prompt_git() {
 	local BRANCH REF
 	REF="$(git rev-parse --short HEAD 2> /dev/null)"
 
-	if [ ! -z "$REF" ]; then
+	if [[ -n "$REF" ]]; then
 		BRANCH="$(git symbolic-ref HEAD 2> /dev/null)"
 
-		if [ ! -z "$BRANCH" ]; then
+		if [[ -n "$BRANCH" ]]; then
 			echo -n " (${BRANCH#refs/heads/})"
 		else
 			echo -n " (detached '$REF')"
