@@ -219,3 +219,6 @@ function! g:grammarous#hooks.on_reset(errs)
     nunmap <buffer><C-n>
     nunmap <buffer><C-p>
 endfunction
+
+" Enable auto formatting on Terraform files
+let g:terraform_fmt_on_save = 1
