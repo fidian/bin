@@ -8,18 +8,23 @@
         "eslint": "latest",
         "eslint_d": "latest",
         "handlebars": "latest",
+        "js-yaml-cli": "latest",
         "jsdoc-to-markdown": "latest",
         "jsonlint": "latest",
         "light-server": "latest",
         "node-gitio": "latest",
         "npm": "latest",
         "npm-check-updates": "latest",
+        "prettier": "latest",
         "reformat-markdown-table": "latest",
         "tiddlywiki": "latest",
+        "tslint": "latest",
+        "typescript": "latest",
         "uglifyjs": "latest",
         "webpack": "latest"
     },
     "scripts": {
-        "clean": "rm -rf package-lock.json node_modules/"
+        "clean": "rm -rf package-lock.json node_modules/",
+        "reinstall": "npm run clean ; npm install"
     }
 }

@@ -40,3 +40,6 @@
 [submodule "conf/vim/bundle/vim-terraform"]
 	path = conf/vim/bundle/vim-terraform
 	url = https://github.com/hashivim/vim-terraform.git
+[submodule "conf/vim/bundle/tsuquyomi"]
+	path = conf/vim/bundle/tsuquyomi
+	url = https://github.com/Quramy/tsuquyomi.git

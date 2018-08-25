@@ -23,7 +23,7 @@ if [[ $? -ne 0 ]]; then
     echo ". '$(pwd)/conf/bashrc'" >> "${BASH_FILE}"
 fi
 
-for F in gitmessage putty vim vimrc XCompose xsession; do
+for F in gitmessage prettierrc putty vim vimrc XCompose xsession; do
     rm -rf ~/.$F
     ln -s "$(pwd)/conf/$F" ~/.$F
 done
@@ -68,6 +68,9 @@ if [[ ! -f ~/.gitconfig ]]; then
     git config --global push.default simple
     git config --global color.diff auto
     git config --global color.interactive auto
+    git config --global alias.branch-name '!git rev-parse --abbrev-ref HEAD'
+    git config --global alias.publish '!git push -u origin $(git branch-name)'
+    git config --global alias.unpublish '!git push origin :$(git branch-name)'
     git config --global alias.unpushed "log @{u}.. --pretty=format:'%h %an %s'"
     git config --global merge.conflictstyle diff3
     git config --global user.signingkey 8F3B8C432F4393BD
@@ -76,7 +79,7 @@ if [[ ! -f ~/.gitconfig ]]; then
 fi
 
 # Install node modules if npm exists
-if hash npm; then
+if hash npm &> /dev/null; then
     npm run clean
     npm install
 fi

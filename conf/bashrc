@@ -164,10 +164,10 @@ bash_prompt_git() {
 	local BRANCH REF
 	REF="$(git rev-parse --short HEAD 2> /dev/null)"
 
-	if [ ! -z "$REF" ]; then
+	if [[ -n "$REF" ]]; then
 		BRANCH="$(git symbolic-ref HEAD 2> /dev/null)"
 
-		if [ ! -z "$BRANCH" ]; then
+		if [[ -n "$BRANCH" ]]; then
 			echo -n " (${BRANCH#refs/heads/})"
 		else
 			echo -n " (detached $REF)"
@@ -233,3 +233,6 @@ export NVM_DIR="$HOME/.nvm"
 # Command completions
 $TEST_FOR_PROGRAM grunt && eval "$(grunt --completion=bash)"
 $TEST_FOR_PROGRAM aws_completer && complete -C '/usr/local/bin/aws_completer' aws
+
+# Clear the error code
+:
