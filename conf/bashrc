@@ -17,7 +17,7 @@ for D in "$HOME/bin/bpm"; do
     fi
 done
 
-for D in "$HOME/bin" "$HOME/.local/bin" "$HOME/bin/packer" "$HOME/bin/node_modules/.bin" "$HOME/node_modules/.bin" "$HOME/android-sdk-linux/platform-tools" "$HOME/pebble-dev/PebbleSDK-"*"/bin"; do
+for D in "$HOME/bin" "$HOME/.local/bin" "$HOME/bin/packer" "$HOME/bin/node_modules/.bin" "$HOME/node_modules/.bin" "$HOME/.bpm/.bin"; do
 	if [[ -d "$D" ]]; then
 		PATH+=":$D"
 	fi
