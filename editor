@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if "${0%/*}/test-for-program" vim; then
+if hash vim &> /dev/null; then
     vim +0 "$@"
 else
     vi "$@"

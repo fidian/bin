@@ -1,37 +1,33 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Check for a BSD install (Mac OS X)
-ls --color=auto > /dev/null 2>&1
-
-if [ $? -ne 0 ]; then
-	GNU="false"
+if ! ls --color=auto &> /dev/null; then
+    GNU="false"
 else
-	GNU="true"
+    GNU="true"
 fi
 
 # Add some directories to the path if they exist.
-# Add BPM first, in front of /usr/bin
-for D in "$HOME/bin/bpm"; do
-    if [[ -d "$D" ]]; then
-        PATH="$D:$PATH"
-    fi
-done
-
 for D in "$HOME/bin" "$HOME/.local/bin" "$HOME/bin/packer" "$HOME/bin/node_modules/.bin" "$HOME/node_modules/.bin" "$HOME/.bpm/.bin"; do
-	if [[ -d "$D" ]]; then
-		PATH+=":$D"
-	fi
+    if [[ -d "$D" ]]; then
+        PATH+=":$D"
+    fi
 done
 
 export PATH
 
 
 if $GNU; then
-	alias dir='ls -lF --color=auto'
-	alias ls='ls -F --color=auto'
+    alias dir='ls -lF --color=auto'
+
+    if ls -N &> /dev/null; then
+        alias ls='ls -FN --color=auto'
+    else
+        alias ls='ls -F --color=auto'
+    fi
 else
-	alias dir='ls -lFG'
-	alias ls='ls -FG'
+    alias dir='ls -lFG'
+    alias ls='ls -FG'
 fi
 
 alias del='gvfs-trash'
@@ -45,24 +41,14 @@ alias ppid='ps -o ppid --no-headers -p'
 alias ..='~/bin/dot-dot'
 alias cws='. ~/cws-cloud/cws.sh'
 
-# Check for our program checker, then check for programs
-TEST_FOR_PROGRAM=~/bin/test-for-program
-
-if [ ! -z "$BASH_SOURCE" ]; then
-	P="$(dirname "$BASH_SOURCE")/../test-for-program";
-	if [ -f "$P" ]; then
-		TEST_FOR_PROGRAM="$P"
-	fi
-fi
-
-if $TEST_FOR_PROGRAM 'less'; then
-	export PAGER=less
+if hash less &> /dev/null; then
+    export PAGER=less
 else
-	alias less=more
+    alias less=more
 fi
 
-if $TEST_FOR_PROGRAM 'vim'; then
-	alias vi='vim'
+if hash vim &> /dev/null; then
+    alias vi='vim'
 
     if [[ -x "$HOME/bin/editor" ]]; then
         export EDITOR="$HOME/bin/editor"
@@ -70,7 +56,8 @@ if $TEST_FOR_PROGRAM 'vim'; then
         export EDITOR=vim
     fi
 else
-	export EDITOR=vi
+    export EDITOR=vi
+    alias vim=vi
 fi
 
 
@@ -108,23 +95,23 @@ LS_COLORS+=":tw=30;42" # sticky, other-writable dir (+t,o+w)
 # per extension settings
 # -- executables are bright green
 for T in bat btm cmd com csh exe sh; do
-	LS_COLORS+=":*.${T}=01;32"
+    LS_COLORS+=":*.${T}=01;32"
 done
 # -- archives are bright red
 for T in 7z ace arj bz bz2 cpio deb dz gz jar lzh lzma rar rpm rz svgz tar taz tbz2 tgz tz z Z zip zoo; do
-	LS_COLORS+=":*.${T}=01;31"
+    LS_COLORS+=":*.${T}=01;31"
 done
 # -- images are bright magenta
 for T in asf avi bmp dl flc fli gif gl jpeg jpg m2v m4v mkv mng mov mp4 mp4v mpeg mpg nuv ogm pbm pcx pgm png ppm qt rm rmvb svg tga tif tiff vob wmv xbm xcf xpm xwd yuv; do
-	LS_COLORS+=":*.${T}=01;35"
+    LS_COLORS+=":*.${T}=01;35"
 done
 # -- html, php are bright yellow
 for T in htm html php; do
-	LS_COLORS+=":*.${T}=01;33"
+    LS_COLORS+=":*.${T}=01;33"
 done
 # -- audio files are bright cyan
 for T in aac au flac mid midi mka mp3 mpc ogg ra wav; do
-	LS_COLORS+=":*.${T}=01;36"
+    LS_COLORS+=":*.${T}=01;36"
 done
 export LS_COLORS
 
@@ -161,18 +148,18 @@ bash_prompt_error() {
 
 # add info about git branch to the prompt
 bash_prompt_git() {
-	local BRANCH REF
-	REF="$(git rev-parse --short HEAD 2> /dev/null)"
+    local BRANCH REF
+    REF="$(git rev-parse --short HEAD 2> /dev/null)"
 
-	if [[ -n "$REF" ]]; then
-		BRANCH="$(git symbolic-ref HEAD 2> /dev/null)"
+    if [[ -n "$REF" ]]; then
+        BRANCH="$(git symbolic-ref HEAD 2> /dev/null)"
 
-		if [[ -n "$BRANCH" ]]; then
-			echo -n " (${BRANCH#refs/heads/})"
-		else
-			echo -n " (detached $REF)"
-		fi
-	fi
+        if [[ -n "$BRANCH" ]]; then
+            echo -n " (${BRANCH#refs/heads/})"
+        else
+            echo -n " (detached $REF)"
+        fi
+    fi
 }
 
 # add shortened path to the prompt
@@ -180,36 +167,36 @@ bash_prompt_path() {
     local P TILDE
 
     TILDE='~'
-	P="${PWD/#${HOME}/$TILDE}"
+    P="${PWD/#${HOME}/$TILDE}"
 
-	if [ "${#P}" -gt 35 ]; then
-		echo -n "…${P: -32}"
-	else
-		echo -n "${P}"
-	fi
+    if [ "${#P}" -gt 35 ]; then
+        echo -n "…${P: -32}"
+    else
+        echo -n "${P}"
+    fi
 }
 
 PS1=""
 case "${TERM}" in
-	xterm*)
-		# Set the title bar to the current directory
-		PS1='\[\033]2;\h:\w\007\]'
-		;;
-	vt100)
-		# Eliminate fancy things like colors
-		NONE=""
-		HBLU=""
-		GRN=""
-		YEL=""
-		PRPL=""
-		RED=""
-		;;
-	*)
-		;;
+    xterm*)
+        # Set the title bar to the current directory
+        PS1='\[\033]2;\h:\w\007\]'
+        ;;
+    vt100)
+        # Eliminate fancy things like colors
+        NONE=""
+        HBLU=""
+        GRN=""
+        YEL=""
+        PRPL=""
+        RED=""
+        ;;
+    *)
+        ;;
 esac
 PS1=$RED'$(bash_prompt_error $?)'$NONE$PS1$GRN'\A'$NONE' '$PRPL'\h'$NONE':'$HBLU'$(bash_prompt_path)'$YEL'$(bash_prompt_git)'$NONE
 if [ ${UID} -eq 0 ]; then
-	PS1=$PS1$RED
+    PS1=$PS1$RED
 fi
 export PS1=$PS1'\$'$NONE' '
 export PS2=$YEL'>'$NONE' '
@@ -219,7 +206,8 @@ export PS4=$YEL'+'$NONE' '
 stty stop undef # disable control-s and control-q
 
 if [ -f ~/bin/conf/git-flow-completion/git-flow-completion.bash ]; then
-	source ~/bin/conf/git-flow-completion/git-flow-completion.bash
+    # shellcheck disable=SC1090
+    source ~/bin/conf/git-flow-completion/git-flow-completion.bash
 fi
 
 # For package building in PPAs
@@ -228,11 +216,20 @@ export DEBEMAIL="fidian@rumkin.com"
 
 # Load nvm
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+    # shellcheck disable=SC1090
+    . "$NVM_DIR/nvm.sh"
+fi
 
 # Command completions
-$TEST_FOR_PROGRAM grunt && eval "$(grunt --completion=bash)"
-$TEST_FOR_PROGRAM aws_completer && complete -C '/usr/local/bin/aws_completer' aws
+if hash grunt &> /dev/null; then
+    eval "$(grunt --completion=bash)"
+fi
+
+if hash aws_completer &> /dev/null; then
+    complete -c "$(command -v aws_completer)" aws
+fi
 
 # Clear the error code
 :

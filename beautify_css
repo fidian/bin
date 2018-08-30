@@ -1,41 +1,41 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 INFILE="$1"
 OUTFILE="$2"
 SKIP_TESTS="$3"
 
-if [ -z "$INFILE" ]; then
+if [[ -z "$INFILE" ]]; then
 	INFILE="-"
 fi
 
-if [ -z "$OUTFILE" ]; then
+if [[ -z "$OUTFILE" ]]; then
 	OUTFILE="$INFILE"
 fi
 
 # Create temp file
-TEMPFILE="`mktemp`"
+TEMPFILE="$(mktemp)"
 
 # Beautify
-csstidy "$INFILE" --sort_properties=true --template=${HOME}/bin/conf/csstidy.template --preserve_css=true --merge_selectors=0 --silent=true --compress_font-weight=false --compress_colors=false > "$TEMPFILE"
+csstidy "$INFILE" --sort_properties=true --template="$HOME/bin/conf/csstidy.template" --preserve_css=true --merge_selectors=0 --silent=true --compress_font-weight=false --compress_colors=false > "$TEMPFILE"
 
 # Lint check
 LINT=""
-if test-for-program 'csslint'; then
+if hash css-lint &> /dev/null; then
 	LINT="csslint";
 else
-	if test-for-program 'csslint-0.6'; then
+	if hash csslint-0.6 &> /dev/null; then
 		LINT="csslint-0.6"
 	fi
 fi
 
-if [ -z "$SKIP_TESTS" ] && [ ! -z "$LINT" ] && ! $LINT "$TEMPFILE" > /dev/null 2>&1; then
+if [[ -z "$SKIP_TESTS" ]] && [[ -n "$LINT" ]] && ! $LINT "$TEMPFILE" > /dev/null 2>&1; then
 	echo "Beautified CSS is invalid" > /dev/stderr
 	echo " IN:  $INFILE" > /dev/stderr
 	echo "OUT:  $TEMPFILE" > /dev/stderr
 	exit 1
 fi
 
-if [ "$OUTFILE" == "-" ]; then
+if [[ "$OUTFILE" == "-" ]]; then
 	cat "$TEMPFILE"
 else
 	# Use cat to preserve file permissions
@@ -43,4 +43,3 @@ else
 fi
 
 rm "$TEMPFILE"
-exit 0
