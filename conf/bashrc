@@ -113,6 +113,10 @@ done
 for T in aac au flac mid midi mka mp3 mpc ogg ra wav; do
     LS_COLORS+=":*.${T}=01;36"
 done
+# -- source code is bright blue
+for T in c js py ts; do
+    LS_COLORS+=":*.${T}=01;34"
+done
 export LS_COLORS
 
 
