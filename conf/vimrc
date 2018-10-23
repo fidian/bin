@@ -245,3 +245,7 @@ nnoremap <silent> <C-Right> <c-w>>
 nnoremap <silent> <C-Left> <c-w><
 nnoremap <silent> <C-Down> <c-w>+
 nnoremap <silent> <C-Up> <c-w>-
+
+" Split to the bottom right by default. Useful for :Se, :Se!, :Ex, :Ex!
+set splitbelow
+set splitright
