@@ -1,0 +1,5 @@
+p360 --deploy=CB_Activation_JAGUARS##Deploy one-click build
+p360 --deploy=CB_Activation_JAGUARS --custom --SCM_BRANCH="{{branch}}"##Deploy specific branch
+for project in CB_Activation_JAGUARS CORE_BLUE_JAGUARS CB_Act_Services_JAGUARS; do p360 --deploy="$project"; done##Deploy all one-click builds
+for project in CB_Activation_JAGUARS CORE_BLUE_JAGUARS CB_Act_Services_JAGUARS; do p360 --deploy="$project" --custom --SCM_BRANCH="{{branch}}"; done##Deploy all custom branch builds
+while true; do date; for project in CB_Activation_JAGUARS CORE_BLUE_JAGUARS CB_Act_Services_JAGUARS; do echo "$(p360 "$project" | grep Status | cut -d " "  -f 2)$(ansi --reset-color) ... $project"; done; sleep 15; done##Watch project deployment status

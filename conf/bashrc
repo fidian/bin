@@ -113,9 +113,9 @@ done
 for T in aac au flac mid midi mka mp3 mpc ogg ra wav; do
     LS_COLORS+=":*.${T}=01;36"
 done
-# -- source code is bright blue
+# -- source code is dark yellow
 for T in c js py ts; do
-    LS_COLORS+=":*.${T}=01;34"
+    LS_COLORS+=":*.${T}=33"
 done
 export LS_COLORS
 
@@ -233,6 +233,18 @@ fi
 
 if hash aws_completer &> /dev/null; then
     complete -c "$(command -v aws_completer)" aws
+fi
+
+# Add marker
+if [[ "${BASH_VERSINFO[0]}" -gt 4 ]] || [[ "${BASH_VERSINFO[0]}" -eq 4 && "${BASH_VERSINFO[1]}" -ge 3 ]]; then
+    export MARKER_DATA_HOME="$HOME/bin/conf/marker"
+    export MARKER_HOME="$HOME/bin/src/marker"
+    # shellcheck disable=SC1090
+    source "$MARKER_HOME/bin/marker.sh"
+
+    # Fix issue #45
+    bind -x '"\emg1":"_marker_get"'
+    bind '"'"${MARKER_KEY_GET:-\C-@}"'":"\emg1"'
 fi
 
 # Clear the error code
