@@ -263,5 +263,5 @@ function! WinBufSwap()
         \ "buffer " . lastbuf
 endfunction
 
-" Bind window switching with Ctrl-W Shift-W
-nnoremap <C-w>W <C-c>:call WinBufSwap()<CR>
+" Bind window switching with Ctrl-W !
+nnoremap <C-w>! <C-c>:call WinBufSwap()<CR>
