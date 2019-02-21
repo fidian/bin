@@ -60,3 +60,10 @@ sudo systemctl disable resilio-sync
 sudo sed -i.bak "s/WantedBy=multi-user/WantedBy=default/" /usr/lib/systemd/user/resilio-sync.service
 systemctl --user enable resilio-sync
 systemctl --user start resilio-sync
+sudo apt install chrome-gnome-shell
+
+# Go to https://extensions.gnome.org/ and install
+# * Places Status Indicator
+# * AlternateTab
+# * Applications Menu
+# * Alternative Status Menu
