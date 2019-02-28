@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
-# For profiling how long the bashrc takes to load and for each command's
-# duration, shown in PS1.
+# Set FULL_TIMESTAMP to a non-empty value to get maximum precision in PS1.
+# Use time::stampHr to set a time stamp, time::stampDiff to get the difference
+# between the last time check and current time in $bashTimeStampDiff.
+
+# This chunk is for profiling how long the bashrc takes to load and for each
+# command's duration, shown in PS1.
 if [[ -n "$EPOCHREALTIME" ]]; then
     time::stampHr() {
         bashTimeStamp=$EPOCHREALTIME
@@ -172,8 +176,8 @@ bash::markStartTime() {
 }
 
 
-time::stampDiffToPs1() {
-    local endSec endPartial len startSec startPartial resultFloat temp
+time::stampDiff() {
+    local endSec endPartial len startSec startPartial temp
 
     # Adding a dot at the end to ensure we have at least 2 entries in
     # the resulting arrays.
@@ -221,20 +225,32 @@ time::stampDiffToPs1() {
             result=$((result - 1))
         fi
 
-        if [[ "$result" -lt 100 ]]; then
-            printf -v resultFloat "%s.%0${len}d" "$result" "$((endPartial - startPartial))"
-
-            if [[ "$result" -lt 1 ]]; then
-                printf -v result "%.3f" "$resultFloat"
-            elif [[ "$result" -lt 10 ]]; then
-                printf -v result "%.2f" "$resultFloat"
-            elif [[ "$result" -lt 100 ]]; then
-                printf -v result "%.1f" "$resultFloat"
-            fi
-        fi
+        printf -v result "%s.%0${len}d" "$result" "$((endPartial - startPartial))"
     fi
 
-    PS1+=$result
+    bashTimeStampDiff=$result
+}
+
+time::stampDiffToPs1() {
+    local decimal result
+
+    time::stampDiff
+
+    if [[ -n "${FULL_TIMESTAMP-}" ]]; then
+        PS1+=$bashTimeStampDiff
+    else
+        decimal=${bashTimeStampDiff%.*}
+
+        if [[ "$decimal" -lt 10 ]]; then
+            printf -v result "%.2f" "$bashTimeStampDiff"
+        elif [[ "$decimal" -lt 10 ]]; then
+            printf -v result "%.1f" "$bashTimeStampDiff"
+        else
+            result=$decimal
+        fi
+
+        PS1+=$result
+    fi
 }
 
 # Normally the prompt is set using things like this.
