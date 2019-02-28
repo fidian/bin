@@ -16,9 +16,12 @@
         "npm": "latest",
         "npm-check-updates": "latest",
         "prettier": "latest",
+        "svgo": "latest",
         "reformat-markdown-table": "latest",
+        "terminalizer": "latest",
         "tiddlywiki": "latest",
         "tslint": "latest",
+        "tv4-cmd": "^1.0.1",
         "typescript": "latest",
         "uglifyjs": "latest",
         "webpack": "latest"

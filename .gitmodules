@@ -49,3 +49,6 @@
 [submodule "conf/vim/bundle/vim-fugitive"]
 	path = conf/vim/bundle/vim-fugitive
 	url = https://github.com/tpope/vim-fugitive
+[submodule "conf/vim/bundle/vim-prettier"]
+	path = conf/vim/bundle/vim-prettier
+	url = https://github.com/prettier/vim-prettier.git

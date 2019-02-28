@@ -1,5 +1,31 @@
 #!/usr/bin/env bash
 
+# For profiling how long the bashrc takes to load and for each command's
+# duration, shown in PS1.
+if [[ -n "$EPOCHREALTIME" ]]; then
+    time::stampHr() {
+        bashTimeStamp=$EPOCHREALTIME
+    }
+elif [[ "$(date +%N)" != "N" ]]; then
+    # GNU version of date. Faster.
+    time::stampHr() {
+        bashTimeStamp=$(date +%s.%N)
+    }
+elif python -c 'from time import time; print "%.9f" % time();' > /dev/null; then
+    # BSD version of date. Fall back to Python if available (much slower)
+    time::stampHr() {
+        bashTimeStamp=$(python -c 'from time import time; print "%.9f" % time();')
+    }
+else
+    # Fall back to seconds - most basic version of bash
+    time::stampHr() {
+        bashTimeStamp=$(date +%s)
+    }
+fi
+
+time::stampHr
+
+
 # Check for a BSD install (Mac OS X)
 if ! ls --color=auto &> /dev/null; then
     GNU="false"
@@ -15,7 +41,6 @@ for D in "$HOME/bin" "$HOME/.local/bin" "$HOME/bin/packer" "$HOME/bin/node_modul
 done
 
 export PATH
-
 
 if $GNU; then
     alias dir='ls -lF --color=auto'
@@ -133,90 +158,178 @@ shopt -s cmdhist # Save multi-line commands as a single command
 stty stop "" # Prevent Ctrl-S from being software flow control XOFF
 bind space:magic-space # Press space to expand all ! expansions
 
-# Color Variables for Prompt
-# Lots of info at http://networking.ringofsaturn.com/Unix/Bash-prompts.php
-NONE='\[\033[00m\]'
-HBLU='\[\033[01;34m\]'
-GRN='\[\033[00;32m\]'
-YEL='\[\033[00;33m\]'
-PRPL='\[\033[00;35m\]'
-RED='\[\033[00;31m\]'
-
-# When the previous command showed an error, report it.
-bash_prompt_error() {
-    if [[ $1 -ne 0 ]]; then
-        echo "[ERR $1] "
+bash::markStartTime() {
+    # Avoid starting the timer
+    #  * during autocompletion of commands
+    #  * for the prompt command
+    #  * while the timer is already running
+    if [[ -z "$COMP_LINE" ]] &&
+        [[ "$BASH_COMMAND" != "$PROMPT_COMMAND" ]] &&
+        [[ -z "$bashTimeStamp" ]]
+    then
+        time::stampHr
     fi
 }
 
 
-# add info about git branch to the prompt
-bash_prompt_git() {
-    local BRANCH REF
-    REF="$(git rev-parse --short HEAD 2> /dev/null)"
+time::stampDiffToPs1() {
+    local endSec endPartial len startSec startPartial resultFloat temp
 
-    if [[ -n "$REF" ]]; then
-        BRANCH="$(git symbolic-ref HEAD 2> /dev/null)"
+    # Adding a dot at the end to ensure we have at least 2 entries in
+    # the resulting arrays.
+    temp="$bashTimeStamp."
+    startSec=${temp%%.*}
+    startPartial=${temp#*.}
+    startPartial=${startPartial%.}
 
-        if [[ -n "$BRANCH" ]]; then
-            echo -n " (${BRANCH#refs/heads/})"
-        else
-            echo -n " (detached $REF)"
+    time::stampHr
+    temp="$bashTimeStamp."
+    endSec=${temp%%.*}
+    endPartial=${temp#*.}
+    endPartial=${endPartial%.}
+
+    len="${#startPartial}"
+
+    if [[ "${#endPartial}" -gt "$len" ]]; then
+        len="${#endPartial}"
+    fi
+
+    # Calculate the seconds of difference.
+    result="$((endSec - startSec))"
+
+    # Only calculate this if there are decimals.
+    if [[ "$len" -gt 0 ]]; then
+        # Pad the right side of the strings to make them even.
+        # This simplifies subtraction. printf is not used here because
+        # we could get unreasonably large numbers and we don't want to error.
+        while [[ "${#startPartial}" -lt "$len" ]]; do
+            startPartial+=0
+        done
+
+        while [[ "${#endPartial}" -lt "$len" ]]; do
+            endPartial+=0
+        done
+
+        # Only care about 9 digits after the decimal.
+        # Lead with a "1" to avoid treating numbers like 059141135 as octal.
+        startPartial="1${startPartial:0:9}"
+        endPartial="1${endPartial:0:9}"
+
+        if [[ "${endPartial}" -lt "${startPartial}" ]]; then
+            # Need to borrow from the whole seconds
+            endPartial="2${endPartial:1:9}"
+            result=$((result - 1))
+        fi
+
+        if [[ "$result" -lt 100 ]]; then
+            printf -v resultFloat "%s.%0${len}d" "$result" "$((endPartial - startPartial))"
+
+            if [[ "$result" -lt 1 ]]; then
+                printf -v result "%.3f" "$resultFloat"
+            elif [[ "$result" -lt 10 ]]; then
+                printf -v result "%.2f" "$resultFloat"
+            elif [[ "$result" -lt 100 ]]; then
+                printf -v result "%.1f" "$resultFloat"
+            fi
         fi
     fi
+
+    PS1+=$result
 }
 
-# add shortened path to the prompt
-bash_prompt_path() {
-    local P TILDE
+# Normally the prompt is set using things like this.
+# PS1=$RED'$(bash_prompt_error $?)'$NONE'\a \h' ...
+# My prompt has a lot of commands in it, which would spawn lots of subshells.
+# To speed it up, I eliminate the subshells.
+# Spaces after the things displayed before the path.
+# Spaces before the things displayed after the path.
+bash::makePrompt() {
+    local branch lastResult=$? p ref
 
-    TILDE='~'
-    P="${PWD/#${HOME}/$TILDE}"
-
-    if [ "${#P}" -gt 35 ]; then
-        echo -n "…${P: -32}"
+    # Error code from the last command
+    if [[ $lastResult != 0 ]]; then
+        PS1="${RED}[ERR ${lastResult}]${NONE} "
     else
-        echo -n "${P}"
+        PS1=
     fi
+
+    # Time for the last command
+    if [[ -n "$bashTimeStamp" ]]; then
+        PS1+=$GRAY
+        time::stampDiffToPs1
+        PS1+="$NONE "
+        bashTimeStamp=
+    fi
+
+    PS1+="${PS1_TITLE_BAR}${GRN}\\A${NONE} ${PRPL}\\h${NONE}:"
+
+    # Shortened path
+    p=${PWD/#${HOME}/'~'}
+
+    if [[ "${#p}" -gt 35 ]]; then
+        p="…${p: -32}"
+    fi
+
+    PS1+="${HBLU}${p}${NONE}"
+
+    # Git branch information
+    ref="$(git rev-parse --short HEAD 2> /dev/null)"
+
+    if [[ -n "$ref" ]]; then
+        branch="$(git symbolic-ref HEAD 2> /dev/null)"
+
+        if [[ -n "$branch" ]]; then
+            PS1+=" ${YEL}(${branch#refs/heads/})${NONE}"
+        else
+            PS1+=" ${YEL}(@ $ref)${NONE}"
+        fi
+    fi
+
+    if [[ $UID == 0 ]]; then
+        PS1+="${RED}# "
+    else
+        PS1+="\$ "
+    fi
+
+    export PS1
 }
 
-PS1=""
+PROMPT_COMMAND=bash::makePrompt
+
 case "${TERM}" in
     xterm*)
         # Set the title bar to the current directory
-        PS1='\[\033]2;\h:\w\007\]'
+        PS1_TITLE_BAR='\[\033]2;\h:\w\007\]'
+
+        # Color Variables for Prompt
+        # Lots of info at http://networking.ringofsaturn.com/Unix/Bash-prompts.php
+        NONE='\[\033[0m\]'
+        HBLU='\[\033[1;34m\]'
+        GRN='\[\033[0;32m\]'
+        YEL='\[\033[0;33m\]'
+        PRPL='\[\033[0;35m\]'
+        RED='\[\033[0;31m\]'
+        GRAY='\[\033[1;30m\]'
         ;;
     vt100)
         # Eliminate fancy things like colors
-        NONE=""
-        HBLU=""
-        GRN=""
-        YEL=""
-        PRPL=""
-        RED=""
+        NONE=
+        HBLU=
+        GRN=
+        YEL=
+        PRPL=
+        RED=
+        GRAY=
         ;;
     *)
         ;;
 esac
-PS1=$RED'$(bash_prompt_error $?)'$NONE$PS1$GRN'\A'$NONE' '$PRPL'\h'$NONE':'$HBLU'$(bash_prompt_path)'$YEL'$(bash_prompt_git)'$NONE
-if [ ${UID} -eq 0 ]; then
-    PS1=$PS1$RED
-fi
-export PS1=$PS1'\$'$NONE' '
 export PS2=$YEL'>'$NONE' '
 export PS3=$YEL'#?'$NONE' '
 export PS4=$YEL'+'$NONE' '
 
-stty stop undef # disable control-s and control-q
-
-if [ -f ~/bin/conf/git-flow-completion/git-flow-completion.bash ]; then
-    # shellcheck disable=SC1090
-    source ~/bin/conf/git-flow-completion/git-flow-completion.bash
-fi
-
-# For package building in PPAs
-export DEBFULLNAME="Tyler Akins"
-export DEBEMAIL="fidian@rumkin.com"
+# Disable control-s and control-q flow control
+stty stop undef
 
 # Load nvm
 export NVM_DIR="$HOME/.nvm"
@@ -226,16 +339,8 @@ if [[ -s "$NVM_DIR/nvm.sh" ]]; then
     . "$NVM_DIR/nvm.sh"
 fi
 
-# Command completions
-if hash grunt &> /dev/null; then
-    eval "$(grunt --completion=bash)"
-fi
-
-if hash aws_completer &> /dev/null; then
-    complete -c "$(command -v aws_completer)" aws
-fi
-
-# Add marker
+# Add marker - Ctrl-Space = search / recall, Ctrl-k = bookmark, Ctrl-t = place
+# cursor at next placeholder, "marker remove" = remove a shortcut
 if [[ "${BASH_VERSINFO[0]}" -gt 4 ]] || [[ "${BASH_VERSINFO[0]}" -eq 4 && "${BASH_VERSINFO[1]}" -ge 3 ]]; then
     export MARKER_DATA_HOME="$HOME/bin/conf/marker"
     export MARKER_HOME="$HOME/bin/src/marker"
@@ -246,6 +351,10 @@ if [[ "${BASH_VERSINFO[0]}" -gt 4 ]] || [[ "${BASH_VERSINFO[0]}" -eq 4 && "${BAS
     bind -x '"\emg1":"_marker_get"'
     bind '"'"${MARKER_KEY_GET:-\C-@}"'":"\emg1"'
 fi
+
+# Set this trap as late as possible so we don't eat time while running our
+# .bashrc file.
+trap bash::markStartTime DEBUG
 
 # Clear the error code
 :
