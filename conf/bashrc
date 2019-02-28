@@ -241,10 +241,16 @@ time::stampDiffToPs1() {
     else
         decimal=${bashTimeStampDiff%.*}
 
+        # Try to preserve the same length in the prompt
         if [[ "$decimal" -lt 10 ]]; then
+            # x.xx
             printf -v result "%.2f" "$bashTimeStampDiff"
-        elif [[ "$decimal" -lt 10 ]]; then
+        elif [[ "$decimal" -lt 100 ]]; then
+            # xx.x
             printf -v result "%.1f" "$bashTimeStampDiff"
+        elif [[ "$decimal" -lt 1000 ]]; then
+            # xxx.
+            result="${decimal}."
         else
             result=$decimal
         fi
