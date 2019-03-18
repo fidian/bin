@@ -127,7 +127,7 @@ for T in bat btm cmd com csh exe sh; do
     LS_COLORS+=":*.${T}=01;32"
 done
 # -- archives are bright red
-for T in 7z ace arj bz bz2 cpio deb dz gz jar lzh lzma rar rpm rz svgz tar taz tbz2 tgz tz z Z zip zoo; do
+for T in 7z ace arj bz bz2 cpio deb dz gz jar lzh lzma rar rpm rz svgz tar taz tbz2 tgz tz xz z Z zip zoo; do
     LS_COLORS+=":*.${T}=01;31"
 done
 # -- images are bright magenta
