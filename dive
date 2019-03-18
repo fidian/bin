@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Inspect docker images
+docker run --rm -it \
+      -v /usr/local/bin/docker:/bin/docker \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      -v  "$PWD:$PWD" \
+      -w "$PWD" \
+      -v "$HOME/.dive.yaml:$HOME/.dive.yaml" \
+      wagoodman/dive:latest ${@+"$@"}
