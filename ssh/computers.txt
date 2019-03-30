@@ -1,4 +1,4 @@
-cajun - Desktop for work
+garlic - Desktop for work
 nas - NAS at home
 oregano - Convertable Acer laptop (really called cinnamon now)
 rumkin - Web server (2015-10)

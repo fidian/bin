@@ -1,0 +1,69 @@
+# In the terminal
+# * change the color theme to white on black
+# * Remove the menubar
+
+sudo add-apt-repository main
+sudo add-apt-repository universe
+sudo add-apt-repository restricted
+sudo add-apt-repository multiverse
+sudo sed -i.bak "/^# deb .*partner/ s/^# //" /etc/apt/sources.list
+sudo apt update
+sudo apt install vim ubuntu-restricted-extras gnome-tweak-tool gnome-session
+
+# Restart system. When logging in, click on username, then click on gear.
+# Select GNOME on Xorg to get vanilla Gnome.
+
+sudo apt install git editorconfig curl
+ssh-keygen
+
+# Open Firefox, download and install Chrome https://chrome.google.com/
+# Open Chrome, sign in.
+# Go to github.com, login, add new SSH key.
+
+git clone git@github.com:fidian/bin.git
+cd bin
+gpg --import Tyler\ Akins.secret.asc
+gpg --edit-key 8F3B8C432F4393BD
+
+# Type in: trust
+# Type in: 5
+# Type in: y
+# Type in: quit
+
+git submodule init
+git submodule update
+./setup_conf
+cp ~/.ssh/id_rsa.pub ssh/$(hostname).pub
+vim ssh/computers.txt
+
+# Update the list of computers. Delete any old SSH keys.
+
+git add ssh
+git commit -m 'Updating SSH keys'
+git push
+
+# Run tweak tool and
+# * Set the theme to Adwaita-dark
+# * Show desktop icons - only mounted volumes
+# * Turn on Ubuntu appindicators
+# * Set monospace font to Anonymous Pro Regular 12
+# * Enable compose key and set it to the right super key
+# * Turn on the date in the toolbar
+
+echo "deb http://linux-packages.resilio.com/resilio-sync/deb resilio-sync non-free" | sudo tee /etc/apt/sources.list.d/resilio-sync.list
+curl -LO http://linux-packages.resilio.com/resilio-sync/key.asc && sudo apt-key add ./key.asc
+rm key.asc
+sudo apt update
+sudo apt install resilio-sync
+sudo systemctl stop resilio-sync
+sudo systemctl disable resilio-sync
+sudo sed -i.bak "s/WantedBy=multi-user/WantedBy=default/" /usr/lib/systemd/user/resilio-sync.service
+systemctl --user enable resilio-sync
+systemctl --user start resilio-sync
+sudo apt install chrome-gnome-shell
+
+# Go to https://extensions.gnome.org/ and install
+# * Places Status Indicator
+# * AlternateTab
+# * Applications Menu
+# * Alternative Status Menu

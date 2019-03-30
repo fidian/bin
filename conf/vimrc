@@ -27,6 +27,11 @@ highlight StatusLine cterm=NONE ctermfg=yellow ctermbg=blue gui=bold guifg=yello
 " highlight String ctermfg=red
  highlight Normal cterm=NONE ctermfg=white guifg=white
 " highlight MatchParen term=underline,bold cterm=underline,bold ctermbg=NONE
+highlight ErrorMsg term=standout cterm=bold ctermfg=white ctermbg=darkred guifg=Black guibg=Red
+highlight Search ctermfg=black ctermbg=yellow cterm=NONE
+highlight SpellBad ctermfg=white ctermbg=darkred
+highlight MatchParen ctermbg=darkblue ctermfg=gray
+highlight StatusLineNC ctermfg=black ctermbg=gray cterm=NONE
 
 " GUI options
 set gfn=Anonymous\ Pro\ 14
@@ -102,13 +107,20 @@ set tags=tags;/
 nmap Q oecho __FILE__.':'.__LINE__."\n";//NOCOMMIT-DEBUG<esc>
 
 if has("autocmd")
+    " Disable quickfix for TypeScript files and enable a tooltip
+    let g:tsuquyomi_disable_quickfix = 1
+    autocmd FileType typescript nnoremap <silent> <C-?> :echo tsuquyomi#hint()<CR>
+
 	" Configure Syntastic syntax checking
 	map <F5> :SyntasticToggleMode<CR>
 	let g:syntastic_auto_jump=1
 	let g:syntastic_auto_loc_list=1
-	let g:syntastic_javascript_jslint_conf="--es5=false"
+    let g:syntastic_check_on_wq=0
+	let g:syntastic_javascript_jslint_args="--es5=false"
     let g:syntastic_javascript_checkers=['eslint']
     let g:syntastic_javascript_eslint_exec='eslint_d'
+    let g:syntastic_typescript_checkers=['tsuquyomi', 'tslint']
+    let g:syntastic_html_checkers=['']
 
 	" Insert <Tab> or complete identifier
 	" if the cursor is after a keyword character
@@ -142,8 +154,7 @@ map S :setlocal spell! spelllang=en_us<CR>
 
 if has("autocmd")
 	" Automatically set up per-filetype settings, like tag matching
-	filetype plugin on
-	filetype detect
+	filetype plugin indent on
 	runtime macros/matchit.vim
 
 	" Automatically use spaces for YAML
@@ -228,3 +239,38 @@ let g:terraform_fmt_on_save = 1
 if has("clipboard")
     set clipboard=unnamed
 endif
+
+" Control-letter moves to another split
+" nnoremap <silent> <C-L> <c-w>l
+" nnoremap <silent> <C-H> <c-w>h
+" nnoremap <silent> <C-K> <c-w>k
+" nnoremap <silent> <C-J> <c-w>j
+
+" Control-arrow resizes splits
+nnoremap <silent> <C-Right> <c-w>>
+nnoremap <silent> <C-Left> <c-w><
+nnoremap <silent> <C-Down> <c-w>+
+nnoremap <silent> <C-Up> <c-w>-
+
+" Split to the bottom right by default. Useful for :Se, :Se!, :Ex, :Ex!
+set splitbelow
+set splitright
+
+" Easy window swapping. Switches the current window with the previous window.
+function! WinBufSwap()
+    let thiswin = winnr()
+    let thisbuf = bufnr("%")
+    let lastwin = winnr("#")
+    let lastbuf = winbufnr(lastwin)
+
+    exec lastwin . " wincmd w" . "|".
+        \ "buffer " . thisbuf . "|".
+        \ thiswin . " wincmd w" . "|".
+        \ "buffer " . lastbuf
+endfunction
+
+" Bind window switching with Ctrl-W !
+nnoremap <C-w>! <C-c>:call WinBufSwap()<CR>
+
+" Change the sort sequence to directories first, then files (case sensitive)
+let g:netrw_sort_sequence="\\/$"

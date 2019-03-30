@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# https://gist.github.com/robv8r/fa66f5e0fdf001f425fe9facf2db6d49
+
+# Gets all tags for a given docker image.
+
+# Examples:
+
+# retrieve all tags for a single library
+# docker-tags "library/redis" | jq --raw-output '.[]'
+
+# retrieve all tags for multiple libraries
+# docker-tags "library/mongo" "library/redis" "microsoft/nanoserver" "microsoft/dotnet" | jq --raw-output '.[]'
+
+# retrieve first 10 tags for multiple libraries
+# docker-tags "library/mongo" "library/redis" "microsoft/nanoserver" "microsoft/dotnet" | jq --raw-output '.[][0:9]'
+
+docker-tags() {
+    local item token
+
+    for item; do
+        if [[ "$item" != */* ]]; then
+            item="library/$item"
+        fi
+
+        token="$(curl \
+            --silent \
+            --get \
+            --data-urlencode service=registry.docker.io \
+            --data-urlencode "scope=repository:$item:pull" \
+            https://auth.docker.io/token | jq --raw-output .token
+        )"
+        curl \
+            --silent \
+            --get \
+            -H "Accept: application/json" \
+            -H "Authorization: Bearer $token" \
+            "https://registry-1.docker.io/v2/$item/tags/list" | jq --raw-output '.tags[]'
+    done
+}
+
+docker-tags::isSourced() {
+    [[ "${FUNCNAME[1]-}" == "source" ]]
+}
+
+if ! docker-tags::isSourced; then
+    docker-tags ${@+"$@"}
+fi

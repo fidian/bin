@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+export PATH="/bin:$PATH"
+
+if [[ "$0" == "${BASH_SOURCE[0]}" ]] || [[ -z "${BASH_SOURCE[0]}" ]]; then
+    echo "Starting bash"
+    bash --init-file "$0" -i
+else
+    . ~/.bashrc
+    alias ls="ls -F"
+    alias dir="ls -lF"
+    export PS1='\[\033[00;31m\]$(bash_prompt_error $?)\[\033[00m\]''\[\033[00;33m\]'"$BASH_VERSION"'\[\033[00m\] ''\[\033[00;35m\]\h\[\033[00m\]:\[\033[01;34m\]$(bash_prompt_path)\[\033[00m\]\$\[\033[00m\] '
+fi

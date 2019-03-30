@@ -43,3 +43,15 @@
 [submodule "src/st"]
 	path = src/st
 	url = https://github.com/nferraz/st.git
+[submodule "conf/vim/bundle/tsuquyomi"]
+	path = conf/vim/bundle/tsuquyomi
+	url = https://github.com/Quramy/tsuquyomi.git
+[submodule "src/marker"]
+	path = src/marker
+	url = https://github.com/pindexis/marker
+[submodule "conf/vim/bundle/vim-fugitive"]
+	path = conf/vim/bundle/vim-fugitive
+	url = https://github.com/tpope/vim-fugitive
+[submodule "conf/vim/bundle/vim-prettier"]
+	path = conf/vim/bundle/vim-prettier
+	url = https://github.com/prettier/vim-prettier.git

@@ -1,30 +1,62 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+# Set FULL_TIMESTAMP to a non-empty value to get maximum precision in PS1.
+# Use time::stampHr to set a time stamp, time::stampDiff to get the difference
+# between the last time check and current time in $bashTimeStampDiff.
+
+# This chunk is for profiling how long the bashrc takes to load and for each
+# command's duration, shown in PS1.
+if [[ -n "$EPOCHREALTIME" ]]; then
+    time::stampHr() {
+        bashTimeStamp=$EPOCHREALTIME
+    }
+elif [[ "$(date +%N)" != "N" ]]; then
+    # GNU version of date. Faster.
+    time::stampHr() {
+        bashTimeStamp=$(date +%s.%N)
+    }
+elif python -c 'from time import time; print "%.9f" % time();' > /dev/null; then
+    # BSD version of date. Fall back to Python if available (much slower)
+    time::stampHr() {
+        bashTimeStamp=$(python -c 'from time import time; print "%.9f" % time();')
+    }
+else
+    # Fall back to seconds - most basic version of bash
+    time::stampHr() {
+        bashTimeStamp=$(date +%s)
+    }
+fi
+
+time::stampHr
+
 
 # Check for a BSD install (Mac OS X)
-ls --color=auto > /dev/null 2>&1
-
-if [ $? -ne 0 ]; then
-	GNU="false"
+if ! ls --color=auto &> /dev/null; then
+    GNU="false"
 else
-	GNU="true"
+    GNU="true"
 fi
 
 # Add some directories to the path if they exist.
-for D in "$HOME/bin" "$HOME/.local/bin" "$HOME/bin/packer" "$HOME/bin/node_modules/.bin" "$HOME/node_modules/.bin" "$HOME/android-sdk-linux/platform-tools" "$HOME/pebble-dev/PebbleSDK-"*"/bin"; do
-	if [[ -d "$D" ]]; then
-		PATH+=":$D"
-	fi
+for D in "$HOME/bin" "$HOME/.local/bin" "$HOME/bin/packer" "$HOME/bin/node_modules/.bin" "$HOME/node_modules/.bin" "$HOME/.bpm/.bin"; do
+    if [[ -d "$D" ]]; then
+        PATH+=":$D"
+    fi
 done
 
 export PATH
 
-
 if $GNU; then
-	alias dir='ls -lF --color=auto'
-	alias ls='ls -F --color=auto'
+    alias dir='ls -lF --color=auto'
+
+    if ls -N &> /dev/null; then
+        alias ls='ls -FN --color=auto'
+    else
+        alias ls='ls -F --color=auto'
+    fi
 else
-	alias dir='ls -lFG'
-	alias ls='ls -FG'
+    alias dir='ls -lFG'
+    alias ls='ls -FG'
 fi
 
 alias del='gvfs-trash'
@@ -38,24 +70,14 @@ alias ppid='ps -o ppid --no-headers -p'
 alias ..='~/bin/dot-dot'
 alias cws='. ~/cws-cloud/cws.sh'
 
-# Check for our program checker, then check for programs
-TEST_FOR_PROGRAM=~/bin/test-for-program
-
-if [ ! -z "$BASH_SOURCE" ]; then
-	P="$(dirname "$BASH_SOURCE")/../test-for-program";
-	if [ -f "$P" ]; then
-		TEST_FOR_PROGRAM="$P"
-	fi
-fi
-
-if $TEST_FOR_PROGRAM 'less'; then
-	export PAGER=less
+if hash less &> /dev/null; then
+    export PAGER=less
 else
-	alias less=more
+    alias less=more
 fi
 
-if $TEST_FOR_PROGRAM 'vim'; then
-	alias vi='vim'
+if hash vim &> /dev/null; then
+    alias vi='vim'
 
     if [[ -x "$HOME/bin/editor" ]]; then
         export EDITOR="$HOME/bin/editor"
@@ -63,7 +85,8 @@ if $TEST_FOR_PROGRAM 'vim'; then
         export EDITOR=vim
     fi
 else
-	export EDITOR=vi
+    export EDITOR=vi
+    alias vim=vi
 fi
 
 
@@ -101,23 +124,27 @@ LS_COLORS+=":tw=30;42" # sticky, other-writable dir (+t,o+w)
 # per extension settings
 # -- executables are bright green
 for T in bat btm cmd com csh exe sh; do
-	LS_COLORS+=":*.${T}=01;32"
+    LS_COLORS+=":*.${T}=01;32"
 done
 # -- archives are bright red
-for T in 7z ace arj bz bz2 cpio deb dz gz jar lzh lzma rar rpm rz svgz tar taz tbz2 tgz tz z Z zip zoo; do
-	LS_COLORS+=":*.${T}=01;31"
+for T in 7z ace arj bz bz2 cpio deb dz gz jar lzh lzma rar rpm rz svgz tar taz tbz2 tgz tz xz z Z zip zoo; do
+    LS_COLORS+=":*.${T}=01;31"
 done
 # -- images are bright magenta
 for T in asf avi bmp dl flc fli gif gl jpeg jpg m2v m4v mkv mng mov mp4 mp4v mpeg mpg nuv ogm pbm pcx pgm png ppm qt rm rmvb svg tga tif tiff vob wmv xbm xcf xpm xwd yuv; do
-	LS_COLORS+=":*.${T}=01;35"
+    LS_COLORS+=":*.${T}=01;35"
 done
 # -- html, php are bright yellow
 for T in htm html php; do
-	LS_COLORS+=":*.${T}=01;33"
+    LS_COLORS+=":*.${T}=01;33"
 done
 # -- audio files are bright cyan
 for T in aac au flac mid midi mka mp3 mpc ogg ra wav; do
-	LS_COLORS+=":*.${T}=01;36"
+    LS_COLORS+=":*.${T}=01;36"
+done
+# -- source code is dark yellow
+for T in c js py ts; do
+    LS_COLORS+=":*.${T}=33"
 done
 export LS_COLORS
 
@@ -135,92 +162,221 @@ shopt -s cmdhist # Save multi-line commands as a single command
 stty stop "" # Prevent Ctrl-S from being software flow control XOFF
 bind space:magic-space # Press space to expand all ! expansions
 
-# Color Variables for Prompt
-# Lots of info at http://networking.ringofsaturn.com/Unix/Bash-prompts.php
-NONE='\[\033[00m\]'
-HBLU='\[\033[01;34m\]'
-GRN='\[\033[00;32m\]'
-YEL='\[\033[00;33m\]'
-PRPL='\[\033[00;35m\]'
-RED='\[\033[00;31m\]'
-
-# When the previous command showed an error, report it.
-bash_prompt_error() {
-    if [[ $1 -ne 0 ]]; then
-        echo "[ERR $1] "
+bash::markStartTime() {
+    # Avoid starting the timer
+    #  * during autocompletion of commands
+    #  * for the prompt command
+    #  * while the timer is already running
+    if [[ -z "$COMP_LINE" ]] &&
+        [[ "$BASH_COMMAND" != "$PROMPT_COMMAND" ]] &&
+        [[ -z "$bashTimeStamp" ]]
+    then
+        time::stampHr
     fi
 }
 
 
-# add info about git branch to the prompt
-bash_prompt_git() {
-	local BRANCH REF
-	REF="$(git rev-parse --short HEAD 2> /dev/null)"
+time::stampDiff() {
+    local endSec endPartial len startSec startPartial temp
 
-	if [ ! -z "$REF" ]; then
-		BRANCH="$(git symbolic-ref HEAD 2> /dev/null)"
+    # Adding a dot at the end to ensure we have at least 2 entries in
+    # the resulting arrays.
+    temp="$bashTimeStamp."
+    startSec=${temp%%.*}
+    startPartial=${temp#*.}
+    startPartial=${startPartial%.}
 
-		if [ ! -z "$BRANCH" ]; then
-			echo -n " (${BRANCH#refs/heads/})"
-		else
-			echo -n " (detached '$REF')"
-		fi
-	fi
+    time::stampHr
+    temp="$bashTimeStamp."
+    endSec=${temp%%.*}
+    endPartial=${temp#*.}
+    endPartial=${endPartial%.}
+
+    len="${#startPartial}"
+
+    if [[ "${#endPartial}" -gt "$len" ]]; then
+        len="${#endPartial}"
+    fi
+
+    # Calculate the seconds of difference.
+    result="$((endSec - startSec))"
+
+    # Only calculate this if there are decimals.
+    if [[ "$len" -gt 0 ]]; then
+        # Pad the right side of the strings to make them even.
+        # This simplifies subtraction. printf is not used here because
+        # we could get unreasonably large numbers and we don't want to error.
+        while [[ "${#startPartial}" -lt "$len" ]]; do
+            startPartial+=0
+        done
+
+        while [[ "${#endPartial}" -lt "$len" ]]; do
+            endPartial+=0
+        done
+
+        # Only care about 9 digits after the decimal.
+        # Lead with a "1" to avoid treating numbers like 059141135 as octal.
+        startPartial="1${startPartial:0:9}"
+        endPartial="1${endPartial:0:9}"
+
+        if [[ "${endPartial}" -lt "${startPartial}" ]]; then
+            # Need to borrow from the whole seconds
+            endPartial="2${endPartial:1:9}"
+            result=$((result - 1))
+        fi
+
+        printf -v result "%s.%0${len}d" "$result" "$((endPartial - startPartial))"
+    fi
+
+    bashTimeStampDiff=$result
 }
 
-# add shortened path to the prompt
-bash_prompt_path() {
-    local P TILDE
+time::stampDiffToPs1() {
+    local decimal result
 
-    TILDE='~'
-	P="${PWD/#${HOME}/$TILDE}"
+    time::stampDiff
 
-	if [ "${#P}" -gt 35 ]; then
-		echo -n "…${P: -32}"
-	else
-		echo -n "${P}"
-	fi
+    if [[ -n "${FULL_TIMESTAMP-}" ]]; then
+        PS1+=$bashTimeStampDiff
+    else
+        decimal=${bashTimeStampDiff%.*}
+
+        # Try to preserve the same length in the prompt
+        if [[ "$decimal" -lt 10 ]]; then
+            # x.xx
+            printf -v result "%.2f" "$bashTimeStampDiff"
+        elif [[ "$decimal" -lt 100 ]]; then
+            # xx.x
+            printf -v result "%.1f" "$bashTimeStampDiff"
+        elif [[ "$decimal" -lt 1000 ]]; then
+            # xxx.
+            result="${decimal}."
+        else
+            result=$decimal
+        fi
+
+        PS1+=$result
+    fi
 }
 
-PS1=""
+# Normally the prompt is set using things like this.
+# PS1=$RED'$(bash_prompt_error $?)'$NONE'\a \h' ...
+# My prompt has a lot of commands in it, which would spawn lots of subshells.
+# To speed it up, I eliminate the subshells.
+# Spaces after the things displayed before the path.
+# Spaces before the things displayed after the path.
+bash::makePrompt() {
+    local branch lastResult=$? p ref
+
+    # Error code from the last command
+    if [[ $lastResult != 0 ]]; then
+        PS1="${RED}[ERR ${lastResult}]${NONE} "
+    else
+        PS1=
+    fi
+
+    # Time for the last command
+    if [[ -n "$bashTimeStamp" ]]; then
+        PS1+=$GRAY
+        time::stampDiffToPs1
+        PS1+="$NONE "
+        bashTimeStamp=
+    fi
+
+    PS1+="${PS1_TITLE_BAR}${GRN}\\A${NONE} ${PRPL}\\h${NONE}:"
+
+    # Shortened path
+    p=${PWD/#${HOME}/'~'}
+
+    if [[ "${#p}" -gt 35 ]]; then
+        p="…${p: -32}"
+    fi
+
+    PS1+="${HBLU}${p}${NONE}"
+
+    # Git branch information
+    ref="$(git rev-parse --short HEAD 2> /dev/null)"
+
+    if [[ -n "$ref" ]]; then
+        branch="$(git symbolic-ref HEAD 2> /dev/null)"
+
+        if [[ -n "$branch" ]]; then
+            PS1+=" ${YEL}(${branch#refs/heads/})${NONE}"
+        else
+            PS1+=" ${YEL}(@ $ref)${NONE}"
+        fi
+    fi
+
+    if [[ $UID == 0 ]]; then
+        PS1+="${RED}# "
+    else
+        PS1+="\$ "
+    fi
+
+    export PS1
+}
+
+PROMPT_COMMAND=bash::makePrompt
+
 case "${TERM}" in
-	xterm*)
-		# Set the title bar to the current directory
-		PS1='\[\033]2;\h:\w\007\]'
-		;;
-	vt100)
-		# Eliminate fancy things like colors
-		NONE=""
-		HBLU=""
-		GRN=""
-		YEL=""
-		PRPL=""
-		RED=""
-		;;
-	*)
-		;;
+    xterm*)
+        # Set the title bar to the current directory
+        PS1_TITLE_BAR='\[\033]2;\h:\w\007\]'
+
+        # Color Variables for Prompt
+        # Lots of info at http://networking.ringofsaturn.com/Unix/Bash-prompts.php
+        NONE='\[\033[0m\]'
+        HBLU='\[\033[1;34m\]'
+        GRN='\[\033[0;32m\]'
+        YEL='\[\033[0;33m\]'
+        PRPL='\[\033[0;35m\]'
+        RED='\[\033[0;31m\]'
+        GRAY='\[\033[1;30m\]'
+        ;;
+    vt100)
+        # Eliminate fancy things like colors
+        NONE=
+        HBLU=
+        GRN=
+        YEL=
+        PRPL=
+        RED=
+        GRAY=
+        ;;
+    *)
+        ;;
 esac
-PS1=$RED'$(bash_prompt_error $?)'$NONE$PS1$GRN'\A'$NONE' '$PRPL'\h'$NONE':'$HBLU'$(bash_prompt_path)'$YEL'$(bash_prompt_git)'$NONE
-if [ ${UID} -eq 0 ]; then
-	PS1=$PS1$RED
-fi
-export PS1=$PS1'\$'$NONE' '
 export PS2=$YEL'>'$NONE' '
 export PS3=$YEL'#?'$NONE' '
 export PS4=$YEL'+'$NONE' '
 
-stty stop undef # disable control-s and control-q
-
-$TEST_FOR_PROGRAM grunt && eval "$(grunt --completion=bash)"
-
-if [ -f ~/bin/conf/git-flow-completion/git-flow-completion.bash ]; then
-	source ~/bin/conf/git-flow-completion/git-flow-completion.bash
-fi
-
-# For package building in PPAs
-export DEBFULLNAME="Tyler Akins"
-export DEBEMAIL="fidian@rumkin.com"
+# Disable control-s and control-q flow control
+stty stop undef
 
 # Load nvm
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+    # shellcheck disable=SC1090
+    . "$NVM_DIR/nvm.sh"
+fi
+
+# Add marker - Ctrl-Space = search / recall, Ctrl-k = bookmark, Ctrl-t = place
+# cursor at next placeholder, "marker remove" = remove a shortcut
+if [[ "${BASH_VERSINFO[0]}" -gt 4 ]] || [[ "${BASH_VERSINFO[0]}" -eq 4 && "${BASH_VERSINFO[1]}" -ge 3 ]]; then
+    export MARKER_DATA_HOME="$HOME/bin/conf/marker"
+    export MARKER_HOME="$HOME/bin/src/marker"
+    # shellcheck disable=SC1090
+    source "$MARKER_HOME/bin/marker.sh"
+
+    # Fix issue #45
+    bind -x '"\emg1":"_marker_get"'
+    bind '"'"${MARKER_KEY_GET:-\C-@}"'":"\emg1"'
+fi
+
+# Set this trap as late as possible so we don't eat time while running our
+# .bashrc file.
+trap bash::markStartTime DEBUG
+
+# Clear the error code
+:
