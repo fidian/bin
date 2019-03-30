@@ -222,3 +222,9 @@ endfunction
 
 " Automatically format Terraform and other HCL files
 let g:terraform_fmt_on_save = 1
+
+" If clipboard is available, set it to the unnamed (middle click) clipboard
+" by default.
+if has("clipboard")
+    set clipboard=unnamed
+endif

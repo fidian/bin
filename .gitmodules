@@ -40,3 +40,6 @@
 [submodule "conf/vim/bundle/vim-terraform"]
 	path = conf/vim/bundle/vim-terraform
 	url = https://github.com/hashivim/vim-terraform.git
+[submodule "src/st"]
+	path = src/st
+	url = https://github.com/nferraz/st.git
