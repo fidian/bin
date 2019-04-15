@@ -9,3 +9,4 @@ HEADLESS=true npm run e2e##Run the end-to-end tests for an Angular project
 HEADLESS=true npm run test##Run headless tests
 HEADLESS=true npm run test-single-run##Run headless tests once
 docker run -it --rm -v "$PWD:/mnt" -w /mnt fidian/multishell##multishell
+npx ng serve --app mock -H "$(ipconfig getifaddr en0)" --disable-host-check##Serve Angular project publicly - whatever
