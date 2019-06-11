@@ -1125,6 +1125,10 @@ randomString() {
             charSet+=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/
             ;;
 
+        --base64url)
+            charSet+=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_
+            ;;
+
         --base91)
             charSet+='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&()*+,./:;<=>?@[]^_`{|}~"'
             ;;
@@ -1137,12 +1141,13 @@ randomString() {
             echo "Different sets can be created by using these flags.  You can use multiple"
             echo "flags together."
             echo ""
-            echo "    --base64  a-z, A-Z, 0-9, +, /"
-            echo "    --base91  a-z, A-Z, 0-9, many symbols"
-            echo "    --hex     0-9, a-f"
-            echo "    --lower   a-z"
-            echo "    --num     0-9"
-            echo "    --upper   A-Z"
+            echo "    --base64     a-z, A-Z, 0-9, +, /"
+            echo "    --base64url  a-z, A-Z, 0-9, -, _"
+            echo "    --base91     a-z, A-Z, 0-9, many symbols"
+            echo "    --hex        0-9, a-f"
+            echo "    --lower      a-z"
+            echo "    --num        0-9"
+            echo "    --upper      A-Z"
             echo ""
             echo "The default is the same as using --lower --num --upper."
             echo ""
