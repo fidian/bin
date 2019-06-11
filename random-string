@@ -1125,6 +1125,10 @@ randomString() {
             charSet+=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/
             ;;
 
+        --base91)
+            charSet+='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&()*+,./:;<=>?@[]^_`{|}~"'
+            ;;
+
         --help)
             echo "random-string [OPTIONS] LENGTH [ALLOWED_CHARACTERS]"
             echo ""
@@ -1134,6 +1138,7 @@ randomString() {
             echo "flags together."
             echo ""
             echo "    --base64  a-z, A-Z, 0-9, +, /"
+            echo "    --base91  a-z, A-Z, 0-9, many symbols"
             echo "    --hex     0-9, a-f"
             echo "    --lower   a-z"
             echo "    --num     0-9"
