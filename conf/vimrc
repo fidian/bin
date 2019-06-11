@@ -137,6 +137,9 @@ if has("autocmd")
 	" Highlight SQL, html syntax in strings
 	let php_sql_query=1
 	let php_htmlInStrings=1
+
+    " Allow Map and other great things
+    let g:typescript_compiler_options = '--lib es2018'
 endif
 
 " Keep the cursor 5 lines away from the top/bottom
