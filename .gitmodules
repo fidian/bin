@@ -55,3 +55,6 @@
 [submodule "conf/vim/bundle/vim-prettier"]
 	path = conf/vim/bundle/vim-prettier
 	url = https://github.com/prettier/vim-prettier.git
+[submodule "conf/vim/bundle/vim-json"]
+	path = conf/vim/bundle/vim-json
+	url = https://github.com/elzr/vim-json.git
