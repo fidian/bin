@@ -58,3 +58,6 @@
 [submodule "conf/vim/bundle/vim-json"]
 	path = conf/vim/bundle/vim-json
 	url = https://github.com/elzr/vim-json.git
+[submodule "conf/vim/bundle/vimproc.vim"]
+	path = conf/vim/bundle/vimproc.vim
+	url = https://github.com/Shougo/vimproc.vim

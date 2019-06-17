@@ -83,3 +83,11 @@ if hash npm &> /dev/null; then
     npm run clean
     npm install
 fi
+
+# Compile programs
+(
+    cd conf/vim/bundle/vimproc.vim && make
+)
+(
+    cd src && ./build
+)
