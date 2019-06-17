@@ -57,7 +57,7 @@ void countResults(int type, unsigned int count) {
 }
 
 int doCount(FILE *in, int dest, int quiet) {
-	unsigned int unix = 0, mac = 0, dos = 0;
+	unsigned int unx = 0, mac = 0, dos = 0;
 	int c = 0, lastC = 0;
 
 	while (! feof(in)) {
@@ -70,15 +70,15 @@ int doCount(FILE *in, int dest, int quiet) {
 				mac --;
 				dos ++;
 			} else {
-				unix ++;
+				unx ++;
 			}
 		}
 	}
 
 	if (! quiet) {
-		if (unix >= mac) {
-			if (unix >= dos) {
-				countResults(COUNT_UNIX, unix);
+		if (unx >= mac) {
+			if (unx >= dos) {
+				countResults(COUNT_UNIX, unx);
 				if (dos >= mac) {
 					countResults(COUNT_DOS, dos);
 					countResults(COUNT_MAC, mac);
@@ -88,20 +88,20 @@ int doCount(FILE *in, int dest, int quiet) {
 				}
 			} else {
 				countResults(COUNT_DOS, dos);
-				countResults(COUNT_UNIX, unix);
+				countResults(COUNT_UNIX, unx);
 				countResults(COUNT_MAC, mac);
 			}
 		} else {
 			countResults(COUNT_MAC, mac);
-			if (unix >= dos) {
-				countResults(COUNT_UNIX, unix);
+			if (unx >= dos) {
+				countResults(COUNT_UNIX, unx);
 				countResults(COUNT_DOS, dos);
 			} else {
 				countResults(COUNT_DOS, dos);
-				countResults(COUNT_UNIX, unix);
+				countResults(COUNT_UNIX, unx);
 			}
 		}
-		if (! unix && ! dos && ! mac) {
+		if (! unx && ! dos && ! mac) {
 			printf("No newlines detected.\n");
 		}
 	}
@@ -109,10 +109,10 @@ int doCount(FILE *in, int dest, int quiet) {
 	if (dest == DEST_UNIX && ! dos && ! mac) {
 		return 0;
 	}
-	if (dest == DEST_DOS && ! unix && ! mac) {
+	if (dest == DEST_DOS && ! unx && ! mac) {
 		return 0;
 	}
-	if (dest == DEST_MAC && ! unix && ! dos) {
+	if (dest == DEST_MAC && ! unx && ! dos) {
 		return 0;
 	}
 
