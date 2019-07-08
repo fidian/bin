@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+xdotool windowsize $(xdotool getwindowfocus) 80% 100%
+xdotool windowmove $(xdotool getwindowfocus) 100% 0%
+
