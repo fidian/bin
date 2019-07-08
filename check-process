@@ -1,0 +1,170 @@
+#!/usr/bin/env bash
+
+pidExists() {
+    ps -p "$1" &> /dev/null
+}
+
+pidStartTime() {
+    TZ=UTC0 ps -p "$1" -o lstart= || :
+}
+
+debug() {
+    if $debugFlag; then
+        echo "$1" >&2
+    fi
+}
+
+showHelp() {
+    cat <<'EOF'
+Checks if a process is running and if it is the same process as what is
+expected. Uses a file to track process information.
+
+Usage: check-process [OPTIONS] <PID/FILE>
+
+Options:
+    --debug, -d     Write a lot of debugging information to stderr.
+    --help, -h      Show this information.
+    --save, -s      Save information about the process ID to the file.
+
+Example:
+
+    # Run a command in the background
+    ./my-server &
+
+    # Save the process ID and information to a tracking file
+    check-process -s $! > my-server.info
+
+    # Set up a loop to see if the process is still running
+    while true; do
+        # Check every minute
+        sleep 60
+
+        # Check if the process is still running
+        if ! ./check-process my-server.info; then
+            # Not running - start it again
+            ./my-server &
+
+            # IMPORTANT: AVOID HUGE DISASTERS!
+            # Must save the updated process information!
+            check-process -s $! > my-server.info
+        fi
+    done
+
+
+Options may not be combined.
+
+    check-process -d -s 12345   # good
+    check-process -ds 12345     # invalid
+
+Returns 0 (true) when it matches. Returns failure otherwise.
+EOF
+}
+
+set -eEu -o pipefail
+
+debugFlag=false
+saveFlag=false
+argument=
+
+while [[ "$#" -gt 0 ]]; do
+    debug "Processing argument: $1"
+    case "$1" in
+        --debug | -d)
+            debugFlag=true
+            debug "Enabling debug mode"
+            ;;
+
+        --help | -h)
+            debug "Showing help"
+            showHelp
+            exit 0
+            ;;
+
+        --save | -s)
+            saveFlag=true
+            debug "Enabling save mode"
+            ;;
+
+        *)
+            if [[ -z "$argument" ]]; then
+                argument=$1
+                debug "Set argument: $1"
+            else
+                echo "Invalid extra argument: $1" >&2
+                echo "" >&2
+                showHelp >&2
+                exit 2
+            fi
+            ;;
+    esac
+    shift
+done
+
+if [[ -z "$argument" ]]; then
+    showHelp
+    exit 0
+fi
+
+if $saveFlag; then
+    debug "Saving process information"
+
+    if ! pidExists "$argument"; then
+        echo "PID does not exit" >&2
+        exit 2
+    fi
+
+    echo "PID=$argument"
+    echo "START_TIME=$(pidStartTime "$argument")"
+else
+    debug "Verifying process information"
+
+    if [[ ! -f "$argument" ]]; then
+        echo "Information file does not exist: $argument" >&2
+        exit 4
+    fi
+
+    pid=
+    startTime=
+
+    while read line; do
+        debug "Read line: $line"
+        key=${line%%=*}
+        value=${line#*=}
+
+        case "$key" in
+            PID)
+                pid=$value
+                ;;
+
+            START_TIME)
+                startTime=$value
+                ;;
+        esac
+    done < "$argument"
+
+    if [[ -z "$pid" ]]; then
+        echo "Invalid information file: $argument" >&2
+        exit 3
+    fi
+
+    if ! pidExists "$pid"; then
+        debug "PID does not exist"
+        exit 5
+    fi
+
+    debug "PID exists"
+
+    if [[ -n "$startTime" ]]; then
+        actual=$(pidStartTime "$pid")
+        debug "Actual START_TIME=$actual"
+
+        if [[ "$startTime" != "$actual" ]]; then
+            debug "START_TIME is different"
+            exit 7
+        fi
+
+        debug "START_TIME passes"
+    else
+        debug "START_TIME is not checked"
+    fi
+fi
