@@ -1,6 +1,8 @@
 # In the terminal
 # * change the color theme to white on black
 # * Remove the menubar
+# * Turn off terminal bell in the profile
+# * Increase scrollback to 100,000 lines in the profile
 
 sudo add-apt-repository main
 sudo add-apt-repository universe
@@ -60,10 +62,23 @@ sudo systemctl disable resilio-sync
 sudo sed -i.bak "s/WantedBy=multi-user/WantedBy=default/" /usr/lib/systemd/user/resilio-sync.service
 systemctl --user enable resilio-sync
 systemctl --user start resilio-sync
-sudo apt install chrome-gnome-shell
+sudo apt install chrome-gnome-shell keepassx
 
 # Go to https://extensions.gnome.org/ and install
 # * Places Status Indicator
 # * AlternateTab
 # * Applications Menu
 # * Alternative Status Menu
+# * Launch New Instance
+
+
+# Makemkv - https://www.makemkv.com/forum/viewtopic.php?f=3&t=224
+sudo apt-get install build-essential pkg-config libc6-dev libssl-dev libexpat1-dev libavcodec-dev libgl1-mesa-dev libqt4-dev zlib1g-dev
+# OSS first, ./configure && make && sudo make install
+# Bin next, make && sudo make install
+
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.34.0/install.sh | bash
+# log out, log in
+nvm install 10
+nvm use 10
+nvm alias default 10
