@@ -23,7 +23,7 @@ if [[ $? -ne 0 ]]; then
     echo ". '$(pwd)/conf/bashrc'" >> "${BASH_FILE}"
 fi
 
-for F in gitmessage prettierrc putty vim vimrc XCompose xsession; do
+for F in gitmessage prettierrc putty Slic3r vim vimrc XCompose xsession; do
     rm -rf ~/.$F
     ln -s "$(pwd)/conf/$F" ~/.$F
 done
