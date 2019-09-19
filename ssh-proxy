@@ -2,12 +2,31 @@
 reset_proxy() {
     echo "Removing proxy from Gnome network settings"
     gsettings set org.gnome.system.proxy mode 'none'
+
+    echo "Removing proxy from npm"
+    npm config delete proxy
+    npm config delete https-proxy
 }
 
 if [[ $# -eq 0 ]]; then
     echo "Specify hostname that will be the endpoint of the SSH proxy."
     echo "Additional ssh options may also be used."
     exit 0
+fi
+
+# If you want to also have an HTTP proxy that forwards through the SOCKS proxy,
+# install polipo and add this to the end of /etc/polipo/config and restart it.
+#
+# socksParentProxy = "127.0.0.1:9892"
+# socksProxyType = socks5
+# proxyAddress = "::0"
+# proxyPort = 8123
+
+if which polipo &> /dev/null; then
+    # HTTP proxy enabled. Add it to npm.
+    echo "Adding HTTP proxy to npm"
+    npm config set proxy http://127.0.0.1:8123
+    npm config set https-proxy http://127.0.0.1:8123
 fi
 
 echo "Configuring Gnome network settings"
