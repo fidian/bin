@@ -10,4 +10,4 @@ fi
 # Cert errors?
 # sudo update-ca-certificates -f
 
-java -jar Minecraft.jar
+minecraft-launcher

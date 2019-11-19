@@ -277,3 +277,6 @@ nnoremap <C-w>! <C-c>:call WinBufSwap()<CR>
 
 " Change the sort sequence to directories first, then files (case sensitive)
 let g:netrw_sort_sequence="\\/$"
+
+" Show quotes in JSON files
+let g:vim_json_syntax_conceal = 0
