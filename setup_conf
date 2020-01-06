@@ -2,6 +2,10 @@
 
 cd "${0%/*}"
 
+# Make sure submodules are here
+git submodule init
+git submodule update
+
 # Detect BSD (Mac OS X)
 ls --color=auto > /dev/null 2>&1
 
