@@ -1,5 +1,4 @@
-garlic - Desktop for work
 inspiron - Inspiron 3521
 nas - NAS at home
-oregano - Convertable Acer laptop (really called cinnamon now)
+perilla - Convertable Acer laptop (previously oregano and cinnamon)
 rumkin - Web server (2015-10)
