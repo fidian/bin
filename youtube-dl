@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# github.com/wernight/docker-youtube-dl
+
+docker run --rm --user "$UID:$GID" -v "$PWD:/downloads" wernight/youtube-dl ${@+"$@"}
