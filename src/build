@@ -10,12 +10,23 @@ for D in */; do (
     echo ""
 	cd $D
 
-    if [ -f Makefile ]; then
-        make
-        find . -maxdepth 1 -type f -perm /u+x -exec strip --strip-unneeded \{\} \;
+    if [[ -f Makefile.PL ]]; then
+        perl Makefile.PL
     fi
 
-    find . -maxdepth 1 -type f -perm /u+x -exec cp \{\} ../.. \;
+    if [[ -f Makefile ]]; then
+        make
+
+        if [[ -f "$D" ]]; then
+            strip --strip-unneeded "$D"
+        fi
+    fi
+
+    for F in blib/script .; do
+        if [[ -f "$F/$D" ]]; then
+            cp "$F/$D" ../..
+        fi
+    done
 
     if [ -f Makefile ]; then
         make clean
