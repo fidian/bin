@@ -20,7 +20,7 @@
     },
     "homepage": "https://github.com/tests-always-included/xxxxxx#readme",
     "devDependencies": {
-        "codecov": "^2.1.0",
+        "codecov": "^3.6.5",
         "eslint": "^3.18.0",
         "istanbul": "^0.4.5",
         "jasmine": "^2.5.3",
