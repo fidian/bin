@@ -2,6 +2,8 @@
     "private": true,
     "dependencies": {
         "PrettyCSS": "latest",
+        "atomizer": "latest",
+        "aws-es-curl": "latest",
         "babel-cli": "latest",
         "broken-link-checker": "latest",
         "checkref": "latest",
@@ -24,7 +26,8 @@
         "tv4-cmd": "^1.0.1",
         "typescript": "latest",
         "uglifyjs": "latest",
-        "webpack": "latest"
+        "webpack": "latest",
+        "webpack-bundle-analyzer": "latest"
     },
     "scripts": {
         "clean": "rm -rf package-lock.json node_modules/",
