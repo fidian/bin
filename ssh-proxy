@@ -6,6 +6,11 @@ reset_proxy() {
     echo "Removing proxy from npm"
     npm config delete proxy
     npm config delete https-proxy
+
+    if which docker &> /dev/null; then
+        echo "Stopping docker polipo"
+        docker stop polipo
+    fi
 }
 
 if [[ $# -eq 0 ]]; then
@@ -22,8 +27,19 @@ fi
 # proxyAddress = "::0"
 # proxyPort = 8123
 
-if which polipo &> /dev/null; then
-    # HTTP proxy enabled. Add it to npm.
+polipoImage=
+
+if which docker &> /dev/null; then
+    polipoImage=$(docker image list clue/polipo -q)
+fi
+
+if [[ "$polipoImage" = "" ]]; then
+    echo "Not setting up a local proxy. To get one, install docker and run"
+    echo "    docker pull clue/polipo"
+else
+    echo "Starting Polipo"
+    docker run -d --name polipo --rm -p 8123:8123 clue/polipo proxyAddress=::0 socksParentProxy=127.0.0.1:9892 socksProxyType=socks5
+
     echo "Adding HTTP proxy to npm"
     npm config set proxy http://127.0.0.1:8123
     npm config set https-proxy http://127.0.0.1:8123

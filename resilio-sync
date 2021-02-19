@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# https://hub.docker.com/r/resilio/sync/
+# Update: docker pull resilio/sync
+DATA_FOLDER=~/.resilio-sync
+WEBUI_PORT=8888
+
+mkdir -p "$DATA_FOLDER"
+
+args=(
+    run -d
+    --name resilio-sync
+    -p 127.0.0.1:$WEBUI_PORT:8888
+    -p 55555
+    -v "$DATA_FOLDER:/mnt/sync"
+)
+
+# Mount all folders in the home directory with a .sync folder within.
+# Want to make a new synced folder?
+#     mkdir -p ~/WHATEVER/.sync
+# Then restart the container
+for D in ~/*/.sync; do
+    DD="${D%/*}"
+    args+=(-v "$DD:/mnt/mounted_folders/${DD##*/}")
+done
+
+args+=(
+    --restart on-failure
+    --user "$UID"
+    resilio/sync
+)
+
+docker stop resilio-sync
+docker rm resilio-sync
+docker "${args[@]}"
