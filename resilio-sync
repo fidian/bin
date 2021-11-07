@@ -10,7 +10,8 @@ args=(
     run -d
     --name resilio-sync
     -p 127.0.0.1:$WEBUI_PORT:8888
-    -p 55555
+    -p 55555:55555
+    -p 3838:3838/udp
     -v "$DATA_FOLDER:/mnt/sync"
 )
 
@@ -23,8 +24,10 @@ for D in ~/*/.sync; do
     args+=(-v "$DD:/mnt/mounted_folders/${DD##*/}")
 done
 
+# Conflicts with --rm
+# --restart on-failure
 args+=(
-    --restart on-failure
+    --rm
     --user "$UID"
     resilio/sync
 )
