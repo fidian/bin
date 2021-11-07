@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+gpg -a --output "$1".sig --detach-sig "$1"
