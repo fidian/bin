@@ -81,6 +81,7 @@ if [[ ! -f ~/.gitconfig ]]; then
     git config --global commit.gpgsign true
     git config --global commit.template "~/.gitmessage"
     git config --global pull.rebase false
+    git config --global init.defaultBranch master
 fi
 
 # Install node modules if npm exists
