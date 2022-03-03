@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd "${0%/*}"
+cd "${0%/*}" || exit
 
 # Make sure submodules are here
 git submodule init
@@ -82,6 +82,8 @@ if [[ ! -f ~/.gitconfig ]]; then
     git config --global commit.template "~/.gitmessage"
     git config --global pull.rebase false
     git config --global init.defaultBranch master
+    git config --global pager.difftool true
+    git config --global difftool.cwdiff.cmd 'cwdiff "$LOCAL" "$REMOTE"'
 fi
 
 # Install node modules if npm exists
