@@ -61,3 +61,6 @@
 [submodule "conf/vim/bundle/vimproc.vim"]
 	path = conf/vim/bundle/vimproc.vim
 	url = https://github.com/Shougo/vimproc.vim
+[submodule "conf/vim/bundle/ale"]
+	path = conf/vim/bundle/ale
+	url = https://github.com/dense-analysis/ale
