@@ -149,14 +149,51 @@ if has("autocmd")
     \   'css': ['prettier'],
     \   'javascript': ['prettier'],
     \   'markdown': ['prettier'],
+    \   'typescript': ['prettier'],
     \}
 
     " Pretty print / fix on save
     let g:ale_fix_on_save = 1
 
-    " Pretty stuff
-    let g:ale_sign_error = '❌'
-    let g:ale_sign_warning = '⚠️'
+    " Disable languagetool because it's only meant for text
+    let g:ale_linters_ignore = {
+    \   'markdown': ['languagetool'],
+    \   'asciidoc': ['languagetool']
+    \}
+
+    " Set up automatic jumps based on file type, so C-] and C-^ navigate
+    " correctly.
+    " https://github.com/dense-analysis/ale/issues/1645
+    function ALELSPMappings()
+        let lsp_found=0
+
+        for linter in ale#linter#Get(&filetype)
+            if !empty(linter.lsp) && ale#lsp_linter#CheckWithLSP(bufnr(''), linter)
+                let lsp_found=1
+            endif
+        endfor
+
+        if (lsp_found)
+            nnoremap <buffer> K :ALEDocumentation<cr>
+            nnoremap <buffer> gr :ALEFindReferences<cr>
+            nnoremap <buffer> gd :ALEGoToDefinition<cr>
+            nnoremap <buffer> gy :ALEGoToTypeDefinition<cr>
+            nnoremap <buffer> gh :ALEHover<cr>
+            setlocal omnifunc=ale#completion#OmniFunc
+            nnoremap <buffer> <C-]> :ALEGoToDefinition<CR>
+		    nnoremap <buffer> <C-^> :ALEFindReferences<CR>
+        else
+            silent! unmap <buffer> K
+            silent! unmap <buffer> gr
+            silent! unmap <buffer> gd
+            silent! unmap <buffer> gy
+            silent! unmap <buffer> gh
+            silent! unmap <buffer> <C-]>
+            silent! unmap <buffer> <C-^>
+        endif
+    endfunction
+
+    autocmd BufRead,FileType * call ALELSPMappings()
 endif
 
 " Keep the cursor 5 lines away from the top/bottom
@@ -220,12 +257,7 @@ if has("clipboard")
     set clipboard=unnamed
 endif
 
-" Control-letter moves to another split
-nnoremap <silent> <C-L> <c-w>l
-nnoremap <silent> <C-H> <c-w>h
-nnoremap <silent> <C-K> <c-w>k
-nnoremap <silent> <C-J> <c-w>j
-
+" Move to another split using C-W and an arrow or C-W and j,k,l,;
 " Control-arrow resizes splits
 nnoremap <silent> <C-Right> <c-w>>
 nnoremap <silent> <C-Left> <c-w><
@@ -245,9 +277,3 @@ let g:netrw_sort_sequence="\\/$"
 
 " Show quotes in JSON files
 let g:vim_json_syntax_conceal = 0
-
-" Disable languagetool because it's only meant for text
-let g:ale_linters_ignore = {
-\   'markdown': ['languagetool'],
-\   'asciidoc': ['languagetool']
-\}
