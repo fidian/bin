@@ -139,21 +139,14 @@ if has("autocmd")
     " Turn on spell checking for Markdown
     autocmd Filetype markdown setlocal spell! spelllang=en_us
 
-    " Pretty print / fix a file with \p
-    let g:mapleader="\\"
-    :map <silent> <Leader>p :ALEFix<CR>
-    :map <silent> <Leader>P :ALEFix<CR>
+    " Navigate to next/previous lint error with Ctrl-PageUp / Ctrl-PageDown
+    nnoremap <C-PageUp> :ALENextWrap<cr>
+    nnoremap <C-PageDown> :ALEPreviousWrap<cr>
 
-    " Set up fixers
-    let g:ale_fixers = {
-    \   'css': ['prettier'],
-    \   'javascript': ['prettier'],
-    \   'markdown': ['prettier'],
-    \   'typescript': ['prettier'],
+    " Set up linters
+    let g:ale_linters = {
+    \   'typescript': ['tsserver'],
     \}
-
-    " Pretty print / fix on save
-    let g:ale_fix_on_save = 1
 
     " Disable languagetool because it's only meant for text
     let g:ale_linters_ignore = {

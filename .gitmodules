@@ -40,3 +40,6 @@
 [submodule "conf/vim/bundle/vim-windowswap"]
 	path = conf/vim/bundle/vim-windowswap
 	url = https://github.com/wesQ3/vim-windowswap
+[submodule "conf/vim/bundle/vim-prettier"]
+	path = conf/vim/bundle/vim-prettier
+	url = https://github.com/prettier/vim-prettier
