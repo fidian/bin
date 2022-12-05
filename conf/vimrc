@@ -107,8 +107,6 @@ set tags=tags;/
 " nmap Q oecho __FILE__.':'.__LINE__."\n";//NOCOMMIT-DEBUG<esc>
 
 if has("autocmd")
-    "autocmd FileType typescript nnoremap <silent> <C-?> :echo tsuquyomi#hint()<CR>
-
 	" Configure Syntastic syntax checking
 	" map <F5> :SyntasticToggleMode<CR>
 
@@ -140,8 +138,12 @@ if has("autocmd")
     autocmd Filetype markdown setlocal spell! spelllang=en_us
 
     " Navigate to next/previous lint error with Ctrl-PageUp / Ctrl-PageDown
-    nnoremap <C-PageUp> :ALENextWrap<cr>
-    nnoremap <C-PageDown> :ALEPreviousWrap<cr>
+    nnoremap <C-PageUp> :ALEPreviousWrap<cr>
+    nnoremap <C-PageDown> :ALENextWrap<cr>
+
+    " Ctrl-? for a type hint
+    autocmd FileType typescript nnoremap <silent> <C-?> :ALEHover<CR>
+
 
     " Set up linters
     let g:ale_linters = {
