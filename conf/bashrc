@@ -361,6 +361,11 @@ if [[ -s "$NVM_DIR/nvm.sh" ]]; then
     . "$NVM_DIR/nvm.sh"
 fi
 
+if [[ -s "$NVM_DIR/bash_completion" ]]; then
+    # shellcheck disable=SC1090
+    . "$NVM_DIR/bash_completion"
+fi
+
 # Add marker - Ctrl-Space = search / recall, Ctrl-k = bookmark, Ctrl-t = place
 # cursor at next placeholder, "marker remove" = remove a shortcut
 if [[ "${BASH_VERSINFO[0]}" -gt 4 ]] || [[ "${BASH_VERSINFO[0]}" -eq 4 && "${BASH_VERSINFO[1]}" -ge 3 ]]; then
