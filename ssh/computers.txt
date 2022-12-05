@@ -3,3 +3,4 @@ nas - NAS at home
 perilla - Convertable HP laptop (previously an Acer named perilla, oregano, and cinnamon)
 rumkin - Web server (2015-10)
 salt - Netbook, unknown brand
+savory - Gateway GWTN141-10BK
