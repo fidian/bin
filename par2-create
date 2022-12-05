@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+workOn() {
+    local fn=$1
+
+    if [[ "$1" =~ *.par2 ]]; then
+        echo "This is a PAR2 file"
+        return 0
+    fi
+
+    if [[ -f "$1".par2 ]]; then
+        echo "Skipping creation - par2 already exists: $1"
+        return 0
+    fi
+
+    par2 create "$1"
+}
+
+while [[ $# -gt 0 ]]; do
+    workOn "$1" || exit $?
+    shift
+done

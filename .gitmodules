@@ -1,12 +1,6 @@
-[submodule "conf/vim/bundle/syntastic"]
-	path = conf/vim/bundle/syntastic
-	url = https://github.com/scrooloose/syntastic.git
 [submodule "conf/vim/bundle/hexmode"]
 	path = conf/vim/bundle/hexmode
 	url = https://github.com/fidian/hexmode.git
-[submodule "conf/vim/bundle/matchit"]
-	path = conf/vim/bundle/matchit
-	url = https://github.com/benjifisher/matchit.zip.git
 [submodule "conf/vim/bundle/markdown"]
 	path = conf/vim/bundle/markdown
 	url = https://github.com/tpope/vim-markdown.git
@@ -16,18 +10,12 @@
 [submodule "conf/vim/bundle/tcomment"]
 	path = conf/vim/bundle/tcomment
 	url = https://github.com/tomtom/tcomment_vim.git
-[submodule "conf/vim/bundle/xterm-color-table.vim"]
-	path = conf/vim/bundle/xterm-color-table.vim
-	url = https://github.com/guns/xterm-color-table.vim.git
 [submodule "src/mo"]
 	path = src/mo
 	url = https://github.com/tests-always-included/mo.git
 [submodule "src/gg"]
 	path = src/gg
 	url = https://github.com/fidian/gg.git
-[submodule "conf/vim/bundle/typescript-vim"]
-	path = conf/vim/bundle/typescript-vim
-	url = https://github.com/leafgarland/typescript-vim.git
 [submodule "conf/vim/bundle/vim-javascript-syntax"]
 	path = conf/vim/bundle/vim-javascript-syntax
 	url = https://github.com/jelera/vim-javascript-syntax.git
@@ -37,27 +25,21 @@
 [submodule "conf/vim/bundle/vim-grammarous"]
 	path = conf/vim/bundle/vim-grammarous
 	url = https://github.com/rhysd/vim-grammarous.git
-[submodule "conf/vim/bundle/vim-terraform"]
-	path = conf/vim/bundle/vim-terraform
-	url = https://github.com/hashivim/vim-terraform.git
 [submodule "src/st"]
 	path = src/st
 	url = https://github.com/nferraz/st.git
-[submodule "conf/vim/bundle/tsuquyomi"]
-	path = conf/vim/bundle/tsuquyomi
-	url = https://github.com/Quramy/tsuquyomi.git
 [submodule "src/marker"]
 	path = src/marker
 	url = https://github.com/pindexis/marker
-[submodule "conf/vim/bundle/vim-fugitive"]
-	path = conf/vim/bundle/vim-fugitive
-	url = https://github.com/tpope/vim-fugitive
-[submodule "conf/vim/bundle/vim-prettier"]
-	path = conf/vim/bundle/vim-prettier
-	url = https://github.com/prettier/vim-prettier.git
 [submodule "conf/vim/bundle/vim-json"]
 	path = conf/vim/bundle/vim-json
 	url = https://github.com/elzr/vim-json.git
-[submodule "conf/vim/bundle/vimproc.vim"]
-	path = conf/vim/bundle/vimproc.vim
-	url = https://github.com/Shougo/vimproc.vim
+[submodule "conf/vim/bundle/ale"]
+	path = conf/vim/bundle/ale
+	url = https://github.com/dense-analysis/ale
+[submodule "conf/vim/bundle/vim-windowswap"]
+	path = conf/vim/bundle/vim-windowswap
+	url = https://github.com/wesQ3/vim-windowswap
+[submodule "conf/vim/bundle/vim-prettier"]
+	path = conf/vim/bundle/vim-prettier
+	url = https://github.com/prettier/vim-prettier

@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 AGAINST="${2:-HEAD}"
 HASH=$(git merge-base "$1" "$AGAINST")
 
-git diff $HASH "$AGAINST"
+git diff "$HASH" "$AGAINST"

@@ -1,0 +1,5352 @@
+#!/usr/bin/env bash
+# Bash Package Manager (BPM)
+BPM_VERSION="1.1.7"
+BPM_BUILD_DATE="2018-08-27T17:50:04+00:00"
+BPM_GLOBAL_PATH=/usr/lib/bpm-modules
+
+# Includes a library that was installed via `bpm install`.
+#
+# $1 - Name of library to include.
+#
+# Starting at the current script's folder, this scans all parent folders
+# for a `bpm` directory that contains the include file for the
+# library. If that fails to find a hit, then the user's installed libraries
+# and system installed libraries are checked.
+#
+# Returns true (0) if the library loaded successfully. Returns 1 when unable
+# to locate the library or when the library doesn't `source` without errors.
+# Returns 2 if no module name is specified.
+bpm::include() {
+    local cachedVarName dir oldPwd
+
+    if [[ -z "${1-}" ]]; then
+        echo "No module name specified." >&2
+
+        return 2
+    fi
+
+    cachedVarName="bpm_include_$1"
+    cachedVarName=${cachedVarName//-/_}
+
+    if [[ -n "${!cachedVarName-}" ]]; then
+        # Already loaded
+        return 0
+    fi
+
+    # This next block is equivalent to shelling out to call `dirname`, but
+    # is roughly twice as fast. It changes things like "file" into ".", but
+    # anything with paths ("./file", "../file", "/dir/file") have the last
+    # slash removed as well as everything afterwards.
+    #
+    # Do not use path::dirname because that library hasn't been loaded yet.
+    dir=${BASH_SOURCE[1]}
+
+    if [[ "$dir" == */* ]]; then
+        dir=${dir%/*}
+    else
+        dir=.
+    fi
+
+    # Resolve ".." and similar things into a full path. Much faster than
+    # the alternative: `dir="$(cd "$dir"; pwd)"`
+    # Please pay special attention to the extra slash at the end of $dir.
+    oldPwd=$PWD
+    cd "$dir"
+    dir="$PWD/"
+    cd "$oldPwd"
+
+    # Scan every folder and their parents until we're at the root.
+    # This loop is a bit weird because we started with an extra slash added
+    # to $dir. That lets us remove the last element from $dir with each loop
+    # and still scan the root directory when we run out of other parents.
+    while [[ -n "$dir" ]]; do
+        dir=${dir%/*}
+
+        bpm::includeAttempt "$cachedVarName" "$dir/bpm-modules/.include/$1" && return 0
+    done
+
+    # Check in a user's module folder.
+    bpm::includeAttempt "$cachedVarName" ~/.bpm/.include/"$1" && return 0
+
+    # Check for a library on the system.
+    # Could use ${BASH_SOURCE[0]} for the location of bpm if we want to use
+    # a relative path.
+    bpm::includeAttempt "$cachedVarName" "$BPM_GLOBAL_PATH/.include/$1" && return 0
+
+    echo "BPM include not found: $1" >&2
+
+    return 1
+}
+
+
+# Tries to include a library at a given path. Used strictly by bpm::include
+# to attempt to load a module.
+#
+# $1 - Variable to assign if the library is loaded.
+# $2 - Full path of library to load.
+#
+# Returns true (0) if the library loaded successfully. Returns 1 if the
+# library does not exist. Returns 2 if there was an error during the load
+# of a library.
+bpm::includeAttempt() {
+    [[ -f "$2" ]] || return 1
+    . "$2" || return 2
+
+    # shellcheck disable=SC2059
+    printf -v "$1" "$2"
+}
+
+
+# Determine if the script is being sourced.
+#
+# Examples
+#
+#   mycommand() {
+#       # This function can be sourced or executed as a command.
+#   }
+#
+#   if bpm::isSourced; then
+#       mycommand "$@"
+#   fi
+#
+# Returns true (0) when sourced, false otherwise.
+bpm::isSourced() {
+    [[ "${FUNCNAME[1]-}" == "source" ]]
+}
+
+
+# Do not execute anything further when we are sourced.
+bpm::isSourced && return
+
+bpm_include_is=$0
+#!/usr/bin/env bash
+
+# Determine if a given environment variable exists and if it is an array.
+#
+# $1 - Name of environment variable.
+#
+# Examples
+#
+#   var=(abc)
+#
+#   if is::array var; then
+#       echo "This is an array"
+#       echo "Be careful to use the variable's name in the function call."
+#   fi
+#
+#   right=wrong
+#   wrong=()
+#
+#   if is::array $right; then
+#       echo "This also says it is an array, which is incorrect."
+#       echo 'The correct call is `is::array right` without the $.'
+#   fi
+#
+# Returns true (0) if the named variable exists and if it is an array.
+# Returns false (1) otherwise.
+is::array() {
+    [[ "$(declare -p "$1" 2> /dev/null)" == "declare -"[aA]* ]]
+}
+
+
+# Determine if the given name is a defined function.
+#
+# $1 - Function name to check.
+#
+# Examples
+#
+#   moo () {
+#       echo "This is a function"
+#   }
+#
+#   if is::function moo; then
+#       echo "moo is a defined function"
+#   fi
+#
+# Returns true (0) if the name is a function, false (1) otherwise.
+is::function() {
+    if [[ "$(type -t "$1" || :)" == "function" ]]; then
+        return 0
+    fi
+
+    return 1
+}
+
+
+# Determine if a variable is assigned, even if it is assigned an empty value.
+#
+# $1 - Variable name to check.
+#
+# Examples
+#
+#   unset abc
+#
+#   if ! is::set abc; then
+#       echo "The variable is not set"
+#   fi
+#
+#   abc=""
+#
+#   if is::set abc; then
+#       echo "This is true, the variable is set"
+#   fi
+#
+# Returns true (0) if the variable is set, false (1) if the variable is unset.
+is::set() {
+    [[ "${!1-a}" == "${!1-b}" ]]
+}
+bpm_include_assign=$0
+#!/usr/bin/env bash
+
+# Array Splitting
+# ---------------
+#
+# IFS must be set to a string containing space or unset in order for
+# the array slicing to work regardless of the current IFS setting on
+# bash 3.  This is detailed further at
+# https://github.com/fidian/gg-core/pull/7
+
+. bpm
+bpm::include is
+
+# Send an array as a variable up to caller of a function. It is best used
+# with some odd syntax as shown in the example, which preserves empty arrays.
+#
+# $1   - Variable name
+# $2-@ - Array elements
+#
+# Examples
+#
+#   callFunc () {
+#       local myArray=(one two three)
+#       local "${1-}" && assign::array "$1" ${myArray[@]+"${myArray[@]}"}
+#   }
+#   callFunc dest
+#   echo "${dest[@]}" # writes "one two three"
+#
+# Returns nothing.
+assign::array() {
+    local IFS
+
+    # Must set IFS - see the "Array Splitting" discussion.
+    IFS=
+    unset -v "$1"
+
+    eval "$(printf "%s=(\"\${@:2}\")" "$1")"
+}
+
+
+# Assigns a value by reference.
+#
+# $1 - Destination variable name.
+# $2 - Source variable name.
+#
+# Copies an array or scalar to the destination. This can be much simpler than
+# assigning arrays. See the example for further information.
+#
+# Examples
+#
+#   # Copy a value
+#   a="a string"
+#   assign::byRef b a
+#   echo "$b"  # "a string"
+#
+#   # Copy an array with an unknown number of elements (even zero)
+#   # Replace "..." with zero or more elements.
+#   theArray=( ... )
+#   assign::byRef theArrayCopy theArray
+#   set | grep ^theArray
+#   # This shows the array was copied
+#
+#   # Copies an unset value as well.
+#   unset unsetValue
+#   unsetValueCopy=something
+#   assign::byRef unsetValueCopy unsetValue
+#   set | grep ^unsetValue
+#   # Neither shows up.
+#
+# Returns nothing.
+assign::byRef() {
+    unset -v "$1"
+
+    if is::array "$2"; then
+        # This looks awful. It generates a string like this
+        # [[ ${#SRC[@]} -gt 0 ]] && DST=("${SRC[@]}") || DST=()
+        eval "$(printf "[[ \${#%s[@]} -gt 0 ]] && %s=(\"\${%s[@]}\") || %s=()" "$2" "$1" "$2" "$1")"
+    elif [[ -n "${!2+_}" ]]; then
+        # If there is a value, copy it.
+        printf -v "$1" '%s' "${!2}"
+    fi
+}
+
+
+# Assign stdin to a value, preserving all newlines and everything that is
+# piped in.
+#
+# $1 - Variable name.
+#
+# Examples:
+#
+#   # This assigns *all* output to the variable
+#   assign::pipe output < <(ls)
+#
+#   # This does not; it trims the trailing newline.
+#   output=$(ls)
+#
+#   # Do not use it this way because the later functions are spawned in
+#   # subshells, thus can not really change the value how you want.
+#   echo "DOES NOT WORK THIS WAY" | assign::pipe badExample
+#
+#   # Works with heredocs!
+#   assign::pipe helpMessage <<'EOF'
+#   This is my help message.
+#   It can have "quotes", 'apostrophes' and `backticks`.
+#   EOF
+assign::pipe() {
+    assign::value "$1" "$(
+        cat
+
+        # Tricky thing part 1: append a period to the end so the subshell
+        # preserves any newlines at the end that cat found.
+        echo -n "."
+    )"
+
+    # Tricky thing part 2: remove that newline. This is all done without
+    # using a temporary variable so we don't need to worry about conflicting
+    # with parent scope variables.
+    assign::value "$1" "${!1%.}"
+}
+
+
+# Send a variable up to the parent of the caller of this function.
+#
+# $1 - Variable name.
+# $2 - Value to assign.
+#
+# Examples
+#
+#   callFunc() {
+#       local dest
+#       dest="Just an example to prove the local variable is overwritten"
+#       local "${1-}" && assign::value "$1" "the value"
+#   }
+#
+#   dest="value from target scope, ignored"
+#   callFunc dest
+#   echo "$dest"  # writes "the value"
+#
+# Returns nothing.
+assign::value() {
+    unset -v "$1"
+    printf -v "$1" '%s' "${2-}"
+}
+bpm_include_string=$0
+#!/usr/bin/env bash
+
+. bpm
+bpm::include assign
+
+
+# Convert a string into a safely quoted string that's safe to pass around as an
+# argument.  It is unlikely that this will be necessary for most scripting
+# that's performed because one would need to use `eval` to parse this back to
+# the original value.
+#
+# $1   - Name of the environment variable that should get the result.
+# $2-@ - The value or values to escape.
+#
+# Examples
+#
+#   string::escape exampleResult one two three "four five"
+#   set | fgrep "exampleResult"
+#   # Output:
+#   # exampleResult='one two three four\ five'
+#
+# Returns nothing.
+string::escape() {
+    local escaped target
+
+    target="$1"
+    shift
+    printf -v escaped " %q" "$@" || return $?
+
+    local "$target" && assign::value "$target" "${escaped:1}"
+}
+
+
+# Hex decodes a string and writes it to stdout. Any non-hex characters are
+# ignored. Only decodes when there are two hex characters together, thus a
+# hex string of "308" is decoded as simply "0" (hex 0x30) and the last "8"
+# character is ignored.
+#
+# $1 - Target variable name for the hex encoded string.
+# $2 - The string to encode.
+#
+# Returns nothing.
+string::fromHex() {
+    local hex maxPos pos result
+
+    hex=$(
+        shopt -s extglob
+        echo "${2//[^a-fA-F0-9]}"
+    )
+    maxPos=$((${#hex} / 2))
+    result=""
+    pos=0
+
+    while [[ "$pos" -lt "$maxPos" ]]; do
+        result="$result\\x${hex:$pos * 2:2}"
+        pos=$((pos + 1))
+    done
+
+    printf -v result "$result"
+
+    local "${1-}" && assign::value "$1" "$result"
+}
+
+
+# Find the first index of a substring.  If not found, sets the index to -1.
+#
+# $1 - Destination variable for the index
+# $2 - Needle
+# $3 - Haystack
+#
+# Returns nothing.
+string::indexOf() {
+    local pos string
+
+    string=${3%%$2*}
+    [[ "$string" == "$3" ]] && pos=-1 || pos=${#string}
+
+    local "${1-}" && assign::value "$1" "$pos"
+}
+
+
+# Prepend a string before each line in a variable.  Also converts all newlines
+# to Unix-style newlines in case they weren't that way before.
+#
+# $1 - Name of variable where the result will be stored.
+# $2 - Prefix string to add to the beginning of all lines.
+# $3 - The original string.
+#
+# Example:
+#
+#   printf -v lines "one\ntwo\n"
+#   # lines is three lines with nothing on the third line.
+#
+#   string::prefixLines result "Look:  " "$lines"
+#   # Result is "Look:  one\nLook:  two\nLook:  "
+#   # Even the last line is (intentionally) prefixed.
+#
+# Returns nothing.
+string::prefixLines() {
+    local output
+
+    output=${3//$'\r\n'/$'\n'}
+    output=${output//$'\r'/$'\n'}
+    output="$2$output"
+    output=${output//$'\n'/$'\n'$2}
+
+    local "${1-}" && assign::value "$1" "$output"
+}
+
+
+# Split a string into an array.
+#
+# $1 - Destination variable name.
+# $2 - The string to split.
+# $3 - Optional, the delimeter, defaults to a space.
+#
+# Examples
+#
+#   string::split DEST "a b c d"
+#   set | grep ^DEST=
+#   # DEST=([0]="a" [1]="b" [2]="c" [3]="d")
+#
+#   string::split DEST "one|two||three|" "|"
+#   set | grep ^DEST=
+#   # DEST=([0]="one" [1]="two" [2]="" [3]="three" [4]="")
+#
+# Returns nothing.
+string::split() {
+    local delim result str target
+
+    target=${1-}
+    str=${2-}
+    delim=${3:- }
+    result=()
+
+    while [[ "$str" != "${str#*$delim}" ]]; do
+        result[${#result[@]}]=${str%%${delim}*}
+        str=${str#*$delim}
+    done
+
+    result[${#result[@]}]=$str
+
+    # shellcheck disable=SC2068
+    local "$target" && assign::array "$target" ${result[@]+"${result[@]}"}
+}
+
+
+# Hex encodes a string and writes it to stdout.
+#
+# Does not handle NULL characters. Hexadecimal is in capital letters.
+#
+# $1 - Target variable name for the hex encoded string.
+# $2 - The string to encode.
+#
+# Returns nothing.
+string::toHex() {
+    local cmd hex IFS LC_CTYPE pattern
+
+    IFS=$' \n' # Work around crazy array slicing bug before bash 4.0-rc1.
+    LC_CTYPE=C
+    hex=
+
+    if [[ -n "$2" ]]; then
+        pattern=${2//?/(.)}
+
+        # Match against a pattern that captures each character. No quotes here.
+        [[ "$2" =~ $pattern ]]
+
+        # Convert to arguments to printf, an escaped apostrophe + the char + a space.
+        printf -v hex "\\\\'%q " "${BASH_REMATCH[@]:1}"
+
+        # Now convert to hex. Do not add quotes to $hex.
+        eval "printf -v hex '${2//?/%02X}' $hex"
+    fi
+
+    local "$1" && assign::value "$1" "$hex"
+}
+
+
+if [[ "${BASH_VERSINFO[0]}" -gt 4 ]] || [[ "${BASH_VERSINFO[0]}" -eq 4 && "${BASH_VERSINFO[1]}" -ge 2 ]]; then
+    # Converts a string to lowercase.
+    #
+    # $1 - Destination variable name.
+    # $2 - String to convert.
+    #
+    # Returns nothing.
+    string::toLower() {
+        local "${1-}" && assign::value "$1" "${2,,}"
+    }
+fi
+
+
+# Converts a string to lowercase. Not locale-aware, but does handle Unicode.
+#
+# $1 - Destination variable name.
+# $2 - String to convert.
+#
+# Returns nothing.
+string::toLowerFallback() {
+    local string
+
+    string=$2
+
+    if [[ "$string" != *[^[:ascii:]]* ]]; then
+        string=${string//A/a}
+        string=${string//B/b}
+        string=${string//C/c}
+        string=${string//D/d}
+        string=${string//E/e}
+        string=${string//F/f}
+        string=${string//G/g}
+        string=${string//H/h}
+        string=${string//I/i}
+        string=${string//J/j}
+        string=${string//K/k}
+        string=${string//L/l}
+        string=${string//M/m}
+        string=${string//N/n}
+        string=${string//O/o}
+        string=${string//P/p}
+        string=${string//Q/q}
+        string=${string//R/r}
+        string=${string//S/s}
+        string=${string//T/t}
+        string=${string//U/u}
+        string=${string//V/v}
+        string=${string//W/w}
+        string=${string//X/x}
+        string=${string//Y/y}
+        string=${string//Z/z}
+    else
+        string=${string//A/a}
+        string=${string//B/b}
+        string=${string//C/c}
+        string=${string//D/d}
+        string=${string//E/e}
+        string=${string//F/f}
+        string=${string//G/g}
+        string=${string//H/h}
+        string=${string//I/i}
+        string=${string//J/j}
+        string=${string//K/k}
+        string=${string//L/l}
+        string=${string//M/m}
+        string=${string//N/n}
+        string=${string//O/o}
+        string=${string//P/p}
+        string=${string//Q/q}
+        string=${string//R/r}
+        string=${string//S/s}
+        string=${string//T/t}
+        string=${string//U/u}
+        string=${string//V/v}
+        string=${string//W/w}
+        string=${string//X/x}
+        string=${string//Y/y}
+        string=${string//Z/z}
+        string=${string//À/à}
+        string=${string//Á/á}
+        string=${string//Â/â}
+        string=${string//Ã/ã}
+        string=${string//Ä/ä}
+        string=${string//Å/å}
+        string=${string//Æ/æ}
+        string=${string//Ç/ç}
+        string=${string//È/è}
+        string=${string//É/é}
+        string=${string//Ê/ê}
+        string=${string//Ë/ë}
+        string=${string//Ì/ì}
+        string=${string//Í/í}
+        string=${string//Î/î}
+        string=${string//Ï/ï}
+        string=${string//Ð/ð}
+        string=${string//Ñ/ñ}
+        string=${string//Ò/ò}
+        string=${string//Ó/ó}
+        string=${string//Ô/ô}
+        string=${string//Õ/õ}
+        string=${string//Ö/ö}
+        string=${string//Ø/ø}
+        string=${string//Ù/ù}
+        string=${string//Ú/ú}
+        string=${string//Û/û}
+        string=${string//Ü/ü}
+        string=${string//Ý/ý}
+        string=${string//Þ/þ}
+        string=${string//Ā/ā}
+        string=${string//Ă/ă}
+        string=${string//Ą/ą}
+        string=${string//Ć/ć}
+        string=${string//Ĉ/ĉ}
+        string=${string//Ċ/ċ}
+        string=${string//Č/č}
+        string=${string//Ď/ď}
+        string=${string//Đ/đ}
+        string=${string//Ē/ē}
+        string=${string//Ĕ/ĕ}
+        string=${string//Ė/ė}
+        string=${string//Ę/ę}
+        string=${string//Ě/ě}
+        string=${string//Ĝ/ĝ}
+        string=${string//Ğ/ğ}
+        string=${string//Ġ/ġ}
+        string=${string//Ģ/ģ}
+        string=${string//Ĥ/ĥ}
+        string=${string//Ħ/ħ}
+        string=${string//Ĩ/ĩ}
+        string=${string//Ī/ī}
+        string=${string//Ĭ/ĭ}
+        string=${string//Į/į}
+        string=${string//İ/i}
+        string=${string//Ĳ/ĳ}
+        string=${string//Ĵ/ĵ}
+        string=${string//Ķ/ķ}
+        string=${string//Ĺ/ĺ}
+        string=${string//Ļ/ļ}
+        string=${string//Ľ/ľ}
+        string=${string//Ŀ/ŀ}
+        string=${string//Ł/ł}
+        string=${string//Ń/ń}
+        string=${string//Ņ/ņ}
+        string=${string//Ň/ň}
+        string=${string//Ŋ/ŋ}
+        string=${string//Ō/ō}
+        string=${string//Ŏ/ŏ}
+        string=${string//Ő/ő}
+        string=${string//Œ/œ}
+        string=${string//Ŕ/ŕ}
+        string=${string//Ŗ/ŗ}
+        string=${string//Ř/ř}
+        string=${string//Ś/ś}
+        string=${string//Ŝ/ŝ}
+        string=${string//Ş/ş}
+        string=${string//Š/š}
+        string=${string//Ţ/ţ}
+        string=${string//Ť/ť}
+        string=${string//Ŧ/ŧ}
+        string=${string//Ũ/ũ}
+        string=${string//Ū/ū}
+        string=${string//Ŭ/ŭ}
+        string=${string//Ů/ů}
+        string=${string//Ű/ű}
+        string=${string//Ų/ų}
+        string=${string//Ŵ/ŵ}
+        string=${string//Ŷ/ŷ}
+        string=${string//Ÿ/ÿ}
+        string=${string//Ź/ź}
+        string=${string//Ż/ż}
+        string=${string//Ž/ž}
+        string=${string//Ɓ/ɓ}
+        string=${string//Ƃ/ƃ}
+        string=${string//Ƅ/ƅ}
+        string=${string//Ɔ/ɔ}
+        string=${string//Ƈ/ƈ}
+        string=${string//Ɖ/ɖ}
+        string=${string//Ɗ/ɗ}
+        string=${string//Ƌ/ƌ}
+        string=${string//Ǝ/ǝ}
+        string=${string//Ə/ə}
+        string=${string//Ɛ/ɛ}
+        string=${string//Ƒ/ƒ}
+        string=${string//Ɠ/ɠ}
+        string=${string//Ɣ/ɣ}
+        string=${string//Ɩ/ɩ}
+        string=${string//Ɨ/ɨ}
+        string=${string//Ƙ/ƙ}
+        string=${string//Ɯ/ɯ}
+        string=${string//Ɲ/ɲ}
+        string=${string//Ɵ/ɵ}
+        string=${string//Ơ/ơ}
+        string=${string//Ƣ/ƣ}
+        string=${string//Ƥ/ƥ}
+        string=${string//Ʀ/ʀ}
+        string=${string//Ƨ/ƨ}
+        string=${string//Ʃ/ʃ}
+        string=${string//Ƭ/ƭ}
+        string=${string//Ʈ/ʈ}
+        string=${string//Ư/ư}
+        string=${string//Ʊ/ʊ}
+        string=${string//Ʋ/ʋ}
+        string=${string//Ƴ/ƴ}
+        string=${string//Ƶ/ƶ}
+        string=${string//Ʒ/ʒ}
+        string=${string//Ƹ/ƹ}
+        string=${string//Ƽ/ƽ}
+        string=${string//Ǆ/ǆ}
+        string=${string//ǅ/ǆ}
+        string=${string//Ǉ/ǉ}
+        string=${string//ǈ/ǉ}
+        string=${string//Ǌ/ǌ}
+        string=${string//ǋ/ǌ}
+        string=${string//Ǎ/ǎ}
+        string=${string//Ǐ/ǐ}
+        string=${string//Ǒ/ǒ}
+        string=${string//Ǔ/ǔ}
+        string=${string//Ǖ/ǖ}
+        string=${string//Ǘ/ǘ}
+        string=${string//Ǚ/ǚ}
+        string=${string//Ǜ/ǜ}
+        string=${string//Ǟ/ǟ}
+        string=${string//Ǡ/ǡ}
+        string=${string//Ǣ/ǣ}
+        string=${string//Ǥ/ǥ}
+        string=${string//Ǧ/ǧ}
+        string=${string//Ǩ/ǩ}
+        string=${string//Ǫ/ǫ}
+        string=${string//Ǭ/ǭ}
+        string=${string//Ǯ/ǯ}
+        string=${string//Ǳ/ǳ}
+        string=${string//ǲ/ǳ}
+        string=${string//Ǵ/ǵ}
+        string=${string//Ƕ/ƕ}
+        string=${string//Ƿ/ƿ}
+        string=${string//Ǹ/ǹ}
+        string=${string//Ǻ/ǻ}
+        string=${string//Ǽ/ǽ}
+        string=${string//Ǿ/ǿ}
+        string=${string//Ȁ/ȁ}
+        string=${string//Ȃ/ȃ}
+        string=${string//Ȅ/ȅ}
+        string=${string//Ȇ/ȇ}
+        string=${string//Ȉ/ȉ}
+        string=${string//Ȋ/ȋ}
+        string=${string//Ȍ/ȍ}
+        string=${string//Ȏ/ȏ}
+        string=${string//Ȑ/ȑ}
+        string=${string//Ȓ/ȓ}
+        string=${string//Ȕ/ȕ}
+        string=${string//Ȗ/ȗ}
+        string=${string//Ș/ș}
+        string=${string//Ț/ț}
+        string=${string//Ȝ/ȝ}
+        string=${string//Ȟ/ȟ}
+        string=${string//Ƞ/ƞ}
+        string=${string//Ȣ/ȣ}
+        string=${string//Ȥ/ȥ}
+        string=${string//Ȧ/ȧ}
+        string=${string//Ȩ/ȩ}
+        string=${string//Ȫ/ȫ}
+        string=${string//Ȭ/ȭ}
+        string=${string//Ȯ/ȯ}
+        string=${string//Ȱ/ȱ}
+        string=${string//Ȳ/ȳ}
+        string=${string//Ⱥ/ⱥ}
+        string=${string//Ȼ/ȼ}
+        string=${string//Ƚ/ƚ}
+        string=${string//Ⱦ/ⱦ}
+        string=${string//Ɂ/ɂ}
+        string=${string//Ƀ/ƀ}
+        string=${string//Ʉ/ʉ}
+        string=${string//Ʌ/ʌ}
+        string=${string//Ɇ/ɇ}
+        string=${string//Ɉ/ɉ}
+        string=${string//Ɋ/ɋ}
+        string=${string//Ɍ/ɍ}
+        string=${string//Ɏ/ɏ}
+        string=${string//Ͱ/ͱ}
+        string=${string//Ͳ/ͳ}
+        string=${string//Ͷ/ͷ}
+        string=${string//Ϳ/ϳ}
+        string=${string//Ά/ά}
+        string=${string//Έ/έ}
+        string=${string//Ή/ή}
+        string=${string//Ί/ί}
+        string=${string//Ό/ό}
+        string=${string//Ύ/ύ}
+        string=${string//Ώ/ώ}
+        string=${string//Α/α}
+        string=${string//Β/β}
+        string=${string//Γ/γ}
+        string=${string//Δ/δ}
+        string=${string//Ε/ε}
+        string=${string//Ζ/ζ}
+        string=${string//Η/η}
+        string=${string//Θ/θ}
+        string=${string//Ι/ι}
+        string=${string//Κ/κ}
+        string=${string//Λ/λ}
+        string=${string//Μ/μ}
+        string=${string//Ν/ν}
+        string=${string//Ξ/ξ}
+        string=${string//Ο/ο}
+        string=${string//Π/π}
+        string=${string//Ρ/ρ}
+        string=${string//Σ/σ}
+        string=${string//Τ/τ}
+        string=${string//Υ/υ}
+        string=${string//Φ/φ}
+        string=${string//Χ/χ}
+        string=${string//Ψ/ψ}
+        string=${string//Ω/ω}
+        string=${string//Ϊ/ϊ}
+        string=${string//Ϋ/ϋ}
+        string=${string//Ϗ/ϗ}
+        string=${string//Ϙ/ϙ}
+        string=${string//Ϛ/ϛ}
+        string=${string//Ϝ/ϝ}
+        string=${string//Ϟ/ϟ}
+        string=${string//Ϡ/ϡ}
+        string=${string//Ϣ/ϣ}
+        string=${string//Ϥ/ϥ}
+        string=${string//Ϧ/ϧ}
+        string=${string//Ϩ/ϩ}
+        string=${string//Ϫ/ϫ}
+        string=${string//Ϭ/ϭ}
+        string=${string//Ϯ/ϯ}
+        string=${string//ϴ/θ}
+        string=${string//Ϸ/ϸ}
+        string=${string//Ϲ/ϲ}
+        string=${string//Ϻ/ϻ}
+        string=${string//Ͻ/ͻ}
+        string=${string//Ͼ/ͼ}
+        string=${string//Ͽ/ͽ}
+        string=${string//Ѐ/ѐ}
+        string=${string//Ё/ё}
+        string=${string//Ђ/ђ}
+        string=${string//Ѓ/ѓ}
+        string=${string//Є/є}
+        string=${string//Ѕ/ѕ}
+        string=${string//І/і}
+        string=${string//Ї/ї}
+        string=${string//Ј/ј}
+        string=${string//Љ/љ}
+        string=${string//Њ/њ}
+        string=${string//Ћ/ћ}
+        string=${string//Ќ/ќ}
+        string=${string//Ѝ/ѝ}
+        string=${string//Ў/ў}
+        string=${string//Џ/џ}
+        string=${string//А/а}
+        string=${string//Б/б}
+        string=${string//В/в}
+        string=${string//Г/г}
+        string=${string//Д/д}
+        string=${string//Е/е}
+        string=${string//Ж/ж}
+        string=${string//З/з}
+        string=${string//И/и}
+        string=${string//Й/й}
+        string=${string//К/к}
+        string=${string//Л/л}
+        string=${string//М/м}
+        string=${string//Н/н}
+        string=${string//О/о}
+        string=${string//П/п}
+        string=${string//Р/р}
+        string=${string//С/с}
+        string=${string//Т/т}
+        string=${string//У/у}
+        string=${string//Ф/ф}
+        string=${string//Х/х}
+        string=${string//Ц/ц}
+        string=${string//Ч/ч}
+        string=${string//Ш/ш}
+        string=${string//Щ/щ}
+        string=${string//Ъ/ъ}
+        string=${string//Ы/ы}
+        string=${string//Ь/ь}
+        string=${string//Э/э}
+        string=${string//Ю/ю}
+        string=${string//Я/я}
+        string=${string//Ѡ/ѡ}
+        string=${string//Ѣ/ѣ}
+        string=${string//Ѥ/ѥ}
+        string=${string//Ѧ/ѧ}
+        string=${string//Ѩ/ѩ}
+        string=${string//Ѫ/ѫ}
+        string=${string//Ѭ/ѭ}
+        string=${string//Ѯ/ѯ}
+        string=${string//Ѱ/ѱ}
+        string=${string//Ѳ/ѳ}
+        string=${string//Ѵ/ѵ}
+        string=${string//Ѷ/ѷ}
+        string=${string//Ѹ/ѹ}
+        string=${string//Ѻ/ѻ}
+        string=${string//Ѽ/ѽ}
+        string=${string//Ѿ/ѿ}
+        string=${string//Ҁ/ҁ}
+        string=${string//Ҋ/ҋ}
+        string=${string//Ҍ/ҍ}
+        string=${string//Ҏ/ҏ}
+        string=${string//Ґ/ґ}
+        string=${string//Ғ/ғ}
+        string=${string//Ҕ/ҕ}
+        string=${string//Җ/җ}
+        string=${string//Ҙ/ҙ}
+        string=${string//Қ/қ}
+        string=${string//Ҝ/ҝ}
+        string=${string//Ҟ/ҟ}
+        string=${string//Ҡ/ҡ}
+        string=${string//Ң/ң}
+        string=${string//Ҥ/ҥ}
+        string=${string//Ҧ/ҧ}
+        string=${string//Ҩ/ҩ}
+        string=${string//Ҫ/ҫ}
+        string=${string//Ҭ/ҭ}
+        string=${string//Ү/ү}
+        string=${string//Ұ/ұ}
+        string=${string//Ҳ/ҳ}
+        string=${string//Ҵ/ҵ}
+        string=${string//Ҷ/ҷ}
+        string=${string//Ҹ/ҹ}
+        string=${string//Һ/һ}
+        string=${string//Ҽ/ҽ}
+        string=${string//Ҿ/ҿ}
+        string=${string//Ӏ/ӏ}
+        string=${string//Ӂ/ӂ}
+        string=${string//Ӄ/ӄ}
+        string=${string//Ӆ/ӆ}
+        string=${string//Ӈ/ӈ}
+        string=${string//Ӊ/ӊ}
+        string=${string//Ӌ/ӌ}
+        string=${string//Ӎ/ӎ}
+        string=${string//Ӑ/ӑ}
+        string=${string//Ӓ/ӓ}
+        string=${string//Ӕ/ӕ}
+        string=${string//Ӗ/ӗ}
+        string=${string//Ә/ә}
+        string=${string//Ӛ/ӛ}
+        string=${string//Ӝ/ӝ}
+        string=${string//Ӟ/ӟ}
+        string=${string//Ӡ/ӡ}
+        string=${string//Ӣ/ӣ}
+        string=${string//Ӥ/ӥ}
+        string=${string//Ӧ/ӧ}
+        string=${string//Ө/ө}
+        string=${string//Ӫ/ӫ}
+        string=${string//Ӭ/ӭ}
+        string=${string//Ӯ/ӯ}
+        string=${string//Ӱ/ӱ}
+        string=${string//Ӳ/ӳ}
+        string=${string//Ӵ/ӵ}
+        string=${string//Ӷ/ӷ}
+        string=${string//Ӹ/ӹ}
+        string=${string//Ӻ/ӻ}
+        string=${string//Ӽ/ӽ}
+        string=${string//Ӿ/ӿ}
+        string=${string//Ԁ/ԁ}
+        string=${string//Ԃ/ԃ}
+        string=${string//Ԅ/ԅ}
+        string=${string//Ԇ/ԇ}
+        string=${string//Ԉ/ԉ}
+        string=${string//Ԋ/ԋ}
+        string=${string//Ԍ/ԍ}
+        string=${string//Ԏ/ԏ}
+        string=${string//Ԑ/ԑ}
+        string=${string//Ԓ/ԓ}
+        string=${string//Ԕ/ԕ}
+        string=${string//Ԗ/ԗ}
+        string=${string//Ԙ/ԙ}
+        string=${string//Ԛ/ԛ}
+        string=${string//Ԝ/ԝ}
+        string=${string//Ԟ/ԟ}
+        string=${string//Ԡ/ԡ}
+        string=${string//Ԣ/ԣ}
+        string=${string//Ԥ/ԥ}
+        string=${string//Ԧ/ԧ}
+        string=${string//Ԩ/ԩ}
+        string=${string//Ԫ/ԫ}
+        string=${string//Ԭ/ԭ}
+        string=${string//Ԯ/ԯ}
+        string=${string//Ա/ա}
+        string=${string//Բ/բ}
+        string=${string//Գ/գ}
+        string=${string//Դ/դ}
+        string=${string//Ե/ե}
+        string=${string//Զ/զ}
+        string=${string//Է/է}
+        string=${string//Ը/ը}
+        string=${string//Թ/թ}
+        string=${string//Ժ/ժ}
+        string=${string//Ի/ի}
+        string=${string//Լ/լ}
+        string=${string//Խ/խ}
+        string=${string//Ծ/ծ}
+        string=${string//Կ/կ}
+        string=${string//Հ/հ}
+        string=${string//Ձ/ձ}
+        string=${string//Ղ/ղ}
+        string=${string//Ճ/ճ}
+        string=${string//Մ/մ}
+        string=${string//Յ/յ}
+        string=${string//Ն/ն}
+        string=${string//Շ/շ}
+        string=${string//Ո/ո}
+        string=${string//Չ/չ}
+        string=${string//Պ/պ}
+        string=${string//Ջ/ջ}
+        string=${string//Ռ/ռ}
+        string=${string//Ս/ս}
+        string=${string//Վ/վ}
+        string=${string//Տ/տ}
+        string=${string//Ր/ր}
+        string=${string//Ց/ց}
+        string=${string//Ւ/ւ}
+        string=${string//Փ/փ}
+        string=${string//Ք/ք}
+        string=${string//Օ/օ}
+        string=${string//Ֆ/ֆ}
+        string=${string//Ⴀ/ⴀ}
+        string=${string//Ⴁ/ⴁ}
+        string=${string//Ⴂ/ⴂ}
+        string=${string//Ⴃ/ⴃ}
+        string=${string//Ⴄ/ⴄ}
+        string=${string//Ⴅ/ⴅ}
+        string=${string//Ⴆ/ⴆ}
+        string=${string//Ⴇ/ⴇ}
+        string=${string//Ⴈ/ⴈ}
+        string=${string//Ⴉ/ⴉ}
+        string=${string//Ⴊ/ⴊ}
+        string=${string//Ⴋ/ⴋ}
+        string=${string//Ⴌ/ⴌ}
+        string=${string//Ⴍ/ⴍ}
+        string=${string//Ⴎ/ⴎ}
+        string=${string//Ⴏ/ⴏ}
+        string=${string//Ⴐ/ⴐ}
+        string=${string//Ⴑ/ⴑ}
+        string=${string//Ⴒ/ⴒ}
+        string=${string//Ⴓ/ⴓ}
+        string=${string//Ⴔ/ⴔ}
+        string=${string//Ⴕ/ⴕ}
+        string=${string//Ⴖ/ⴖ}
+        string=${string//Ⴗ/ⴗ}
+        string=${string//Ⴘ/ⴘ}
+        string=${string//Ⴙ/ⴙ}
+        string=${string//Ⴚ/ⴚ}
+        string=${string//Ⴛ/ⴛ}
+        string=${string//Ⴜ/ⴜ}
+        string=${string//Ⴝ/ⴝ}
+        string=${string//Ⴞ/ⴞ}
+        string=${string//Ⴟ/ⴟ}
+        string=${string//Ⴠ/ⴠ}
+        string=${string//Ⴡ/ⴡ}
+        string=${string//Ⴢ/ⴢ}
+        string=${string//Ⴣ/ⴣ}
+        string=${string//Ⴤ/ⴤ}
+        string=${string//Ⴥ/ⴥ}
+        string=${string//Ⴧ/ⴧ}
+        string=${string//Ⴭ/ⴭ}
+        string=${string//Ꭰ/ꭰ}
+        string=${string//Ꭱ/ꭱ}
+        string=${string//Ꭲ/ꭲ}
+        string=${string//Ꭳ/ꭳ}
+        string=${string//Ꭴ/ꭴ}
+        string=${string//Ꭵ/ꭵ}
+        string=${string//Ꭶ/ꭶ}
+        string=${string//Ꭷ/ꭷ}
+        string=${string//Ꭸ/ꭸ}
+        string=${string//Ꭹ/ꭹ}
+        string=${string//Ꭺ/ꭺ}
+        string=${string//Ꭻ/ꭻ}
+        string=${string//Ꭼ/ꭼ}
+        string=${string//Ꭽ/ꭽ}
+        string=${string//Ꭾ/ꭾ}
+        string=${string//Ꭿ/ꭿ}
+        string=${string//Ꮀ/ꮀ}
+        string=${string//Ꮁ/ꮁ}
+        string=${string//Ꮂ/ꮂ}
+        string=${string//Ꮃ/ꮃ}
+        string=${string//Ꮄ/ꮄ}
+        string=${string//Ꮅ/ꮅ}
+        string=${string//Ꮆ/ꮆ}
+        string=${string//Ꮇ/ꮇ}
+        string=${string//Ꮈ/ꮈ}
+        string=${string//Ꮉ/ꮉ}
+        string=${string//Ꮊ/ꮊ}
+        string=${string//Ꮋ/ꮋ}
+        string=${string//Ꮌ/ꮌ}
+        string=${string//Ꮍ/ꮍ}
+        string=${string//Ꮎ/ꮎ}
+        string=${string//Ꮏ/ꮏ}
+        string=${string//Ꮐ/ꮐ}
+        string=${string//Ꮑ/ꮑ}
+        string=${string//Ꮒ/ꮒ}
+        string=${string//Ꮓ/ꮓ}
+        string=${string//Ꮔ/ꮔ}
+        string=${string//Ꮕ/ꮕ}
+        string=${string//Ꮖ/ꮖ}
+        string=${string//Ꮗ/ꮗ}
+        string=${string//Ꮘ/ꮘ}
+        string=${string//Ꮙ/ꮙ}
+        string=${string//Ꮚ/ꮚ}
+        string=${string//Ꮛ/ꮛ}
+        string=${string//Ꮜ/ꮜ}
+        string=${string//Ꮝ/ꮝ}
+        string=${string//Ꮞ/ꮞ}
+        string=${string//Ꮟ/ꮟ}
+        string=${string//Ꮠ/ꮠ}
+        string=${string//Ꮡ/ꮡ}
+        string=${string//Ꮢ/ꮢ}
+        string=${string//Ꮣ/ꮣ}
+        string=${string//Ꮤ/ꮤ}
+        string=${string//Ꮥ/ꮥ}
+        string=${string//Ꮦ/ꮦ}
+        string=${string//Ꮧ/ꮧ}
+        string=${string//Ꮨ/ꮨ}
+        string=${string//Ꮩ/ꮩ}
+        string=${string//Ꮪ/ꮪ}
+        string=${string//Ꮫ/ꮫ}
+        string=${string//Ꮬ/ꮬ}
+        string=${string//Ꮭ/ꮭ}
+        string=${string//Ꮮ/ꮮ}
+        string=${string//Ꮯ/ꮯ}
+        string=${string//Ꮰ/ꮰ}
+        string=${string//Ꮱ/ꮱ}
+        string=${string//Ꮲ/ꮲ}
+        string=${string//Ꮳ/ꮳ}
+        string=${string//Ꮴ/ꮴ}
+        string=${string//Ꮵ/ꮵ}
+        string=${string//Ꮶ/ꮶ}
+        string=${string//Ꮷ/ꮷ}
+        string=${string//Ꮸ/ꮸ}
+        string=${string//Ꮹ/ꮹ}
+        string=${string//Ꮺ/ꮺ}
+        string=${string//Ꮻ/ꮻ}
+        string=${string//Ꮼ/ꮼ}
+        string=${string//Ꮽ/ꮽ}
+        string=${string//Ꮾ/ꮾ}
+        string=${string//Ꮿ/ꮿ}
+        string=${string//Ᏸ/ᏸ}
+        string=${string//Ᏹ/ᏹ}
+        string=${string//Ᏺ/ᏺ}
+        string=${string//Ᏻ/ᏻ}
+        string=${string//Ᏼ/ᏼ}
+        string=${string//Ᏽ/ᏽ}
+        string=${string//Ḁ/ḁ}
+        string=${string//Ḃ/ḃ}
+        string=${string//Ḅ/ḅ}
+        string=${string//Ḇ/ḇ}
+        string=${string//Ḉ/ḉ}
+        string=${string//Ḋ/ḋ}
+        string=${string//Ḍ/ḍ}
+        string=${string//Ḏ/ḏ}
+        string=${string//Ḑ/ḑ}
+        string=${string//Ḓ/ḓ}
+        string=${string//Ḕ/ḕ}
+        string=${string//Ḗ/ḗ}
+        string=${string//Ḙ/ḙ}
+        string=${string//Ḛ/ḛ}
+        string=${string//Ḝ/ḝ}
+        string=${string//Ḟ/ḟ}
+        string=${string//Ḡ/ḡ}
+        string=${string//Ḣ/ḣ}
+        string=${string//Ḥ/ḥ}
+        string=${string//Ḧ/ḧ}
+        string=${string//Ḩ/ḩ}
+        string=${string//Ḫ/ḫ}
+        string=${string//Ḭ/ḭ}
+        string=${string//Ḯ/ḯ}
+        string=${string//Ḱ/ḱ}
+        string=${string//Ḳ/ḳ}
+        string=${string//Ḵ/ḵ}
+        string=${string//Ḷ/ḷ}
+        string=${string//Ḹ/ḹ}
+        string=${string//Ḻ/ḻ}
+        string=${string//Ḽ/ḽ}
+        string=${string//Ḿ/ḿ}
+        string=${string//Ṁ/ṁ}
+        string=${string//Ṃ/ṃ}
+        string=${string//Ṅ/ṅ}
+        string=${string//Ṇ/ṇ}
+        string=${string//Ṉ/ṉ}
+        string=${string//Ṋ/ṋ}
+        string=${string//Ṍ/ṍ}
+        string=${string//Ṏ/ṏ}
+        string=${string//Ṑ/ṑ}
+        string=${string//Ṓ/ṓ}
+        string=${string//Ṕ/ṕ}
+        string=${string//Ṗ/ṗ}
+        string=${string//Ṙ/ṙ}
+        string=${string//Ṛ/ṛ}
+        string=${string//Ṝ/ṝ}
+        string=${string//Ṟ/ṟ}
+        string=${string//Ṡ/ṡ}
+        string=${string//Ṣ/ṣ}
+        string=${string//Ṥ/ṥ}
+        string=${string//Ṧ/ṧ}
+        string=${string//Ṩ/ṩ}
+        string=${string//Ṫ/ṫ}
+        string=${string//Ṭ/ṭ}
+        string=${string//Ṯ/ṯ}
+        string=${string//Ṱ/ṱ}
+        string=${string//Ṳ/ṳ}
+        string=${string//Ṵ/ṵ}
+        string=${string//Ṷ/ṷ}
+        string=${string//Ṹ/ṹ}
+        string=${string//Ṻ/ṻ}
+        string=${string//Ṽ/ṽ}
+        string=${string//Ṿ/ṿ}
+        string=${string//Ẁ/ẁ}
+        string=${string//Ẃ/ẃ}
+        string=${string//Ẅ/ẅ}
+        string=${string//Ẇ/ẇ}
+        string=${string//Ẉ/ẉ}
+        string=${string//Ẋ/ẋ}
+        string=${string//Ẍ/ẍ}
+        string=${string//Ẏ/ẏ}
+        string=${string//Ẑ/ẑ}
+        string=${string//Ẓ/ẓ}
+        string=${string//Ẕ/ẕ}
+        string=${string//ẞ/ß}
+        string=${string//Ạ/ạ}
+        string=${string//Ả/ả}
+        string=${string//Ấ/ấ}
+        string=${string//Ầ/ầ}
+        string=${string//Ẩ/ẩ}
+        string=${string//Ẫ/ẫ}
+        string=${string//Ậ/ậ}
+        string=${string//Ắ/ắ}
+        string=${string//Ằ/ằ}
+        string=${string//Ẳ/ẳ}
+        string=${string//Ẵ/ẵ}
+        string=${string//Ặ/ặ}
+        string=${string//Ẹ/ẹ}
+        string=${string//Ẻ/ẻ}
+        string=${string//Ẽ/ẽ}
+        string=${string//Ế/ế}
+        string=${string//Ề/ề}
+        string=${string//Ể/ể}
+        string=${string//Ễ/ễ}
+        string=${string//Ệ/ệ}
+        string=${string//Ỉ/ỉ}
+        string=${string//Ị/ị}
+        string=${string//Ọ/ọ}
+        string=${string//Ỏ/ỏ}
+        string=${string//Ố/ố}
+        string=${string//Ồ/ồ}
+        string=${string//Ổ/ổ}
+        string=${string//Ỗ/ỗ}
+        string=${string//Ộ/ộ}
+        string=${string//Ớ/ớ}
+        string=${string//Ờ/ờ}
+        string=${string//Ở/ở}
+        string=${string//Ỡ/ỡ}
+        string=${string//Ợ/ợ}
+        string=${string//Ụ/ụ}
+        string=${string//Ủ/ủ}
+        string=${string//Ứ/ứ}
+        string=${string//Ừ/ừ}
+        string=${string//Ử/ử}
+        string=${string//Ữ/ữ}
+        string=${string//Ự/ự}
+        string=${string//Ỳ/ỳ}
+        string=${string//Ỵ/ỵ}
+        string=${string//Ỷ/ỷ}
+        string=${string//Ỹ/ỹ}
+        string=${string//Ỻ/ỻ}
+        string=${string//Ỽ/ỽ}
+        string=${string//Ỿ/ỿ}
+        string=${string//Ἀ/ἀ}
+        string=${string//Ἁ/ἁ}
+        string=${string//Ἂ/ἂ}
+        string=${string//Ἃ/ἃ}
+        string=${string//Ἄ/ἄ}
+        string=${string//Ἅ/ἅ}
+        string=${string//Ἆ/ἆ}
+        string=${string//Ἇ/ἇ}
+        string=${string//Ἐ/ἐ}
+        string=${string//Ἑ/ἑ}
+        string=${string//Ἒ/ἒ}
+        string=${string//Ἓ/ἓ}
+        string=${string//Ἔ/ἔ}
+        string=${string//Ἕ/ἕ}
+        string=${string//Ἠ/ἠ}
+        string=${string//Ἡ/ἡ}
+        string=${string//Ἢ/ἢ}
+        string=${string//Ἣ/ἣ}
+        string=${string//Ἤ/ἤ}
+        string=${string//Ἥ/ἥ}
+        string=${string//Ἦ/ἦ}
+        string=${string//Ἧ/ἧ}
+        string=${string//Ἰ/ἰ}
+        string=${string//Ἱ/ἱ}
+        string=${string//Ἲ/ἲ}
+        string=${string//Ἳ/ἳ}
+        string=${string//Ἴ/ἴ}
+        string=${string//Ἵ/ἵ}
+        string=${string//Ἶ/ἶ}
+        string=${string//Ἷ/ἷ}
+        string=${string//Ὀ/ὀ}
+        string=${string//Ὁ/ὁ}
+        string=${string//Ὂ/ὂ}
+        string=${string//Ὃ/ὃ}
+        string=${string//Ὄ/ὄ}
+        string=${string//Ὅ/ὅ}
+        string=${string//Ὑ/ὑ}
+        string=${string//Ὓ/ὓ}
+        string=${string//Ὕ/ὕ}
+        string=${string//Ὗ/ὗ}
+        string=${string//Ὠ/ὠ}
+        string=${string//Ὡ/ὡ}
+        string=${string//Ὢ/ὢ}
+        string=${string//Ὣ/ὣ}
+        string=${string//Ὤ/ὤ}
+        string=${string//Ὥ/ὥ}
+        string=${string//Ὦ/ὦ}
+        string=${string//Ὧ/ὧ}
+        string=${string//ᾈ/ᾀ}
+        string=${string//ᾉ/ᾁ}
+        string=${string//ᾊ/ᾂ}
+        string=${string//ᾋ/ᾃ}
+        string=${string//ᾌ/ᾄ}
+        string=${string//ᾍ/ᾅ}
+        string=${string//ᾎ/ᾆ}
+        string=${string//ᾏ/ᾇ}
+        string=${string//ᾘ/ᾐ}
+        string=${string//ᾙ/ᾑ}
+        string=${string//ᾚ/ᾒ}
+        string=${string//ᾛ/ᾓ}
+        string=${string//ᾜ/ᾔ}
+        string=${string//ᾝ/ᾕ}
+        string=${string//ᾞ/ᾖ}
+        string=${string//ᾟ/ᾗ}
+        string=${string//ᾨ/ᾠ}
+        string=${string//ᾩ/ᾡ}
+        string=${string//ᾪ/ᾢ}
+        string=${string//ᾫ/ᾣ}
+        string=${string//ᾬ/ᾤ}
+        string=${string//ᾭ/ᾥ}
+        string=${string//ᾮ/ᾦ}
+        string=${string//ᾯ/ᾧ}
+        string=${string//Ᾰ/ᾰ}
+        string=${string//Ᾱ/ᾱ}
+        string=${string//Ὰ/ὰ}
+        string=${string//Ά/ά}
+        string=${string//ᾼ/ᾳ}
+        string=${string//Ὲ/ὲ}
+        string=${string//Έ/έ}
+        string=${string//Ὴ/ὴ}
+        string=${string//Ή/ή}
+        string=${string//ῌ/ῃ}
+        string=${string//Ῐ/ῐ}
+        string=${string//Ῑ/ῑ}
+        string=${string//Ὶ/ὶ}
+        string=${string//Ί/ί}
+        string=${string//Ῠ/ῠ}
+        string=${string//Ῡ/ῡ}
+        string=${string//Ὺ/ὺ}
+        string=${string//Ύ/ύ}
+        string=${string//Ῥ/ῥ}
+        string=${string//Ὸ/ὸ}
+        string=${string//Ό/ό}
+        string=${string//Ὼ/ὼ}
+        string=${string//Ώ/ώ}
+        string=${string//ῼ/ῳ}
+        string=${string//Ω/ω}
+        string=${string//K/k}
+        string=${string//Å/å}
+        string=${string//Ⅎ/ⅎ}
+        string=${string//Ⅰ/ⅰ}
+        string=${string//Ⅱ/ⅱ}
+        string=${string//Ⅲ/ⅲ}
+        string=${string//Ⅳ/ⅳ}
+        string=${string//Ⅴ/ⅴ}
+        string=${string//Ⅵ/ⅵ}
+        string=${string//Ⅶ/ⅶ}
+        string=${string//Ⅷ/ⅷ}
+        string=${string//Ⅸ/ⅸ}
+        string=${string//Ⅹ/ⅹ}
+        string=${string//Ⅺ/ⅺ}
+        string=${string//Ⅻ/ⅻ}
+        string=${string//Ⅼ/ⅼ}
+        string=${string//Ⅽ/ⅽ}
+        string=${string//Ⅾ/ⅾ}
+        string=${string//Ⅿ/ⅿ}
+        string=${string//Ↄ/ↄ}
+        string=${string//Ⓐ/ⓐ}
+        string=${string//Ⓑ/ⓑ}
+        string=${string//Ⓒ/ⓒ}
+        string=${string//Ⓓ/ⓓ}
+        string=${string//Ⓔ/ⓔ}
+        string=${string//Ⓕ/ⓕ}
+        string=${string//Ⓖ/ⓖ}
+        string=${string//Ⓗ/ⓗ}
+        string=${string//Ⓘ/ⓘ}
+        string=${string//Ⓙ/ⓙ}
+        string=${string//Ⓚ/ⓚ}
+        string=${string//Ⓛ/ⓛ}
+        string=${string//Ⓜ/ⓜ}
+        string=${string//Ⓝ/ⓝ}
+        string=${string//Ⓞ/ⓞ}
+        string=${string//Ⓟ/ⓟ}
+        string=${string//Ⓠ/ⓠ}
+        string=${string//Ⓡ/ⓡ}
+        string=${string//Ⓢ/ⓢ}
+        string=${string//Ⓣ/ⓣ}
+        string=${string//Ⓤ/ⓤ}
+        string=${string//Ⓥ/ⓥ}
+        string=${string//Ⓦ/ⓦ}
+        string=${string//Ⓧ/ⓧ}
+        string=${string//Ⓨ/ⓨ}
+        string=${string//Ⓩ/ⓩ}
+        string=${string//Ⰰ/ⰰ}
+        string=${string//Ⰱ/ⰱ}
+        string=${string//Ⰲ/ⰲ}
+        string=${string//Ⰳ/ⰳ}
+        string=${string//Ⰴ/ⰴ}
+        string=${string//Ⰵ/ⰵ}
+        string=${string//Ⰶ/ⰶ}
+        string=${string//Ⰷ/ⰷ}
+        string=${string//Ⰸ/ⰸ}
+        string=${string//Ⰹ/ⰹ}
+        string=${string//Ⰺ/ⰺ}
+        string=${string//Ⰻ/ⰻ}
+        string=${string//Ⰼ/ⰼ}
+        string=${string//Ⰽ/ⰽ}
+        string=${string//Ⰾ/ⰾ}
+        string=${string//Ⰿ/ⰿ}
+        string=${string//Ⱀ/ⱀ}
+        string=${string//Ⱁ/ⱁ}
+        string=${string//Ⱂ/ⱂ}
+        string=${string//Ⱃ/ⱃ}
+        string=${string//Ⱄ/ⱄ}
+        string=${string//Ⱅ/ⱅ}
+        string=${string//Ⱆ/ⱆ}
+        string=${string//Ⱇ/ⱇ}
+        string=${string//Ⱈ/ⱈ}
+        string=${string//Ⱉ/ⱉ}
+        string=${string//Ⱊ/ⱊ}
+        string=${string//Ⱋ/ⱋ}
+        string=${string//Ⱌ/ⱌ}
+        string=${string//Ⱍ/ⱍ}
+        string=${string//Ⱎ/ⱎ}
+        string=${string//Ⱏ/ⱏ}
+        string=${string//Ⱐ/ⱐ}
+        string=${string//Ⱑ/ⱑ}
+        string=${string//Ⱒ/ⱒ}
+        string=${string//Ⱓ/ⱓ}
+        string=${string//Ⱔ/ⱔ}
+        string=${string//Ⱕ/ⱕ}
+        string=${string//Ⱖ/ⱖ}
+        string=${string//Ⱗ/ⱗ}
+        string=${string//Ⱘ/ⱘ}
+        string=${string//Ⱙ/ⱙ}
+        string=${string//Ⱚ/ⱚ}
+        string=${string//Ⱛ/ⱛ}
+        string=${string//Ⱜ/ⱜ}
+        string=${string//Ⱝ/ⱝ}
+        string=${string//Ⱞ/ⱞ}
+        string=${string//Ⱡ/ⱡ}
+        string=${string//Ɫ/ɫ}
+        string=${string//Ᵽ/ᵽ}
+        string=${string//Ɽ/ɽ}
+        string=${string//Ⱨ/ⱨ}
+        string=${string//Ⱪ/ⱪ}
+        string=${string//Ⱬ/ⱬ}
+        string=${string//Ɑ/ɑ}
+        string=${string//Ɱ/ɱ}
+        string=${string//Ɐ/ɐ}
+        string=${string//Ɒ/ɒ}
+        string=${string//Ⱳ/ⱳ}
+        string=${string//Ⱶ/ⱶ}
+        string=${string//Ȿ/ȿ}
+        string=${string//Ɀ/ɀ}
+        string=${string//Ⲁ/ⲁ}
+        string=${string//Ⲃ/ⲃ}
+        string=${string//Ⲅ/ⲅ}
+        string=${string//Ⲇ/ⲇ}
+        string=${string//Ⲉ/ⲉ}
+        string=${string//Ⲋ/ⲋ}
+        string=${string//Ⲍ/ⲍ}
+        string=${string//Ⲏ/ⲏ}
+        string=${string//Ⲑ/ⲑ}
+        string=${string//Ⲓ/ⲓ}
+        string=${string//Ⲕ/ⲕ}
+        string=${string//Ⲗ/ⲗ}
+        string=${string//Ⲙ/ⲙ}
+        string=${string//Ⲛ/ⲛ}
+        string=${string//Ⲝ/ⲝ}
+        string=${string//Ⲟ/ⲟ}
+        string=${string//Ⲡ/ⲡ}
+        string=${string//Ⲣ/ⲣ}
+        string=${string//Ⲥ/ⲥ}
+        string=${string//Ⲧ/ⲧ}
+        string=${string//Ⲩ/ⲩ}
+        string=${string//Ⲫ/ⲫ}
+        string=${string//Ⲭ/ⲭ}
+        string=${string//Ⲯ/ⲯ}
+        string=${string//Ⲱ/ⲱ}
+        string=${string//Ⲳ/ⲳ}
+        string=${string//Ⲵ/ⲵ}
+        string=${string//Ⲷ/ⲷ}
+        string=${string//Ⲹ/ⲹ}
+        string=${string//Ⲻ/ⲻ}
+        string=${string//Ⲽ/ⲽ}
+        string=${string//Ⲿ/ⲿ}
+        string=${string//Ⳁ/ⳁ}
+        string=${string//Ⳃ/ⳃ}
+        string=${string//Ⳅ/ⳅ}
+        string=${string//Ⳇ/ⳇ}
+        string=${string//Ⳉ/ⳉ}
+        string=${string//Ⳋ/ⳋ}
+        string=${string//Ⳍ/ⳍ}
+        string=${string//Ⳏ/ⳏ}
+        string=${string//Ⳑ/ⳑ}
+        string=${string//Ⳓ/ⳓ}
+        string=${string//Ⳕ/ⳕ}
+        string=${string//Ⳗ/ⳗ}
+        string=${string//Ⳙ/ⳙ}
+        string=${string//Ⳛ/ⳛ}
+        string=${string//Ⳝ/ⳝ}
+        string=${string//Ⳟ/ⳟ}
+        string=${string//Ⳡ/ⳡ}
+        string=${string//Ⳣ/ⳣ}
+        string=${string//Ⳬ/ⳬ}
+        string=${string//Ⳮ/ⳮ}
+        string=${string//Ⳳ/ⳳ}
+        string=${string//Ꙁ/ꙁ}
+        string=${string//Ꙃ/ꙃ}
+        string=${string//Ꙅ/ꙅ}
+        string=${string//Ꙇ/ꙇ}
+        string=${string//Ꙉ/ꙉ}
+        string=${string//Ꙋ/ꙋ}
+        string=${string//Ꙍ/ꙍ}
+        string=${string//Ꙏ/ꙏ}
+        string=${string//Ꙑ/ꙑ}
+        string=${string//Ꙓ/ꙓ}
+        string=${string//Ꙕ/ꙕ}
+        string=${string//Ꙗ/ꙗ}
+        string=${string//Ꙙ/ꙙ}
+        string=${string//Ꙛ/ꙛ}
+        string=${string//Ꙝ/ꙝ}
+        string=${string//Ꙟ/ꙟ}
+        string=${string//Ꙡ/ꙡ}
+        string=${string//Ꙣ/ꙣ}
+        string=${string//Ꙥ/ꙥ}
+        string=${string//Ꙧ/ꙧ}
+        string=${string//Ꙩ/ꙩ}
+        string=${string//Ꙫ/ꙫ}
+        string=${string//Ꙭ/ꙭ}
+        string=${string//Ꚁ/ꚁ}
+        string=${string//Ꚃ/ꚃ}
+        string=${string//Ꚅ/ꚅ}
+        string=${string//Ꚇ/ꚇ}
+        string=${string//Ꚉ/ꚉ}
+        string=${string//Ꚋ/ꚋ}
+        string=${string//Ꚍ/ꚍ}
+        string=${string//Ꚏ/ꚏ}
+        string=${string//Ꚑ/ꚑ}
+        string=${string//Ꚓ/ꚓ}
+        string=${string//Ꚕ/ꚕ}
+        string=${string//Ꚗ/ꚗ}
+        string=${string//Ꚙ/ꚙ}
+        string=${string//Ꚛ/ꚛ}
+        string=${string//Ꜣ/ꜣ}
+        string=${string//Ꜥ/ꜥ}
+        string=${string//Ꜧ/ꜧ}
+        string=${string//Ꜩ/ꜩ}
+        string=${string//Ꜫ/ꜫ}
+        string=${string//Ꜭ/ꜭ}
+        string=${string//Ꜯ/ꜯ}
+        string=${string//Ꜳ/ꜳ}
+        string=${string//Ꜵ/ꜵ}
+        string=${string//Ꜷ/ꜷ}
+        string=${string//Ꜹ/ꜹ}
+        string=${string//Ꜻ/ꜻ}
+        string=${string//Ꜽ/ꜽ}
+        string=${string//Ꜿ/ꜿ}
+        string=${string//Ꝁ/ꝁ}
+        string=${string//Ꝃ/ꝃ}
+        string=${string//Ꝅ/ꝅ}
+        string=${string//Ꝇ/ꝇ}
+        string=${string//Ꝉ/ꝉ}
+        string=${string//Ꝋ/ꝋ}
+        string=${string//Ꝍ/ꝍ}
+        string=${string//Ꝏ/ꝏ}
+        string=${string//Ꝑ/ꝑ}
+        string=${string//Ꝓ/ꝓ}
+        string=${string//Ꝕ/ꝕ}
+        string=${string//Ꝗ/ꝗ}
+        string=${string//Ꝙ/ꝙ}
+        string=${string//Ꝛ/ꝛ}
+        string=${string//Ꝝ/ꝝ}
+        string=${string//Ꝟ/ꝟ}
+        string=${string//Ꝡ/ꝡ}
+        string=${string//Ꝣ/ꝣ}
+        string=${string//Ꝥ/ꝥ}
+        string=${string//Ꝧ/ꝧ}
+        string=${string//Ꝩ/ꝩ}
+        string=${string//Ꝫ/ꝫ}
+        string=${string//Ꝭ/ꝭ}
+        string=${string//Ꝯ/ꝯ}
+        string=${string//Ꝺ/ꝺ}
+        string=${string//Ꝼ/ꝼ}
+        string=${string//Ᵹ/ᵹ}
+        string=${string//Ꝿ/ꝿ}
+        string=${string//Ꞁ/ꞁ}
+        string=${string//Ꞃ/ꞃ}
+        string=${string//Ꞅ/ꞅ}
+        string=${string//Ꞇ/ꞇ}
+        string=${string//Ꞌ/ꞌ}
+        string=${string//Ɥ/ɥ}
+        string=${string//Ꞑ/ꞑ}
+        string=${string//Ꞓ/ꞓ}
+        string=${string//Ꞗ/ꞗ}
+        string=${string//Ꞙ/ꞙ}
+        string=${string//Ꞛ/ꞛ}
+        string=${string//Ꞝ/ꞝ}
+        string=${string//Ꞟ/ꞟ}
+        string=${string//Ꞡ/ꞡ}
+        string=${string//Ꞣ/ꞣ}
+        string=${string//Ꞥ/ꞥ}
+        string=${string//Ꞧ/ꞧ}
+        string=${string//Ꞩ/ꞩ}
+        string=${string//Ɦ/ɦ}
+        string=${string//Ɜ/ɜ}
+        string=${string//Ɡ/ɡ}
+        string=${string//Ɬ/ɬ}
+        string=${string//Ɪ/ɪ}
+        string=${string//Ʞ/ʞ}
+        string=${string//Ʇ/ʇ}
+        string=${string//Ʝ/ʝ}
+        string=${string//Ꭓ/ꭓ}
+        string=${string//Ꞵ/ꞵ}
+        string=${string//Ꞷ/ꞷ}
+        string=${string//Ａ/ａ}
+        string=${string//Ｂ/ｂ}
+        string=${string//Ｃ/ｃ}
+        string=${string//Ｄ/ｄ}
+        string=${string//Ｅ/ｅ}
+        string=${string//Ｆ/ｆ}
+        string=${string//Ｇ/ｇ}
+        string=${string//Ｈ/ｈ}
+        string=${string//Ｉ/ｉ}
+        string=${string//Ｊ/ｊ}
+        string=${string//Ｋ/ｋ}
+        string=${string//Ｌ/ｌ}
+        string=${string//Ｍ/ｍ}
+        string=${string//Ｎ/ｎ}
+        string=${string//Ｏ/ｏ}
+        string=${string//Ｐ/ｐ}
+        string=${string//Ｑ/ｑ}
+        string=${string//Ｒ/ｒ}
+        string=${string//Ｓ/ｓ}
+        string=${string//Ｔ/ｔ}
+        string=${string//Ｕ/ｕ}
+        string=${string//Ｖ/ｖ}
+        string=${string//Ｗ/ｗ}
+        string=${string//Ｘ/ｘ}
+        string=${string//Ｙ/ｙ}
+        string=${string//Ｚ/ｚ}
+        string=${string//𐐀/𐐨}
+        string=${string//𐐁/𐐩}
+        string=${string//𐐂/𐐪}
+        string=${string//𐐃/𐐫}
+        string=${string//𐐄/𐐬}
+        string=${string//𐐅/𐐭}
+        string=${string//𐐆/𐐮}
+        string=${string//𐐇/𐐯}
+        string=${string//𐐈/𐐰}
+        string=${string//𐐉/𐐱}
+        string=${string//𐐊/𐐲}
+        string=${string//𐐋/𐐳}
+        string=${string//𐐌/𐐴}
+        string=${string//𐐍/𐐵}
+        string=${string//𐐎/𐐶}
+        string=${string//𐐏/𐐷}
+        string=${string//𐐐/𐐸}
+        string=${string//𐐑/𐐹}
+        string=${string//𐐒/𐐺}
+        string=${string//𐐓/𐐻}
+        string=${string//𐐔/𐐼}
+        string=${string//𐐕/𐐽}
+        string=${string//𐐖/𐐾}
+        string=${string//𐐗/𐐿}
+        string=${string//𐐘/𐑀}
+        string=${string//𐐙/𐑁}
+        string=${string//𐐚/𐑂}
+        string=${string//𐐛/𐑃}
+        string=${string//𐐜/𐑄}
+        string=${string//𐐝/𐑅}
+        string=${string//𐐞/𐑆}
+        string=${string//𐐟/𐑇}
+        string=${string//𐐠/𐑈}
+        string=${string//𐐡/𐑉}
+        string=${string//𐐢/𐑊}
+        string=${string//𐐣/𐑋}
+        string=${string//𐐤/𐑌}
+        string=${string//𐐥/𐑍}
+        string=${string//𐐦/𐑎}
+        string=${string//𐐧/𐑏}
+        string=${string//𐒰/𐓘}
+        string=${string//𐒱/𐓙}
+        string=${string//𐒲/𐓚}
+        string=${string//𐒳/𐓛}
+        string=${string//𐒴/𐓜}
+        string=${string//𐒵/𐓝}
+        string=${string//𐒶/𐓞}
+        string=${string//𐒷/𐓟}
+        string=${string//𐒸/𐓠}
+        string=${string//𐒹/𐓡}
+        string=${string//𐒺/𐓢}
+        string=${string//𐒻/𐓣}
+        string=${string//𐒼/𐓤}
+        string=${string//𐒽/𐓥}
+        string=${string//𐒾/𐓦}
+        string=${string//𐒿/𐓧}
+        string=${string//𐓀/𐓨}
+        string=${string//𐓁/𐓩}
+        string=${string//𐓂/𐓪}
+        string=${string//𐓃/𐓫}
+        string=${string//𐓄/𐓬}
+        string=${string//𐓅/𐓭}
+        string=${string//𐓆/𐓮}
+        string=${string//𐓇/𐓯}
+        string=${string//𐓈/𐓰}
+        string=${string//𐓉/𐓱}
+        string=${string//𐓊/𐓲}
+        string=${string//𐓋/𐓳}
+        string=${string//𐓌/𐓴}
+        string=${string//𐓍/𐓵}
+        string=${string//𐓎/𐓶}
+        string=${string//𐓏/𐓷}
+        string=${string//𐓐/𐓸}
+        string=${string//𐓑/𐓹}
+        string=${string//𐓒/𐓺}
+        string=${string//𐓓/𐓻}
+        string=${string//𐲀/𐳀}
+        string=${string//𐲁/𐳁}
+        string=${string//𐲂/𐳂}
+        string=${string//𐲃/𐳃}
+        string=${string//𐲄/𐳄}
+        string=${string//𐲅/𐳅}
+        string=${string//𐲆/𐳆}
+        string=${string//𐲇/𐳇}
+        string=${string//𐲈/𐳈}
+        string=${string//𐲉/𐳉}
+        string=${string//𐲊/𐳊}
+        string=${string//𐲋/𐳋}
+        string=${string//𐲌/𐳌}
+        string=${string//𐲍/𐳍}
+        string=${string//𐲎/𐳎}
+        string=${string//𐲏/𐳏}
+        string=${string//𐲐/𐳐}
+        string=${string//𐲑/𐳑}
+        string=${string//𐲒/𐳒}
+        string=${string//𐲓/𐳓}
+        string=${string//𐲔/𐳔}
+        string=${string//𐲕/𐳕}
+        string=${string//𐲖/𐳖}
+        string=${string//𐲗/𐳗}
+        string=${string//𐲘/𐳘}
+        string=${string//𐲙/𐳙}
+        string=${string//𐲚/𐳚}
+        string=${string//𐲛/𐳛}
+        string=${string//𐲜/𐳜}
+        string=${string//𐲝/𐳝}
+        string=${string//𐲞/𐳞}
+        string=${string//𐲟/𐳟}
+        string=${string//𐲠/𐳠}
+        string=${string//𐲡/𐳡}
+        string=${string//𐲢/𐳢}
+        string=${string//𐲣/𐳣}
+        string=${string//𐲤/𐳤}
+        string=${string//𐲥/𐳥}
+        string=${string//𐲦/𐳦}
+        string=${string//𐲧/𐳧}
+        string=${string//𐲨/𐳨}
+        string=${string//𐲩/𐳩}
+        string=${string//𐲪/𐳪}
+        string=${string//𐲫/𐳫}
+        string=${string//𐲬/𐳬}
+        string=${string//𐲭/𐳭}
+        string=${string//𐲮/𐳮}
+        string=${string//𐲯/𐳯}
+        string=${string//𐲰/𐳰}
+        string=${string//𐲱/𐳱}
+        string=${string//𐲲/𐳲}
+        string=${string//𑢠/𑣀}
+        string=${string//𑢡/𑣁}
+        string=${string//𑢢/𑣂}
+        string=${string//𑢣/𑣃}
+        string=${string//𑢤/𑣄}
+        string=${string//𑢥/𑣅}
+        string=${string//𑢦/𑣆}
+        string=${string//𑢧/𑣇}
+        string=${string//𑢨/𑣈}
+        string=${string//𑢩/𑣉}
+        string=${string//𑢪/𑣊}
+        string=${string//𑢫/𑣋}
+        string=${string//𑢬/𑣌}
+        string=${string//𑢭/𑣍}
+        string=${string//𑢮/𑣎}
+        string=${string//𑢯/𑣏}
+        string=${string//𑢰/𑣐}
+        string=${string//𑢱/𑣑}
+        string=${string//𑢲/𑣒}
+        string=${string//𑢳/𑣓}
+        string=${string//𑢴/𑣔}
+        string=${string//𑢵/𑣕}
+        string=${string//𑢶/𑣖}
+        string=${string//𑢷/𑣗}
+        string=${string//𑢸/𑣘}
+        string=${string//𑢹/𑣙}
+        string=${string//𑢺/𑣚}
+        string=${string//𑢻/𑣛}
+        string=${string//𑢼/𑣜}
+        string=${string//𑢽/𑣝}
+        string=${string//𑢾/𑣞}
+        string=${string//𑢿/𑣟}
+        string=${string//𞤀/𞤢}
+        string=${string//𞤁/𞤣}
+        string=${string//𞤂/𞤤}
+        string=${string//𞤃/𞤥}
+        string=${string//𞤄/𞤦}
+        string=${string//𞤅/𞤧}
+        string=${string//𞤆/𞤨}
+        string=${string//𞤇/𞤩}
+        string=${string//𞤈/𞤪}
+        string=${string//𞤉/𞤫}
+        string=${string//𞤊/𞤬}
+        string=${string//𞤋/𞤭}
+        string=${string//𞤌/𞤮}
+        string=${string//𞤍/𞤯}
+        string=${string//𞤎/𞤰}
+        string=${string//𞤏/𞤱}
+        string=${string//𞤐/𞤲}
+        string=${string//𞤑/𞤳}
+        string=${string//𞤒/𞤴}
+        string=${string//𞤓/𞤵}
+        string=${string//𞤔/𞤶}
+        string=${string//𞤕/𞤷}
+        string=${string//𞤖/𞤸}
+        string=${string//𞤗/𞤹}
+        string=${string//𞤘/𞤺}
+        string=${string//𞤙/𞤻}
+        string=${string//𞤚/𞤼}
+        string=${string//𞤛/𞤽}
+        string=${string//𞤜/𞤾}
+        string=${string//𞤝/𞤿}
+        string=${string//𞤞/𞥀}
+        string=${string//𞤟/𞥁}
+        string=${string//𞤠/𞥂}
+        string=${string//𞤡/𞥃}
+    fi
+
+    local "${1-}" && assign::value "$1" "$string"
+}
+
+if [[ "${BASH_VERSINFO[0]}" -lt 4 ]] || [[ "${BASH_VERSINFO[0]}" -eq 4 && "${BASH_VERSINFO[1]}" -lt 2 ]]; then
+    #: Use the fallback because the faster method is not available.
+    string::toLower() {
+        string::toLowerFallback "$1" "$2"
+    }
+fi
+
+
+if [[ "${BASH_VERSINFO[0]}" -gt 4 ]] || [[ "${BASH_VERSINFO[0]}" -eq 4 && "${BASH_VERSINFO[1]}" -ge 2 ]]; then
+    # Converts a string to uppercase. Not locale-aware.
+    #
+    # $1 - Destination variable name.
+    # $2 - String to convert.
+    #
+    # Returns nothing.
+    string::toUpper() {
+        local "${1-}" && assign::value "$1" "${2^^}"
+    }
+fi
+
+
+# Converts a string to uppercase. Not locale-aware, but does handle Unicode.
+#
+# $1 - Destination variable name.
+# $2 - String to convert.
+#
+# Returns nothing.
+string::toUpperFallback() {
+    local string
+
+    string=$2
+
+    if [[ "$string" != *[^[:ascii:]]* ]]; then
+        string=${string//a/A}
+        string=${string//b/B}
+        string=${string//c/C}
+        string=${string//d/D}
+        string=${string//e/E}
+        string=${string//f/F}
+        string=${string//g/G}
+        string=${string//h/H}
+        string=${string//i/I}
+        string=${string//j/J}
+        string=${string//k/K}
+        string=${string//l/L}
+        string=${string//m/M}
+        string=${string//n/N}
+        string=${string//o/O}
+        string=${string//p/P}
+        string=${string//q/Q}
+        string=${string//r/R}
+        string=${string//s/S}
+        string=${string//t/T}
+        string=${string//u/U}
+        string=${string//v/V}
+        string=${string//w/W}
+        string=${string//x/X}
+        string=${string//y/Y}
+        string=${string//z/Z}
+    else
+        string=${string//a/A}
+        string=${string//b/B}
+        string=${string//c/C}
+        string=${string//d/D}
+        string=${string//e/E}
+        string=${string//f/F}
+        string=${string//g/G}
+        string=${string//h/H}
+        string=${string//i/I}
+        string=${string//j/J}
+        string=${string//k/K}
+        string=${string//l/L}
+        string=${string//m/M}
+        string=${string//n/N}
+        string=${string//o/O}
+        string=${string//p/P}
+        string=${string//q/Q}
+        string=${string//r/R}
+        string=${string//s/S}
+        string=${string//t/T}
+        string=${string//u/U}
+        string=${string//v/V}
+        string=${string//w/W}
+        string=${string//x/X}
+        string=${string//y/Y}
+        string=${string//z/Z}
+        string=${string//µ/Μ}
+        string=${string//à/À}
+        string=${string//á/Á}
+        string=${string//â/Â}
+        string=${string//ã/Ã}
+        string=${string//ä/Ä}
+        string=${string//å/Å}
+        string=${string//æ/Æ}
+        string=${string//ç/Ç}
+        string=${string//è/È}
+        string=${string//é/É}
+        string=${string//ê/Ê}
+        string=${string//ë/Ë}
+        string=${string//ì/Ì}
+        string=${string//í/Í}
+        string=${string//î/Î}
+        string=${string//ï/Ï}
+        string=${string//ð/Ð}
+        string=${string//ñ/Ñ}
+        string=${string//ò/Ò}
+        string=${string//ó/Ó}
+        string=${string//ô/Ô}
+        string=${string//õ/Õ}
+        string=${string//ö/Ö}
+        string=${string//ø/Ø}
+        string=${string//ù/Ù}
+        string=${string//ú/Ú}
+        string=${string//û/Û}
+        string=${string//ü/Ü}
+        string=${string//ý/Ý}
+        string=${string//þ/Þ}
+        string=${string//ÿ/Ÿ}
+        string=${string//ā/Ā}
+        string=${string//ă/Ă}
+        string=${string//ą/Ą}
+        string=${string//ć/Ć}
+        string=${string//ĉ/Ĉ}
+        string=${string//ċ/Ċ}
+        string=${string//č/Č}
+        string=${string//ď/Ď}
+        string=${string//đ/Đ}
+        string=${string//ē/Ē}
+        string=${string//ĕ/Ĕ}
+        string=${string//ė/Ė}
+        string=${string//ę/Ę}
+        string=${string//ě/Ě}
+        string=${string//ĝ/Ĝ}
+        string=${string//ğ/Ğ}
+        string=${string//ġ/Ġ}
+        string=${string//ģ/Ģ}
+        string=${string//ĥ/Ĥ}
+        string=${string//ħ/Ħ}
+        string=${string//ĩ/Ĩ}
+        string=${string//ī/Ī}
+        string=${string//ĭ/Ĭ}
+        string=${string//į/Į}
+        string=${string//ı/I}
+        string=${string//ĳ/Ĳ}
+        string=${string//ĵ/Ĵ}
+        string=${string//ķ/Ķ}
+        string=${string//ĺ/Ĺ}
+        string=${string//ļ/Ļ}
+        string=${string//ľ/Ľ}
+        string=${string//ŀ/Ŀ}
+        string=${string//ł/Ł}
+        string=${string//ń/Ń}
+        string=${string//ņ/Ņ}
+        string=${string//ň/Ň}
+        string=${string//ŋ/Ŋ}
+        string=${string//ō/Ō}
+        string=${string//ŏ/Ŏ}
+        string=${string//ő/Ő}
+        string=${string//œ/Œ}
+        string=${string//ŕ/Ŕ}
+        string=${string//ŗ/Ŗ}
+        string=${string//ř/Ř}
+        string=${string//ś/Ś}
+        string=${string//ŝ/Ŝ}
+        string=${string//ş/Ş}
+        string=${string//š/Š}
+        string=${string//ţ/Ţ}
+        string=${string//ť/Ť}
+        string=${string//ŧ/Ŧ}
+        string=${string//ũ/Ũ}
+        string=${string//ū/Ū}
+        string=${string//ŭ/Ŭ}
+        string=${string//ů/Ů}
+        string=${string//ű/Ű}
+        string=${string//ų/Ų}
+        string=${string//ŵ/Ŵ}
+        string=${string//ŷ/Ŷ}
+        string=${string//ź/Ź}
+        string=${string//ż/Ż}
+        string=${string//ž/Ž}
+        string=${string//ſ/S}
+        string=${string//ƀ/Ƀ}
+        string=${string//ƃ/Ƃ}
+        string=${string//ƅ/Ƅ}
+        string=${string//ƈ/Ƈ}
+        string=${string//ƌ/Ƌ}
+        string=${string//ƒ/Ƒ}
+        string=${string//ƕ/Ƕ}
+        string=${string//ƙ/Ƙ}
+        string=${string//ƚ/Ƚ}
+        string=${string//ƞ/Ƞ}
+        string=${string//ơ/Ơ}
+        string=${string//ƣ/Ƣ}
+        string=${string//ƥ/Ƥ}
+        string=${string//ƨ/Ƨ}
+        string=${string//ƭ/Ƭ}
+        string=${string//ư/Ư}
+        string=${string//ƴ/Ƴ}
+        string=${string//ƶ/Ƶ}
+        string=${string//ƹ/Ƹ}
+        string=${string//ƽ/Ƽ}
+        string=${string//ƿ/Ƿ}
+        string=${string//ǅ/Ǆ}
+        string=${string//ǆ/Ǆ}
+        string=${string//ǈ/Ǉ}
+        string=${string//ǉ/Ǉ}
+        string=${string//ǋ/Ǌ}
+        string=${string//ǌ/Ǌ}
+        string=${string//ǎ/Ǎ}
+        string=${string//ǐ/Ǐ}
+        string=${string//ǒ/Ǒ}
+        string=${string//ǔ/Ǔ}
+        string=${string//ǖ/Ǖ}
+        string=${string//ǘ/Ǘ}
+        string=${string//ǚ/Ǚ}
+        string=${string//ǜ/Ǜ}
+        string=${string//ǝ/Ǝ}
+        string=${string//ǟ/Ǟ}
+        string=${string//ǡ/Ǡ}
+        string=${string//ǣ/Ǣ}
+        string=${string//ǥ/Ǥ}
+        string=${string//ǧ/Ǧ}
+        string=${string//ǩ/Ǩ}
+        string=${string//ǫ/Ǫ}
+        string=${string//ǭ/Ǭ}
+        string=${string//ǯ/Ǯ}
+        string=${string//ǲ/Ǳ}
+        string=${string//ǳ/Ǳ}
+        string=${string//ǵ/Ǵ}
+        string=${string//ǹ/Ǹ}
+        string=${string//ǻ/Ǻ}
+        string=${string//ǽ/Ǽ}
+        string=${string//ǿ/Ǿ}
+        string=${string//ȁ/Ȁ}
+        string=${string//ȃ/Ȃ}
+        string=${string//ȅ/Ȅ}
+        string=${string//ȇ/Ȇ}
+        string=${string//ȉ/Ȉ}
+        string=${string//ȋ/Ȋ}
+        string=${string//ȍ/Ȍ}
+        string=${string//ȏ/Ȏ}
+        string=${string//ȑ/Ȑ}
+        string=${string//ȓ/Ȓ}
+        string=${string//ȕ/Ȕ}
+        string=${string//ȗ/Ȗ}
+        string=${string//ș/Ș}
+        string=${string//ț/Ț}
+        string=${string//ȝ/Ȝ}
+        string=${string//ȟ/Ȟ}
+        string=${string//ȣ/Ȣ}
+        string=${string//ȥ/Ȥ}
+        string=${string//ȧ/Ȧ}
+        string=${string//ȩ/Ȩ}
+        string=${string//ȫ/Ȫ}
+        string=${string//ȭ/Ȭ}
+        string=${string//ȯ/Ȯ}
+        string=${string//ȱ/Ȱ}
+        string=${string//ȳ/Ȳ}
+        string=${string//ȼ/Ȼ}
+        string=${string//ȿ/Ȿ}
+        string=${string//ɀ/Ɀ}
+        string=${string//ɂ/Ɂ}
+        string=${string//ɇ/Ɇ}
+        string=${string//ɉ/Ɉ}
+        string=${string//ɋ/Ɋ}
+        string=${string//ɍ/Ɍ}
+        string=${string//ɏ/Ɏ}
+        string=${string//ɐ/Ɐ}
+        string=${string//ɑ/Ɑ}
+        string=${string//ɒ/Ɒ}
+        string=${string//ɓ/Ɓ}
+        string=${string//ɔ/Ɔ}
+        string=${string//ɖ/Ɖ}
+        string=${string//ɗ/Ɗ}
+        string=${string//ə/Ə}
+        string=${string//ɛ/Ɛ}
+        string=${string//ɜ/Ɜ}
+        string=${string//ɠ/Ɠ}
+        string=${string//ɡ/Ɡ}
+        string=${string//ɣ/Ɣ}
+        string=${string//ɥ/Ɥ}
+        string=${string//ɦ/Ɦ}
+        string=${string//ɨ/Ɨ}
+        string=${string//ɩ/Ɩ}
+        string=${string//ɪ/Ɪ}
+        string=${string//ɫ/Ɫ}
+        string=${string//ɬ/Ɬ}
+        string=${string//ɯ/Ɯ}
+        string=${string//ɱ/Ɱ}
+        string=${string//ɲ/Ɲ}
+        string=${string//ɵ/Ɵ}
+        string=${string//ɽ/Ɽ}
+        string=${string//ʀ/Ʀ}
+        string=${string//ʃ/Ʃ}
+        string=${string//ʇ/Ʇ}
+        string=${string//ʈ/Ʈ}
+        string=${string//ʉ/Ʉ}
+        string=${string//ʊ/Ʊ}
+        string=${string//ʋ/Ʋ}
+        string=${string//ʌ/Ʌ}
+        string=${string//ʒ/Ʒ}
+        string=${string//ʝ/Ʝ}
+        string=${string//ʞ/Ʞ}
+        string=${string//ͅ/Ι}
+        string=${string//ͱ/Ͱ}
+        string=${string//ͳ/Ͳ}
+        string=${string//ͷ/Ͷ}
+        string=${string//ͻ/Ͻ}
+        string=${string//ͼ/Ͼ}
+        string=${string//ͽ/Ͽ}
+        string=${string//ά/Ά}
+        string=${string//έ/Έ}
+        string=${string//ή/Ή}
+        string=${string//ί/Ί}
+        string=${string//α/Α}
+        string=${string//β/Β}
+        string=${string//γ/Γ}
+        string=${string//δ/Δ}
+        string=${string//ε/Ε}
+        string=${string//ζ/Ζ}
+        string=${string//η/Η}
+        string=${string//θ/Θ}
+        string=${string//ι/Ι}
+        string=${string//κ/Κ}
+        string=${string//λ/Λ}
+        string=${string//μ/Μ}
+        string=${string//ν/Ν}
+        string=${string//ξ/Ξ}
+        string=${string//ο/Ο}
+        string=${string//π/Π}
+        string=${string//ρ/Ρ}
+        string=${string//ς/Σ}
+        string=${string//σ/Σ}
+        string=${string//τ/Τ}
+        string=${string//υ/Υ}
+        string=${string//φ/Φ}
+        string=${string//χ/Χ}
+        string=${string//ψ/Ψ}
+        string=${string//ω/Ω}
+        string=${string//ϊ/Ϊ}
+        string=${string//ϋ/Ϋ}
+        string=${string//ό/Ό}
+        string=${string//ύ/Ύ}
+        string=${string//ώ/Ώ}
+        string=${string//ϐ/Β}
+        string=${string//ϑ/Θ}
+        string=${string//ϕ/Φ}
+        string=${string//ϖ/Π}
+        string=${string//ϗ/Ϗ}
+        string=${string//ϙ/Ϙ}
+        string=${string//ϛ/Ϛ}
+        string=${string//ϝ/Ϝ}
+        string=${string//ϟ/Ϟ}
+        string=${string//ϡ/Ϡ}
+        string=${string//ϣ/Ϣ}
+        string=${string//ϥ/Ϥ}
+        string=${string//ϧ/Ϧ}
+        string=${string//ϩ/Ϩ}
+        string=${string//ϫ/Ϫ}
+        string=${string//ϭ/Ϭ}
+        string=${string//ϯ/Ϯ}
+        string=${string//ϰ/Κ}
+        string=${string//ϱ/Ρ}
+        string=${string//ϲ/Ϲ}
+        string=${string//ϳ/Ϳ}
+        string=${string//ϵ/Ε}
+        string=${string//ϸ/Ϸ}
+        string=${string//ϻ/Ϻ}
+        string=${string//а/А}
+        string=${string//б/Б}
+        string=${string//в/В}
+        string=${string//г/Г}
+        string=${string//д/Д}
+        string=${string//е/Е}
+        string=${string//ж/Ж}
+        string=${string//з/З}
+        string=${string//и/И}
+        string=${string//й/Й}
+        string=${string//к/К}
+        string=${string//л/Л}
+        string=${string//м/М}
+        string=${string//н/Н}
+        string=${string//о/О}
+        string=${string//п/П}
+        string=${string//р/Р}
+        string=${string//с/С}
+        string=${string//т/Т}
+        string=${string//у/У}
+        string=${string//ф/Ф}
+        string=${string//х/Х}
+        string=${string//ц/Ц}
+        string=${string//ч/Ч}
+        string=${string//ш/Ш}
+        string=${string//щ/Щ}
+        string=${string//ъ/Ъ}
+        string=${string//ы/Ы}
+        string=${string//ь/Ь}
+        string=${string//э/Э}
+        string=${string//ю/Ю}
+        string=${string//я/Я}
+        string=${string//ѐ/Ѐ}
+        string=${string//ё/Ё}
+        string=${string//ђ/Ђ}
+        string=${string//ѓ/Ѓ}
+        string=${string//є/Є}
+        string=${string//ѕ/Ѕ}
+        string=${string//і/І}
+        string=${string//ї/Ї}
+        string=${string//ј/Ј}
+        string=${string//љ/Љ}
+        string=${string//њ/Њ}
+        string=${string//ћ/Ћ}
+        string=${string//ќ/Ќ}
+        string=${string//ѝ/Ѝ}
+        string=${string//ў/Ў}
+        string=${string//џ/Џ}
+        string=${string//ѡ/Ѡ}
+        string=${string//ѣ/Ѣ}
+        string=${string//ѥ/Ѥ}
+        string=${string//ѧ/Ѧ}
+        string=${string//ѩ/Ѩ}
+        string=${string//ѫ/Ѫ}
+        string=${string//ѭ/Ѭ}
+        string=${string//ѯ/Ѯ}
+        string=${string//ѱ/Ѱ}
+        string=${string//ѳ/Ѳ}
+        string=${string//ѵ/Ѵ}
+        string=${string//ѷ/Ѷ}
+        string=${string//ѹ/Ѹ}
+        string=${string//ѻ/Ѻ}
+        string=${string//ѽ/Ѽ}
+        string=${string//ѿ/Ѿ}
+        string=${string//ҁ/Ҁ}
+        string=${string//ҋ/Ҋ}
+        string=${string//ҍ/Ҍ}
+        string=${string//ҏ/Ҏ}
+        string=${string//ґ/Ґ}
+        string=${string//ғ/Ғ}
+        string=${string//ҕ/Ҕ}
+        string=${string//җ/Җ}
+        string=${string//ҙ/Ҙ}
+        string=${string//қ/Қ}
+        string=${string//ҝ/Ҝ}
+        string=${string//ҟ/Ҟ}
+        string=${string//ҡ/Ҡ}
+        string=${string//ң/Ң}
+        string=${string//ҥ/Ҥ}
+        string=${string//ҧ/Ҧ}
+        string=${string//ҩ/Ҩ}
+        string=${string//ҫ/Ҫ}
+        string=${string//ҭ/Ҭ}
+        string=${string//ү/Ү}
+        string=${string//ұ/Ұ}
+        string=${string//ҳ/Ҳ}
+        string=${string//ҵ/Ҵ}
+        string=${string//ҷ/Ҷ}
+        string=${string//ҹ/Ҹ}
+        string=${string//һ/Һ}
+        string=${string//ҽ/Ҽ}
+        string=${string//ҿ/Ҿ}
+        string=${string//ӂ/Ӂ}
+        string=${string//ӄ/Ӄ}
+        string=${string//ӆ/Ӆ}
+        string=${string//ӈ/Ӈ}
+        string=${string//ӊ/Ӊ}
+        string=${string//ӌ/Ӌ}
+        string=${string//ӎ/Ӎ}
+        string=${string//ӏ/Ӏ}
+        string=${string//ӑ/Ӑ}
+        string=${string//ӓ/Ӓ}
+        string=${string//ӕ/Ӕ}
+        string=${string//ӗ/Ӗ}
+        string=${string//ә/Ә}
+        string=${string//ӛ/Ӛ}
+        string=${string//ӝ/Ӝ}
+        string=${string//ӟ/Ӟ}
+        string=${string//ӡ/Ӡ}
+        string=${string//ӣ/Ӣ}
+        string=${string//ӥ/Ӥ}
+        string=${string//ӧ/Ӧ}
+        string=${string//ө/Ө}
+        string=${string//ӫ/Ӫ}
+        string=${string//ӭ/Ӭ}
+        string=${string//ӯ/Ӯ}
+        string=${string//ӱ/Ӱ}
+        string=${string//ӳ/Ӳ}
+        string=${string//ӵ/Ӵ}
+        string=${string//ӷ/Ӷ}
+        string=${string//ӹ/Ӹ}
+        string=${string//ӻ/Ӻ}
+        string=${string//ӽ/Ӽ}
+        string=${string//ӿ/Ӿ}
+        string=${string//ԁ/Ԁ}
+        string=${string//ԃ/Ԃ}
+        string=${string//ԅ/Ԅ}
+        string=${string//ԇ/Ԇ}
+        string=${string//ԉ/Ԉ}
+        string=${string//ԋ/Ԋ}
+        string=${string//ԍ/Ԍ}
+        string=${string//ԏ/Ԏ}
+        string=${string//ԑ/Ԑ}
+        string=${string//ԓ/Ԓ}
+        string=${string//ԕ/Ԕ}
+        string=${string//ԗ/Ԗ}
+        string=${string//ԙ/Ԙ}
+        string=${string//ԛ/Ԛ}
+        string=${string//ԝ/Ԝ}
+        string=${string//ԟ/Ԟ}
+        string=${string//ԡ/Ԡ}
+        string=${string//ԣ/Ԣ}
+        string=${string//ԥ/Ԥ}
+        string=${string//ԧ/Ԧ}
+        string=${string//ԩ/Ԩ}
+        string=${string//ԫ/Ԫ}
+        string=${string//ԭ/Ԭ}
+        string=${string//ԯ/Ԯ}
+        string=${string//ա/Ա}
+        string=${string//բ/Բ}
+        string=${string//գ/Գ}
+        string=${string//դ/Դ}
+        string=${string//ե/Ե}
+        string=${string//զ/Զ}
+        string=${string//է/Է}
+        string=${string//ը/Ը}
+        string=${string//թ/Թ}
+        string=${string//ժ/Ժ}
+        string=${string//ի/Ի}
+        string=${string//լ/Լ}
+        string=${string//խ/Խ}
+        string=${string//ծ/Ծ}
+        string=${string//կ/Կ}
+        string=${string//հ/Հ}
+        string=${string//ձ/Ձ}
+        string=${string//ղ/Ղ}
+        string=${string//ճ/Ճ}
+        string=${string//մ/Մ}
+        string=${string//յ/Յ}
+        string=${string//ն/Ն}
+        string=${string//շ/Շ}
+        string=${string//ո/Ո}
+        string=${string//չ/Չ}
+        string=${string//պ/Պ}
+        string=${string//ջ/Ջ}
+        string=${string//ռ/Ռ}
+        string=${string//ս/Ս}
+        string=${string//վ/Վ}
+        string=${string//տ/Տ}
+        string=${string//ր/Ր}
+        string=${string//ց/Ց}
+        string=${string//ւ/Ւ}
+        string=${string//փ/Փ}
+        string=${string//ք/Ք}
+        string=${string//օ/Օ}
+        string=${string//ֆ/Ֆ}
+        string=${string//ᏸ/Ᏸ}
+        string=${string//ᏹ/Ᏹ}
+        string=${string//ᏺ/Ᏺ}
+        string=${string//ᏻ/Ᏻ}
+        string=${string//ᏼ/Ᏼ}
+        string=${string//ᏽ/Ᏽ}
+        string=${string//ᲀ/В}
+        string=${string//ᲁ/Д}
+        string=${string//ᲂ/О}
+        string=${string//ᲃ/С}
+        string=${string//ᲄ/Т}
+        string=${string//ᲅ/Т}
+        string=${string//ᲆ/Ъ}
+        string=${string//ᲇ/Ѣ}
+        string=${string//ᲈ/Ꙋ}
+        string=${string//ᵹ/Ᵹ}
+        string=${string//ᵽ/Ᵽ}
+        string=${string//ḁ/Ḁ}
+        string=${string//ḃ/Ḃ}
+        string=${string//ḅ/Ḅ}
+        string=${string//ḇ/Ḇ}
+        string=${string//ḉ/Ḉ}
+        string=${string//ḋ/Ḋ}
+        string=${string//ḍ/Ḍ}
+        string=${string//ḏ/Ḏ}
+        string=${string//ḑ/Ḑ}
+        string=${string//ḓ/Ḓ}
+        string=${string//ḕ/Ḕ}
+        string=${string//ḗ/Ḗ}
+        string=${string//ḙ/Ḙ}
+        string=${string//ḛ/Ḛ}
+        string=${string//ḝ/Ḝ}
+        string=${string//ḟ/Ḟ}
+        string=${string//ḡ/Ḡ}
+        string=${string//ḣ/Ḣ}
+        string=${string//ḥ/Ḥ}
+        string=${string//ḧ/Ḧ}
+        string=${string//ḩ/Ḩ}
+        string=${string//ḫ/Ḫ}
+        string=${string//ḭ/Ḭ}
+        string=${string//ḯ/Ḯ}
+        string=${string//ḱ/Ḱ}
+        string=${string//ḳ/Ḳ}
+        string=${string//ḵ/Ḵ}
+        string=${string//ḷ/Ḷ}
+        string=${string//ḹ/Ḹ}
+        string=${string//ḻ/Ḻ}
+        string=${string//ḽ/Ḽ}
+        string=${string//ḿ/Ḿ}
+        string=${string//ṁ/Ṁ}
+        string=${string//ṃ/Ṃ}
+        string=${string//ṅ/Ṅ}
+        string=${string//ṇ/Ṇ}
+        string=${string//ṉ/Ṉ}
+        string=${string//ṋ/Ṋ}
+        string=${string//ṍ/Ṍ}
+        string=${string//ṏ/Ṏ}
+        string=${string//ṑ/Ṑ}
+        string=${string//ṓ/Ṓ}
+        string=${string//ṕ/Ṕ}
+        string=${string//ṗ/Ṗ}
+        string=${string//ṙ/Ṙ}
+        string=${string//ṛ/Ṛ}
+        string=${string//ṝ/Ṝ}
+        string=${string//ṟ/Ṟ}
+        string=${string//ṡ/Ṡ}
+        string=${string//ṣ/Ṣ}
+        string=${string//ṥ/Ṥ}
+        string=${string//ṧ/Ṧ}
+        string=${string//ṩ/Ṩ}
+        string=${string//ṫ/Ṫ}
+        string=${string//ṭ/Ṭ}
+        string=${string//ṯ/Ṯ}
+        string=${string//ṱ/Ṱ}
+        string=${string//ṳ/Ṳ}
+        string=${string//ṵ/Ṵ}
+        string=${string//ṷ/Ṷ}
+        string=${string//ṹ/Ṹ}
+        string=${string//ṻ/Ṻ}
+        string=${string//ṽ/Ṽ}
+        string=${string//ṿ/Ṿ}
+        string=${string//ẁ/Ẁ}
+        string=${string//ẃ/Ẃ}
+        string=${string//ẅ/Ẅ}
+        string=${string//ẇ/Ẇ}
+        string=${string//ẉ/Ẉ}
+        string=${string//ẋ/Ẋ}
+        string=${string//ẍ/Ẍ}
+        string=${string//ẏ/Ẏ}
+        string=${string//ẑ/Ẑ}
+        string=${string//ẓ/Ẓ}
+        string=${string//ẕ/Ẕ}
+        string=${string//ẛ/Ṡ}
+        string=${string//ạ/Ạ}
+        string=${string//ả/Ả}
+        string=${string//ấ/Ấ}
+        string=${string//ầ/Ầ}
+        string=${string//ẩ/Ẩ}
+        string=${string//ẫ/Ẫ}
+        string=${string//ậ/Ậ}
+        string=${string//ắ/Ắ}
+        string=${string//ằ/Ằ}
+        string=${string//ẳ/Ẳ}
+        string=${string//ẵ/Ẵ}
+        string=${string//ặ/Ặ}
+        string=${string//ẹ/Ẹ}
+        string=${string//ẻ/Ẻ}
+        string=${string//ẽ/Ẽ}
+        string=${string//ế/Ế}
+        string=${string//ề/Ề}
+        string=${string//ể/Ể}
+        string=${string//ễ/Ễ}
+        string=${string//ệ/Ệ}
+        string=${string//ỉ/Ỉ}
+        string=${string//ị/Ị}
+        string=${string//ọ/Ọ}
+        string=${string//ỏ/Ỏ}
+        string=${string//ố/Ố}
+        string=${string//ồ/Ồ}
+        string=${string//ổ/Ổ}
+        string=${string//ỗ/Ỗ}
+        string=${string//ộ/Ộ}
+        string=${string//ớ/Ớ}
+        string=${string//ờ/Ờ}
+        string=${string//ở/Ở}
+        string=${string//ỡ/Ỡ}
+        string=${string//ợ/Ợ}
+        string=${string//ụ/Ụ}
+        string=${string//ủ/Ủ}
+        string=${string//ứ/Ứ}
+        string=${string//ừ/Ừ}
+        string=${string//ử/Ử}
+        string=${string//ữ/Ữ}
+        string=${string//ự/Ự}
+        string=${string//ỳ/Ỳ}
+        string=${string//ỵ/Ỵ}
+        string=${string//ỷ/Ỷ}
+        string=${string//ỹ/Ỹ}
+        string=${string//ỻ/Ỻ}
+        string=${string//ỽ/Ỽ}
+        string=${string//ỿ/Ỿ}
+        string=${string//ἀ/Ἀ}
+        string=${string//ἁ/Ἁ}
+        string=${string//ἂ/Ἂ}
+        string=${string//ἃ/Ἃ}
+        string=${string//ἄ/Ἄ}
+        string=${string//ἅ/Ἅ}
+        string=${string//ἆ/Ἆ}
+        string=${string//ἇ/Ἇ}
+        string=${string//ἐ/Ἐ}
+        string=${string//ἑ/Ἑ}
+        string=${string//ἒ/Ἒ}
+        string=${string//ἓ/Ἓ}
+        string=${string//ἔ/Ἔ}
+        string=${string//ἕ/Ἕ}
+        string=${string//ἠ/Ἠ}
+        string=${string//ἡ/Ἡ}
+        string=${string//ἢ/Ἢ}
+        string=${string//ἣ/Ἣ}
+        string=${string//ἤ/Ἤ}
+        string=${string//ἥ/Ἥ}
+        string=${string//ἦ/Ἦ}
+        string=${string//ἧ/Ἧ}
+        string=${string//ἰ/Ἰ}
+        string=${string//ἱ/Ἱ}
+        string=${string//ἲ/Ἲ}
+        string=${string//ἳ/Ἳ}
+        string=${string//ἴ/Ἴ}
+        string=${string//ἵ/Ἵ}
+        string=${string//ἶ/Ἶ}
+        string=${string//ἷ/Ἷ}
+        string=${string//ὀ/Ὀ}
+        string=${string//ὁ/Ὁ}
+        string=${string//ὂ/Ὂ}
+        string=${string//ὃ/Ὃ}
+        string=${string//ὄ/Ὄ}
+        string=${string//ὅ/Ὅ}
+        string=${string//ὑ/Ὑ}
+        string=${string//ὓ/Ὓ}
+        string=${string//ὕ/Ὕ}
+        string=${string//ὗ/Ὗ}
+        string=${string//ὠ/Ὠ}
+        string=${string//ὡ/Ὡ}
+        string=${string//ὢ/Ὢ}
+        string=${string//ὣ/Ὣ}
+        string=${string//ὤ/Ὤ}
+        string=${string//ὥ/Ὥ}
+        string=${string//ὦ/Ὦ}
+        string=${string//ὧ/Ὧ}
+        string=${string//ὰ/Ὰ}
+        string=${string//ά/Ά}
+        string=${string//ὲ/Ὲ}
+        string=${string//έ/Έ}
+        string=${string//ὴ/Ὴ}
+        string=${string//ή/Ή}
+        string=${string//ὶ/Ὶ}
+        string=${string//ί/Ί}
+        string=${string//ὸ/Ὸ}
+        string=${string//ό/Ό}
+        string=${string//ὺ/Ὺ}
+        string=${string//ύ/Ύ}
+        string=${string//ὼ/Ὼ}
+        string=${string//ώ/Ώ}
+        string=${string//ᾀ/ᾈ}
+        string=${string//ᾁ/ᾉ}
+        string=${string//ᾂ/ᾊ}
+        string=${string//ᾃ/ᾋ}
+        string=${string//ᾄ/ᾌ}
+        string=${string//ᾅ/ᾍ}
+        string=${string//ᾆ/ᾎ}
+        string=${string//ᾇ/ᾏ}
+        string=${string//ᾐ/ᾘ}
+        string=${string//ᾑ/ᾙ}
+        string=${string//ᾒ/ᾚ}
+        string=${string//ᾓ/ᾛ}
+        string=${string//ᾔ/ᾜ}
+        string=${string//ᾕ/ᾝ}
+        string=${string//ᾖ/ᾞ}
+        string=${string//ᾗ/ᾟ}
+        string=${string//ᾠ/ᾨ}
+        string=${string//ᾡ/ᾩ}
+        string=${string//ᾢ/ᾪ}
+        string=${string//ᾣ/ᾫ}
+        string=${string//ᾤ/ᾬ}
+        string=${string//ᾥ/ᾭ}
+        string=${string//ᾦ/ᾮ}
+        string=${string//ᾧ/ᾯ}
+        string=${string//ᾰ/Ᾰ}
+        string=${string//ᾱ/Ᾱ}
+        string=${string//ᾳ/ᾼ}
+        string=${string//ι/Ι}
+        string=${string//ῃ/ῌ}
+        string=${string//ῐ/Ῐ}
+        string=${string//ῑ/Ῑ}
+        string=${string//ῠ/Ῠ}
+        string=${string//ῡ/Ῡ}
+        string=${string//ῥ/Ῥ}
+        string=${string//ῳ/ῼ}
+        string=${string//ⅎ/Ⅎ}
+        string=${string//ⅰ/Ⅰ}
+        string=${string//ⅱ/Ⅱ}
+        string=${string//ⅲ/Ⅲ}
+        string=${string//ⅳ/Ⅳ}
+        string=${string//ⅴ/Ⅴ}
+        string=${string//ⅵ/Ⅵ}
+        string=${string//ⅶ/Ⅶ}
+        string=${string//ⅷ/Ⅷ}
+        string=${string//ⅸ/Ⅸ}
+        string=${string//ⅹ/Ⅹ}
+        string=${string//ⅺ/Ⅺ}
+        string=${string//ⅻ/Ⅻ}
+        string=${string//ⅼ/Ⅼ}
+        string=${string//ⅽ/Ⅽ}
+        string=${string//ⅾ/Ⅾ}
+        string=${string//ⅿ/Ⅿ}
+        string=${string//ↄ/Ↄ}
+        string=${string//ⓐ/Ⓐ}
+        string=${string//ⓑ/Ⓑ}
+        string=${string//ⓒ/Ⓒ}
+        string=${string//ⓓ/Ⓓ}
+        string=${string//ⓔ/Ⓔ}
+        string=${string//ⓕ/Ⓕ}
+        string=${string//ⓖ/Ⓖ}
+        string=${string//ⓗ/Ⓗ}
+        string=${string//ⓘ/Ⓘ}
+        string=${string//ⓙ/Ⓙ}
+        string=${string//ⓚ/Ⓚ}
+        string=${string//ⓛ/Ⓛ}
+        string=${string//ⓜ/Ⓜ}
+        string=${string//ⓝ/Ⓝ}
+        string=${string//ⓞ/Ⓞ}
+        string=${string//ⓟ/Ⓟ}
+        string=${string//ⓠ/Ⓠ}
+        string=${string//ⓡ/Ⓡ}
+        string=${string//ⓢ/Ⓢ}
+        string=${string//ⓣ/Ⓣ}
+        string=${string//ⓤ/Ⓤ}
+        string=${string//ⓥ/Ⓥ}
+        string=${string//ⓦ/Ⓦ}
+        string=${string//ⓧ/Ⓧ}
+        string=${string//ⓨ/Ⓨ}
+        string=${string//ⓩ/Ⓩ}
+        string=${string//ⰰ/Ⰰ}
+        string=${string//ⰱ/Ⰱ}
+        string=${string//ⰲ/Ⰲ}
+        string=${string//ⰳ/Ⰳ}
+        string=${string//ⰴ/Ⰴ}
+        string=${string//ⰵ/Ⰵ}
+        string=${string//ⰶ/Ⰶ}
+        string=${string//ⰷ/Ⰷ}
+        string=${string//ⰸ/Ⰸ}
+        string=${string//ⰹ/Ⰹ}
+        string=${string//ⰺ/Ⰺ}
+        string=${string//ⰻ/Ⰻ}
+        string=${string//ⰼ/Ⰼ}
+        string=${string//ⰽ/Ⰽ}
+        string=${string//ⰾ/Ⰾ}
+        string=${string//ⰿ/Ⰿ}
+        string=${string//ⱀ/Ⱀ}
+        string=${string//ⱁ/Ⱁ}
+        string=${string//ⱂ/Ⱂ}
+        string=${string//ⱃ/Ⱃ}
+        string=${string//ⱄ/Ⱄ}
+        string=${string//ⱅ/Ⱅ}
+        string=${string//ⱆ/Ⱆ}
+        string=${string//ⱇ/Ⱇ}
+        string=${string//ⱈ/Ⱈ}
+        string=${string//ⱉ/Ⱉ}
+        string=${string//ⱊ/Ⱊ}
+        string=${string//ⱋ/Ⱋ}
+        string=${string//ⱌ/Ⱌ}
+        string=${string//ⱍ/Ⱍ}
+        string=${string//ⱎ/Ⱎ}
+        string=${string//ⱏ/Ⱏ}
+        string=${string//ⱐ/Ⱐ}
+        string=${string//ⱑ/Ⱑ}
+        string=${string//ⱒ/Ⱒ}
+        string=${string//ⱓ/Ⱓ}
+        string=${string//ⱔ/Ⱔ}
+        string=${string//ⱕ/Ⱕ}
+        string=${string//ⱖ/Ⱖ}
+        string=${string//ⱗ/Ⱗ}
+        string=${string//ⱘ/Ⱘ}
+        string=${string//ⱙ/Ⱙ}
+        string=${string//ⱚ/Ⱚ}
+        string=${string//ⱛ/Ⱛ}
+        string=${string//ⱜ/Ⱜ}
+        string=${string//ⱝ/Ⱝ}
+        string=${string//ⱞ/Ⱞ}
+        string=${string//ⱡ/Ⱡ}
+        string=${string//ⱥ/Ⱥ}
+        string=${string//ⱦ/Ⱦ}
+        string=${string//ⱨ/Ⱨ}
+        string=${string//ⱪ/Ⱪ}
+        string=${string//ⱬ/Ⱬ}
+        string=${string//ⱳ/Ⱳ}
+        string=${string//ⱶ/Ⱶ}
+        string=${string//ⲁ/Ⲁ}
+        string=${string//ⲃ/Ⲃ}
+        string=${string//ⲅ/Ⲅ}
+        string=${string//ⲇ/Ⲇ}
+        string=${string//ⲉ/Ⲉ}
+        string=${string//ⲋ/Ⲋ}
+        string=${string//ⲍ/Ⲍ}
+        string=${string//ⲏ/Ⲏ}
+        string=${string//ⲑ/Ⲑ}
+        string=${string//ⲓ/Ⲓ}
+        string=${string//ⲕ/Ⲕ}
+        string=${string//ⲗ/Ⲗ}
+        string=${string//ⲙ/Ⲙ}
+        string=${string//ⲛ/Ⲛ}
+        string=${string//ⲝ/Ⲝ}
+        string=${string//ⲟ/Ⲟ}
+        string=${string//ⲡ/Ⲡ}
+        string=${string//ⲣ/Ⲣ}
+        string=${string//ⲥ/Ⲥ}
+        string=${string//ⲧ/Ⲧ}
+        string=${string//ⲩ/Ⲩ}
+        string=${string//ⲫ/Ⲫ}
+        string=${string//ⲭ/Ⲭ}
+        string=${string//ⲯ/Ⲯ}
+        string=${string//ⲱ/Ⲱ}
+        string=${string//ⲳ/Ⲳ}
+        string=${string//ⲵ/Ⲵ}
+        string=${string//ⲷ/Ⲷ}
+        string=${string//ⲹ/Ⲹ}
+        string=${string//ⲻ/Ⲻ}
+        string=${string//ⲽ/Ⲽ}
+        string=${string//ⲿ/Ⲿ}
+        string=${string//ⳁ/Ⳁ}
+        string=${string//ⳃ/Ⳃ}
+        string=${string//ⳅ/Ⳅ}
+        string=${string//ⳇ/Ⳇ}
+        string=${string//ⳉ/Ⳉ}
+        string=${string//ⳋ/Ⳋ}
+        string=${string//ⳍ/Ⳍ}
+        string=${string//ⳏ/Ⳏ}
+        string=${string//ⳑ/Ⳑ}
+        string=${string//ⳓ/Ⳓ}
+        string=${string//ⳕ/Ⳕ}
+        string=${string//ⳗ/Ⳗ}
+        string=${string//ⳙ/Ⳙ}
+        string=${string//ⳛ/Ⳛ}
+        string=${string//ⳝ/Ⳝ}
+        string=${string//ⳟ/Ⳟ}
+        string=${string//ⳡ/Ⳡ}
+        string=${string//ⳣ/Ⳣ}
+        string=${string//ⳬ/Ⳬ}
+        string=${string//ⳮ/Ⳮ}
+        string=${string//ⳳ/Ⳳ}
+        string=${string//ⴀ/Ⴀ}
+        string=${string//ⴁ/Ⴁ}
+        string=${string//ⴂ/Ⴂ}
+        string=${string//ⴃ/Ⴃ}
+        string=${string//ⴄ/Ⴄ}
+        string=${string//ⴅ/Ⴅ}
+        string=${string//ⴆ/Ⴆ}
+        string=${string//ⴇ/Ⴇ}
+        string=${string//ⴈ/Ⴈ}
+        string=${string//ⴉ/Ⴉ}
+        string=${string//ⴊ/Ⴊ}
+        string=${string//ⴋ/Ⴋ}
+        string=${string//ⴌ/Ⴌ}
+        string=${string//ⴍ/Ⴍ}
+        string=${string//ⴎ/Ⴎ}
+        string=${string//ⴏ/Ⴏ}
+        string=${string//ⴐ/Ⴐ}
+        string=${string//ⴑ/Ⴑ}
+        string=${string//ⴒ/Ⴒ}
+        string=${string//ⴓ/Ⴓ}
+        string=${string//ⴔ/Ⴔ}
+        string=${string//ⴕ/Ⴕ}
+        string=${string//ⴖ/Ⴖ}
+        string=${string//ⴗ/Ⴗ}
+        string=${string//ⴘ/Ⴘ}
+        string=${string//ⴙ/Ⴙ}
+        string=${string//ⴚ/Ⴚ}
+        string=${string//ⴛ/Ⴛ}
+        string=${string//ⴜ/Ⴜ}
+        string=${string//ⴝ/Ⴝ}
+        string=${string//ⴞ/Ⴞ}
+        string=${string//ⴟ/Ⴟ}
+        string=${string//ⴠ/Ⴠ}
+        string=${string//ⴡ/Ⴡ}
+        string=${string//ⴢ/Ⴢ}
+        string=${string//ⴣ/Ⴣ}
+        string=${string//ⴤ/Ⴤ}
+        string=${string//ⴥ/Ⴥ}
+        string=${string//ⴧ/Ⴧ}
+        string=${string//ⴭ/Ⴭ}
+        string=${string//ꙁ/Ꙁ}
+        string=${string//ꙃ/Ꙃ}
+        string=${string//ꙅ/Ꙅ}
+        string=${string//ꙇ/Ꙇ}
+        string=${string//ꙉ/Ꙉ}
+        string=${string//ꙋ/Ꙋ}
+        string=${string//ꙍ/Ꙍ}
+        string=${string//ꙏ/Ꙏ}
+        string=${string//ꙑ/Ꙑ}
+        string=${string//ꙓ/Ꙓ}
+        string=${string//ꙕ/Ꙕ}
+        string=${string//ꙗ/Ꙗ}
+        string=${string//ꙙ/Ꙙ}
+        string=${string//ꙛ/Ꙛ}
+        string=${string//ꙝ/Ꙝ}
+        string=${string//ꙟ/Ꙟ}
+        string=${string//ꙡ/Ꙡ}
+        string=${string//ꙣ/Ꙣ}
+        string=${string//ꙥ/Ꙥ}
+        string=${string//ꙧ/Ꙧ}
+        string=${string//ꙩ/Ꙩ}
+        string=${string//ꙫ/Ꙫ}
+        string=${string//ꙭ/Ꙭ}
+        string=${string//ꚁ/Ꚁ}
+        string=${string//ꚃ/Ꚃ}
+        string=${string//ꚅ/Ꚅ}
+        string=${string//ꚇ/Ꚇ}
+        string=${string//ꚉ/Ꚉ}
+        string=${string//ꚋ/Ꚋ}
+        string=${string//ꚍ/Ꚍ}
+        string=${string//ꚏ/Ꚏ}
+        string=${string//ꚑ/Ꚑ}
+        string=${string//ꚓ/Ꚓ}
+        string=${string//ꚕ/Ꚕ}
+        string=${string//ꚗ/Ꚗ}
+        string=${string//ꚙ/Ꚙ}
+        string=${string//ꚛ/Ꚛ}
+        string=${string//ꜣ/Ꜣ}
+        string=${string//ꜥ/Ꜥ}
+        string=${string//ꜧ/Ꜧ}
+        string=${string//ꜩ/Ꜩ}
+        string=${string//ꜫ/Ꜫ}
+        string=${string//ꜭ/Ꜭ}
+        string=${string//ꜯ/Ꜯ}
+        string=${string//ꜳ/Ꜳ}
+        string=${string//ꜵ/Ꜵ}
+        string=${string//ꜷ/Ꜷ}
+        string=${string//ꜹ/Ꜹ}
+        string=${string//ꜻ/Ꜻ}
+        string=${string//ꜽ/Ꜽ}
+        string=${string//ꜿ/Ꜿ}
+        string=${string//ꝁ/Ꝁ}
+        string=${string//ꝃ/Ꝃ}
+        string=${string//ꝅ/Ꝅ}
+        string=${string//ꝇ/Ꝇ}
+        string=${string//ꝉ/Ꝉ}
+        string=${string//ꝋ/Ꝋ}
+        string=${string//ꝍ/Ꝍ}
+        string=${string//ꝏ/Ꝏ}
+        string=${string//ꝑ/Ꝑ}
+        string=${string//ꝓ/Ꝓ}
+        string=${string//ꝕ/Ꝕ}
+        string=${string//ꝗ/Ꝗ}
+        string=${string//ꝙ/Ꝙ}
+        string=${string//ꝛ/Ꝛ}
+        string=${string//ꝝ/Ꝝ}
+        string=${string//ꝟ/Ꝟ}
+        string=${string//ꝡ/Ꝡ}
+        string=${string//ꝣ/Ꝣ}
+        string=${string//ꝥ/Ꝥ}
+        string=${string//ꝧ/Ꝧ}
+        string=${string//ꝩ/Ꝩ}
+        string=${string//ꝫ/Ꝫ}
+        string=${string//ꝭ/Ꝭ}
+        string=${string//ꝯ/Ꝯ}
+        string=${string//ꝺ/Ꝺ}
+        string=${string//ꝼ/Ꝼ}
+        string=${string//ꝿ/Ꝿ}
+        string=${string//ꞁ/Ꞁ}
+        string=${string//ꞃ/Ꞃ}
+        string=${string//ꞅ/Ꞅ}
+        string=${string//ꞇ/Ꞇ}
+        string=${string//ꞌ/Ꞌ}
+        string=${string//ꞑ/Ꞑ}
+        string=${string//ꞓ/Ꞓ}
+        string=${string//ꞗ/Ꞗ}
+        string=${string//ꞙ/Ꞙ}
+        string=${string//ꞛ/Ꞛ}
+        string=${string//ꞝ/Ꞝ}
+        string=${string//ꞟ/Ꞟ}
+        string=${string//ꞡ/Ꞡ}
+        string=${string//ꞣ/Ꞣ}
+        string=${string//ꞥ/Ꞥ}
+        string=${string//ꞧ/Ꞧ}
+        string=${string//ꞩ/Ꞩ}
+        string=${string//ꞵ/Ꞵ}
+        string=${string//ꞷ/Ꞷ}
+        string=${string//ꭓ/Ꭓ}
+        string=${string//ꭰ/Ꭰ}
+        string=${string//ꭱ/Ꭱ}
+        string=${string//ꭲ/Ꭲ}
+        string=${string//ꭳ/Ꭳ}
+        string=${string//ꭴ/Ꭴ}
+        string=${string//ꭵ/Ꭵ}
+        string=${string//ꭶ/Ꭶ}
+        string=${string//ꭷ/Ꭷ}
+        string=${string//ꭸ/Ꭸ}
+        string=${string//ꭹ/Ꭹ}
+        string=${string//ꭺ/Ꭺ}
+        string=${string//ꭻ/Ꭻ}
+        string=${string//ꭼ/Ꭼ}
+        string=${string//ꭽ/Ꭽ}
+        string=${string//ꭾ/Ꭾ}
+        string=${string//ꭿ/Ꭿ}
+        string=${string//ꮀ/Ꮀ}
+        string=${string//ꮁ/Ꮁ}
+        string=${string//ꮂ/Ꮂ}
+        string=${string//ꮃ/Ꮃ}
+        string=${string//ꮄ/Ꮄ}
+        string=${string//ꮅ/Ꮅ}
+        string=${string//ꮆ/Ꮆ}
+        string=${string//ꮇ/Ꮇ}
+        string=${string//ꮈ/Ꮈ}
+        string=${string//ꮉ/Ꮉ}
+        string=${string//ꮊ/Ꮊ}
+        string=${string//ꮋ/Ꮋ}
+        string=${string//ꮌ/Ꮌ}
+        string=${string//ꮍ/Ꮍ}
+        string=${string//ꮎ/Ꮎ}
+        string=${string//ꮏ/Ꮏ}
+        string=${string//ꮐ/Ꮐ}
+        string=${string//ꮑ/Ꮑ}
+        string=${string//ꮒ/Ꮒ}
+        string=${string//ꮓ/Ꮓ}
+        string=${string//ꮔ/Ꮔ}
+        string=${string//ꮕ/Ꮕ}
+        string=${string//ꮖ/Ꮖ}
+        string=${string//ꮗ/Ꮗ}
+        string=${string//ꮘ/Ꮘ}
+        string=${string//ꮙ/Ꮙ}
+        string=${string//ꮚ/Ꮚ}
+        string=${string//ꮛ/Ꮛ}
+        string=${string//ꮜ/Ꮜ}
+        string=${string//ꮝ/Ꮝ}
+        string=${string//ꮞ/Ꮞ}
+        string=${string//ꮟ/Ꮟ}
+        string=${string//ꮠ/Ꮠ}
+        string=${string//ꮡ/Ꮡ}
+        string=${string//ꮢ/Ꮢ}
+        string=${string//ꮣ/Ꮣ}
+        string=${string//ꮤ/Ꮤ}
+        string=${string//ꮥ/Ꮥ}
+        string=${string//ꮦ/Ꮦ}
+        string=${string//ꮧ/Ꮧ}
+        string=${string//ꮨ/Ꮨ}
+        string=${string//ꮩ/Ꮩ}
+        string=${string//ꮪ/Ꮪ}
+        string=${string//ꮫ/Ꮫ}
+        string=${string//ꮬ/Ꮬ}
+        string=${string//ꮭ/Ꮭ}
+        string=${string//ꮮ/Ꮮ}
+        string=${string//ꮯ/Ꮯ}
+        string=${string//ꮰ/Ꮰ}
+        string=${string//ꮱ/Ꮱ}
+        string=${string//ꮲ/Ꮲ}
+        string=${string//ꮳ/Ꮳ}
+        string=${string//ꮴ/Ꮴ}
+        string=${string//ꮵ/Ꮵ}
+        string=${string//ꮶ/Ꮶ}
+        string=${string//ꮷ/Ꮷ}
+        string=${string//ꮸ/Ꮸ}
+        string=${string//ꮹ/Ꮹ}
+        string=${string//ꮺ/Ꮺ}
+        string=${string//ꮻ/Ꮻ}
+        string=${string//ꮼ/Ꮼ}
+        string=${string//ꮽ/Ꮽ}
+        string=${string//ꮾ/Ꮾ}
+        string=${string//ꮿ/Ꮿ}
+        string=${string//ａ/Ａ}
+        string=${string//ｂ/Ｂ}
+        string=${string//ｃ/Ｃ}
+        string=${string//ｄ/Ｄ}
+        string=${string//ｅ/Ｅ}
+        string=${string//ｆ/Ｆ}
+        string=${string//ｇ/Ｇ}
+        string=${string//ｈ/Ｈ}
+        string=${string//ｉ/Ｉ}
+        string=${string//ｊ/Ｊ}
+        string=${string//ｋ/Ｋ}
+        string=${string//ｌ/Ｌ}
+        string=${string//ｍ/Ｍ}
+        string=${string//ｎ/Ｎ}
+        string=${string//ｏ/Ｏ}
+        string=${string//ｐ/Ｐ}
+        string=${string//ｑ/Ｑ}
+        string=${string//ｒ/Ｒ}
+        string=${string//ｓ/Ｓ}
+        string=${string//ｔ/Ｔ}
+        string=${string//ｕ/Ｕ}
+        string=${string//ｖ/Ｖ}
+        string=${string//ｗ/Ｗ}
+        string=${string//ｘ/Ｘ}
+        string=${string//ｙ/Ｙ}
+        string=${string//ｚ/Ｚ}
+        string=${string//𐐨/𐐀}
+        string=${string//𐐩/𐐁}
+        string=${string//𐐪/𐐂}
+        string=${string//𐐫/𐐃}
+        string=${string//𐐬/𐐄}
+        string=${string//𐐭/𐐅}
+        string=${string//𐐮/𐐆}
+        string=${string//𐐯/𐐇}
+        string=${string//𐐰/𐐈}
+        string=${string//𐐱/𐐉}
+        string=${string//𐐲/𐐊}
+        string=${string//𐐳/𐐋}
+        string=${string//𐐴/𐐌}
+        string=${string//𐐵/𐐍}
+        string=${string//𐐶/𐐎}
+        string=${string//𐐷/𐐏}
+        string=${string//𐐸/𐐐}
+        string=${string//𐐹/𐐑}
+        string=${string//𐐺/𐐒}
+        string=${string//𐐻/𐐓}
+        string=${string//𐐼/𐐔}
+        string=${string//𐐽/𐐕}
+        string=${string//𐐾/𐐖}
+        string=${string//𐐿/𐐗}
+        string=${string//𐑀/𐐘}
+        string=${string//𐑁/𐐙}
+        string=${string//𐑂/𐐚}
+        string=${string//𐑃/𐐛}
+        string=${string//𐑄/𐐜}
+        string=${string//𐑅/𐐝}
+        string=${string//𐑆/𐐞}
+        string=${string//𐑇/𐐟}
+        string=${string//𐑈/𐐠}
+        string=${string//𐑉/𐐡}
+        string=${string//𐑊/𐐢}
+        string=${string//𐑋/𐐣}
+        string=${string//𐑌/𐐤}
+        string=${string//𐑍/𐐥}
+        string=${string//𐑎/𐐦}
+        string=${string//𐑏/𐐧}
+        string=${string//𐓘/𐒰}
+        string=${string//𐓙/𐒱}
+        string=${string//𐓚/𐒲}
+        string=${string//𐓛/𐒳}
+        string=${string//𐓜/𐒴}
+        string=${string//𐓝/𐒵}
+        string=${string//𐓞/𐒶}
+        string=${string//𐓟/𐒷}
+        string=${string//𐓠/𐒸}
+        string=${string//𐓡/𐒹}
+        string=${string//𐓢/𐒺}
+        string=${string//𐓣/𐒻}
+        string=${string//𐓤/𐒼}
+        string=${string//𐓥/𐒽}
+        string=${string//𐓦/𐒾}
+        string=${string//𐓧/𐒿}
+        string=${string//𐓨/𐓀}
+        string=${string//𐓩/𐓁}
+        string=${string//𐓪/𐓂}
+        string=${string//𐓫/𐓃}
+        string=${string//𐓬/𐓄}
+        string=${string//𐓭/𐓅}
+        string=${string//𐓮/𐓆}
+        string=${string//𐓯/𐓇}
+        string=${string//𐓰/𐓈}
+        string=${string//𐓱/𐓉}
+        string=${string//𐓲/𐓊}
+        string=${string//𐓳/𐓋}
+        string=${string//𐓴/𐓌}
+        string=${string//𐓵/𐓍}
+        string=${string//𐓶/𐓎}
+        string=${string//𐓷/𐓏}
+        string=${string//𐓸/𐓐}
+        string=${string//𐓹/𐓑}
+        string=${string//𐓺/𐓒}
+        string=${string//𐓻/𐓓}
+        string=${string//𐳀/𐲀}
+        string=${string//𐳁/𐲁}
+        string=${string//𐳂/𐲂}
+        string=${string//𐳃/𐲃}
+        string=${string//𐳄/𐲄}
+        string=${string//𐳅/𐲅}
+        string=${string//𐳆/𐲆}
+        string=${string//𐳇/𐲇}
+        string=${string//𐳈/𐲈}
+        string=${string//𐳉/𐲉}
+        string=${string//𐳊/𐲊}
+        string=${string//𐳋/𐲋}
+        string=${string//𐳌/𐲌}
+        string=${string//𐳍/𐲍}
+        string=${string//𐳎/𐲎}
+        string=${string//𐳏/𐲏}
+        string=${string//𐳐/𐲐}
+        string=${string//𐳑/𐲑}
+        string=${string//𐳒/𐲒}
+        string=${string//𐳓/𐲓}
+        string=${string//𐳔/𐲔}
+        string=${string//𐳕/𐲕}
+        string=${string//𐳖/𐲖}
+        string=${string//𐳗/𐲗}
+        string=${string//𐳘/𐲘}
+        string=${string//𐳙/𐲙}
+        string=${string//𐳚/𐲚}
+        string=${string//𐳛/𐲛}
+        string=${string//𐳜/𐲜}
+        string=${string//𐳝/𐲝}
+        string=${string//𐳞/𐲞}
+        string=${string//𐳟/𐲟}
+        string=${string//𐳠/𐲠}
+        string=${string//𐳡/𐲡}
+        string=${string//𐳢/𐲢}
+        string=${string//𐳣/𐲣}
+        string=${string//𐳤/𐲤}
+        string=${string//𐳥/𐲥}
+        string=${string//𐳦/𐲦}
+        string=${string//𐳧/𐲧}
+        string=${string//𐳨/𐲨}
+        string=${string//𐳩/𐲩}
+        string=${string//𐳪/𐲪}
+        string=${string//𐳫/𐲫}
+        string=${string//𐳬/𐲬}
+        string=${string//𐳭/𐲭}
+        string=${string//𐳮/𐲮}
+        string=${string//𐳯/𐲯}
+        string=${string//𐳰/𐲰}
+        string=${string//𐳱/𐲱}
+        string=${string//𐳲/𐲲}
+        string=${string//𑣀/𑢠}
+        string=${string//𑣁/𑢡}
+        string=${string//𑣂/𑢢}
+        string=${string//𑣃/𑢣}
+        string=${string//𑣄/𑢤}
+        string=${string//𑣅/𑢥}
+        string=${string//𑣆/𑢦}
+        string=${string//𑣇/𑢧}
+        string=${string//𑣈/𑢨}
+        string=${string//𑣉/𑢩}
+        string=${string//𑣊/𑢪}
+        string=${string//𑣋/𑢫}
+        string=${string//𑣌/𑢬}
+        string=${string//𑣍/𑢭}
+        string=${string//𑣎/𑢮}
+        string=${string//𑣏/𑢯}
+        string=${string//𑣐/𑢰}
+        string=${string//𑣑/𑢱}
+        string=${string//𑣒/𑢲}
+        string=${string//𑣓/𑢳}
+        string=${string//𑣔/𑢴}
+        string=${string//𑣕/𑢵}
+        string=${string//𑣖/𑢶}
+        string=${string//𑣗/𑢷}
+        string=${string//𑣘/𑢸}
+        string=${string//𑣙/𑢹}
+        string=${string//𑣚/𑢺}
+        string=${string//𑣛/𑢻}
+        string=${string//𑣜/𑢼}
+        string=${string//𑣝/𑢽}
+        string=${string//𑣞/𑢾}
+        string=${string//𑣟/𑢿}
+        string=${string//𞤢/𞤀}
+        string=${string//𞤣/𞤁}
+        string=${string//𞤤/𞤂}
+        string=${string//𞤥/𞤃}
+        string=${string//𞤦/𞤄}
+        string=${string//𞤧/𞤅}
+        string=${string//𞤨/𞤆}
+        string=${string//𞤩/𞤇}
+        string=${string//𞤪/𞤈}
+        string=${string//𞤫/𞤉}
+        string=${string//𞤬/𞤊}
+        string=${string//𞤭/𞤋}
+        string=${string//𞤮/𞤌}
+        string=${string//𞤯/𞤍}
+        string=${string//𞤰/𞤎}
+        string=${string//𞤱/𞤏}
+        string=${string//𞤲/𞤐}
+        string=${string//𞤳/𞤑}
+        string=${string//𞤴/𞤒}
+        string=${string//𞤵/𞤓}
+        string=${string//𞤶/𞤔}
+        string=${string//𞤷/𞤕}
+        string=${string//𞤸/𞤖}
+        string=${string//𞤹/𞤗}
+        string=${string//𞤺/𞤘}
+        string=${string//𞤻/𞤙}
+        string=${string//𞤼/𞤚}
+        string=${string//𞤽/𞤛}
+        string=${string//𞤾/𞤜}
+        string=${string//𞤿/𞤝}
+        string=${string//𞥀/𞤞}
+        string=${string//𞥁/𞤟}
+        string=${string//𞥂/𞤠}
+        string=${string//𞥃/𞤡}
+    fi
+
+    local "${1-}" && assign::value "$1" "$string"
+}
+
+if [[ "${BASH_VERSINFO[0]}" -lt 4 ]] || [[ "${BASH_VERSINFO[0]}" -eq 4 && "${BASH_VERSINFO[1]}" -lt 2 ]]; then
+    #: Use the fallback because the faster method is not available.
+    string::toUpper() {
+        string::toUpperFallback "$1" "$2"
+    }
+fi
+
+
+# Trim leading and trailing whitespace from a string.
+#
+# $1 - Name of variable to store trimmed string.
+# $2 - The string.
+#
+# Returns nothing.
+string::trim() {
+    local result
+
+    string::trimStrings result "$2" true true $'\r' $'\n' $'\t' " "
+
+    local "${1-}" && assign::value "$1" "$result"
+}
+
+
+# Trim strings from the front or end of a string.
+#
+# $1   - Name of destination variable.
+# $2   - The string.
+# $3   - true/false - trim front?
+# $4   - true/false - trim end?
+# $5-@ - What to trim, each as separate arguments.
+#
+# Returns nothing.
+string::trimStrings() {
+    local back current front last remove target
+
+    target=${1-}
+    current=${2-}
+    front=${3-}
+    back=${4-}
+    last=""
+    shift 4 # Remove target, string, trim front flag, trim end flag
+
+    while [[ "$current" != "$last" ]]; do
+        last=$current
+
+        for remove in "$@"; do
+            $front && current="${current/#$remove}"
+            $back && current="${current/%$remove}"
+        done
+    done
+
+    local "$target" && assign::value "$target" "$current"
+}
+
+
+bpm_include_strict=$0
+#!/usr/bin/env bash
+
+. bpm
+bpm::include assign
+
+# Check if errors are ignored. Be careful, calling this function inside of
+# a conditional will completely change the answer.
+#
+# $1 - Result should be placed in this variable.
+#
+# The value that's stored in the variable named by `$1` will be one of these
+# values:
+#
+# * `true` - Errors are honored.
+# * `false` - Errors are not honored.
+#
+# By "honored", it means that the program should terminate when `set -eE` is
+# enabled.
+#
+# Examples
+#
+#   # Using ||, &&, or any other conditional changes the context.
+#   strict::checkErrors || echo "Errors in conditionals are not honored."
+#
+# Returns nothing.
+strict::checkErrorsHonored() {
+    local result
+
+    result="$(
+        # Subshells are used to help avoid cleanup.
+        set +eE
+        trap - ERR
+
+        checkIfIgnored() {
+            (
+                set -eE
+                false
+                true
+            )
+        }
+
+        checkIfIgnored
+
+        if [[ $? -eq 0 ]]; then
+            echo false
+        else
+            echo true
+        fi
+    )"
+
+    local "$1" && assign::value "$1" "$result"
+}
+
+
+# Turns off strict mode.
+#
+# Examples
+#
+#   # Turn on strict mode
+#   strict::mode
+#
+#   # Turn off strict mode
+#   strict::disable
+#
+# Returns nothing.
+strict::disable() {
+    set +eEu +o pipefail
+    shopt -u extdebug
+    trap - ERR
+
+    #: This is the default IFS
+    IFS=$' \t\n'
+}
+
+
+# The ERR trap calls this function to report on the error location
+# right before dying.  See `strict::mode` for further details.
+#
+# $1 - Status from failed command.
+#
+# Example
+#
+#   # This sets the error trap.
+#   strict::mode
+#
+#   # Cause an error
+#   ls some-file-that-is-not-there
+#   # This calls the ERR trap, passing 2 as the status code.
+#
+# Returns nothing.
+strict::failure() (
+    set +x
+    local argsList argsLeft i nextArg
+
+    echo "Error detected - status code $1" >&2
+    echo "Command:  $BASH_COMMAND" >&2
+    echo "Location:  ${BASH_SOURCE[1]:-unknown}, line ${BASH_LINENO[0]:-unknown}" >&2
+
+    if [[ ${#PIPESTATUS[@]} -gt 1 ]]; then
+        echo "Pipe status: " "${PIPESTATUS[@]}" >&2
+    fi
+
+    i=$#
+    nextArg=$#
+
+    if [[ $i -lt ${#BASH_LINENO[@]} ]]; then
+        echo "Stack Trace:" >&2
+    else
+        echo "Stack trace is unavailable" >&2
+    fi
+
+    while [[ $i -lt ${#BASH_LINENO[@]} ]]; do
+        argsList=()
+
+        if [[ ${#BASH_ARGC[@]} -gt $i && ${#BASH_ARGV[@]} -ge $(( nextArg + BASH_ARGC[i] )) ]]; then
+            for (( argsLeft = BASH_ARGC[i]; argsLeft; --argsLeft )); do
+                # Note: this reverses the order on purpose
+                argsList[$argsLeft]=${BASH_ARGV[nextArg]}
+                (( nextArg ++ ))
+            done
+
+            if [[ ${#argsList[@]} -gt 0 ]]; then
+                printf -v argsList " %q" "${argsList[@]}"
+            else
+                argsList=""
+            fi
+
+            if [[ ${#argsList} -gt 255 ]]; then
+                argsList=${argsList:0:250}...
+            fi
+        else
+            argsList=""
+        fi
+
+        echo "    [$i] ${FUNCNAME[i]:+${FUNCNAME[i]}(): }${BASH_SOURCE[i]}, line ${BASH_LINENO[i - 1]} -> ${FUNCNAME[i]:-${BASH_SOURCE[i]##*/}}$argsList" >&2
+        (( i ++ ))
+    done
+)
+
+
+# Enables "strict mode" for Bash, based off [unofficial bash strict mode].
+# Errors will kill the program.  Accessing undefined variables will cause
+# errors (and exit the program).  Commands in pipelines that return a non-zero
+# status code will also cause errors and kill the program.  An ERR trap is also
+# enabled that will produce a stack trace when errors happen.
+#
+# Not all errors are caught. There's an error context in Bash that ignores
+# errors, so be careful when you intend to rely on this behavior. It is only
+# here as a safety net to catch you in case of problems, not a babysitter
+# to prevent you from starting the house on fire.
+#
+# This is intended to be used at the beginning of your shell scripts in order
+# to ensure correctness in your programming.
+#
+# Examples
+#
+#   #!/usr/bin/env bash
+#   . bpm
+#   bpm::include strict
+#   strict::mode
+#
+# [unofficial bash strict mode]: http://redsymbol.net/articles/unofficial-bash-strict-mode/
+#
+# Returns nothing.
+strict::mode() {
+    set -eEu -o pipefail
+    shopt -s extdebug
+    IFS=$'\t\n'
+    trap 'strict::failure $?' ERR
+}
+
+
+# Runs a command and captures its return code, even when strict mode is
+# enabled.  The variable name you specify is set to the return code of the
+# command.
+#
+# $1   - Name of variable that should get the return value / status code.
+# $2-@ - Command and arguments to run.
+#
+# This is intended to be used along with `strict::mode`.  It helps counter
+# the newer Bash behavior where the error exit flag is suppressed in
+# specific contexts.
+#
+# Execution of a command happens in a subshell.  If you are running a function
+# with `strict::run`, please keep in mind that it can not export values
+# to the parent context for use by the caller.
+#
+# Example:
+#
+#   #!/usr/bin/env bash
+#   . bpm
+#   bpm::include strict
+#   strict::mode
+#
+#   strict::run result grep "some-string" /etc/some-file.cfg > /dev/null 2>&1
+#
+#   if [[ "$result" -eq 0 ]]; then
+#       echo "some-string was found"
+#   else
+#       echo "some-string was not found"
+#   fi
+#
+# Returns nothing.
+strict::run() {
+    local dest restoreErrors result
+
+    dest=${1-}
+    shift
+
+    #: Gathering current settings and traps for ERR
+    #: so we can restore them later.
+    restoreErrors="set \"-$-\";$(trap -p ERR)"
+
+    # Disabling errors only for the area around this subshell.  For once,
+    # we don't want it to exit if the subshell fails and we don't
+    # want it logging a stack trace just for this line.  We do,
+    # however, want strict mode enabled inside the subshell.
+    set +eE
+    trap - ERR
+    (
+        # Can't seem to find a safe way to pass the tests without using & and
+        # "wait". Open to ideas.
+        eval "$restoreErrors"
+        "$@" &
+        wait "$!" && return $?
+    )
+
+    result=$?
+    eval "$restoreErrors"
+
+    local "$dest" && assign::value "$dest" "$result"
+}
+bpm_include_array=$0
+#!/usr/bin/env bash
+
+. bpm
+bpm::include assign
+bpm::include strict
+
+
+# Determines if a value is in an array.
+#
+# $1    - The value to seek in the array.
+# $2-$@ - Array elements.
+#
+# Examples
+#
+#   local index list
+#
+#   list=(one two three "four four")
+#
+#   if array::contains one "${list[@]}"; then
+#       # This one works
+#       echo "one is found"
+#   fi
+#
+#   if array::contains four "${list[@]}"; then
+#       echo "four should not be found"
+#       echo "'four four' with a space would be found"
+#   fi
+#
+# Returns true (0) if $1 is found in the list of other arguments, false (1)
+# otherwise.
+array::contains() {
+    local check needle
+
+    needle=$1
+    shift 1
+
+    for check in "$@"; do
+        if [[ "$needle" == "$check" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+
+# Run a list of values through a filter. When the filter returns an error,
+# remove that element from the list.
+#
+# $1    - Variable name where the final list will be placed.
+# $2    - Function or command to run. Receives one argument: a single value
+#         from the list.
+# $3-$@ - List of values in the array.
+#
+# Examples
+#
+#   removeAnimals() {
+#       case "$1" in
+#           dog|cat|cow|moose)
+#               # Return failure and the elements will be removed.
+#               return 1
+#               ;;
+#       esac
+#
+#       return 0
+#   }
+#
+#   words=(a dog and a cat chased a cow)
+#   array::filter filtered removeAnimals "${words[@]}"
+#
+#   # Prints "a and a chased a". The special hyphen allows you to print an
+#   # empty array in strict mode.
+#   echo "${filtered[@]-}"
+#
+# Returns nothing.
+array::filter() {
+    local filter result returnCode target
+
+    target=$1
+    shift
+    filter=$1
+    shift
+    result=()
+
+    while [[ $# -gt 0 ]]; do
+        strict::run returnCode "$filter" "$1"
+
+        if [[ "$returnCode" -eq 0 ]]; then
+            result[${#result[@]}]=$1
+        fi
+
+        shift
+    done
+
+    # shellcheck disable=SC2068
+    local "$target" && assign::array "$target" ${result[@]+"${result[@]}"}
+}
+
+
+# Check if a value is in an array.  If the value is found, the index within
+# the array is assigned to the destination variable and this returns true.
+# If it is not in the array, nothing is assigned and the function returns
+# an error.
+#
+# $1    - Destination value for storing the index that is found.
+# $2    - The value to seek in the array.
+# $3-$@ - Array elements.
+#
+# The destination variable is only set when the element is found.
+#
+# Examples
+#
+#   local index list
+#
+#   list=(one two three "four four")
+#
+#   if array::indexOf index one "${list[@]}"; then
+#       # This one works
+#       echo "one is found at index $index"
+#   fi
+#
+#   if array::indexOf index four "${list[@]}"; then
+#       echo "four should not be found"
+#       echo "'four four' with a space would be found"
+#       echo "\$index will not be updated"
+#   fi
+#
+# Returns success if $1 is found in the list of other arguments.
+array::indexOf() {
+    local check index needle target
+
+    target=${1-}
+    needle=${2-}
+    shift 2
+    index=0
+
+    for check in "$@"; do
+        if [[ "$needle" == "$check" ]]; then
+            local "$target" && assign::value "$target" "$index"
+
+            return 0
+        fi
+
+        index=$((index + 1))
+    done
+
+    return 1
+}
+
+
+# Join / implode an array
+#
+# $1    - Variable name to receive the joined content
+# $2    - Joiner
+# $3-$@ - Elements to join
+#
+# Returns nothing.
+array::join() {
+    local joiner result target
+
+    target=${1-}
+    joiner=${2-}
+    shift
+    shift
+    printf -v result "$joiner%s" "$@"
+    result=${result:${#joiner}}
+
+    local "$target" && assign::value "$target" "$result"
+}
+bpm_include_log=$0
+#!/usr/bin/env bash
+
+. bpm
+bpm::include array
+bpm::include string
+
+# This logging function helps diagnose errors or provide additional details
+# about what's happening in your scripts.  Use this to log every action that is
+# performed.  Debug output can be enabled by setting the `DEBUG` environment
+# variable.  When enabled, debug output is written to `stderr` and are also
+# passed to `log::toFile` so they could be written to a log file. This also
+# will colorize the output when the `LOG_COLOR` environment variable is set to
+# a non-empty string.
+#
+# $@         - The message to log.  Arguments are joined into one line.
+# $DEBUG     - Controls if logging is enabled and where it's enabled.
+# $LOG_COLOR - When set to non-empty string, ANSI color is enabled.
+#
+# When the DEBUG environment variable is not set, debug is disabled.  If DEBUG
+# is set to `*`, `all` or `true`, this always logs.  In all other cases, DEBUG
+# is assumed to be either a name of a function or a list of function names that
+# should have debug logging enabled.  When FUNCNAME lists one of these
+# functions, logging will happen.  This means you can turn on logging for one
+# function and logging is enabled for that function and for all code that the
+# function will execute, so child functions will also write debug output.
+#
+# Writing to `stderr` is intentional.  This way you can enable debugging and
+# still get valid output captured.
+#
+# Examples
+#
+#   # Forcibly disable all logging.
+#   DEBUG= ./thing
+#
+#   # Enable all debugging (two methods).
+#   DEBUG=true ./thing
+#   DEBUG="*" ./thing
+#
+#   # Enable logging for a function named "doMagic".
+#   DEBUG=doMagic ./thing
+#
+#   # Enable logging for the functions "rainbow", "pony" and "unicorn".
+#   DEBUG="rainbow pony unicorn" ./thing
+#
+#   # Enable debug logging for all subsequent commands.
+#   export DEBUG=true
+#   ./thing1
+#   ./thing2
+#
+# Returns nothing.
+log::debug() {
+    # Do not log unless DEBUG environment variable is set.
+    [[ -z "${DEBUG-}" ]] || (
+        set +x
+        # Disable debug in this function.  Note: this function uses a subshell!
+
+        local content list name output
+
+        array::join content " " "$@" || return $?
+        string::prefixLines output "DEBUG: " "$content" || return $?
+
+        if [[ -n "${LOG_COLOR-}" ]]; then
+            output=$'\E[90;1m'"$output"$'\E[0m'
+        fi
+
+        # Check if debugging is enabled for everything
+        if [[ "$DEBUG" == "*" ]] || [[ "$DEBUG" == "true" ]]; then
+            log::toFile "DEBUG" "$content" || return $?
+            echo "$output" >&2
+
+            return
+        fi
+
+        #: Here is the more complex checking if any value in the DEBUG variable
+        #: is in the FUNCNAME array.
+        list="$DEBUG"
+
+        while [[ -n "$list" ]]; do
+            name=${DEBUG%% *}
+            list=${list#* }
+
+            if [[ "$list" == "$name" ]]; then
+                list=""
+            fi
+
+            if [[ -n "$name" ]] && [[ ${#FUNCNAME[@]} -gt 0 ]]; then
+                if array::contains "$name" "${FUNCNAME[@]}"; then
+                    log::toFile "DEBUG" "$content" || return $?
+                    echo "$output" >&2
+
+                    return
+                fi
+            fi
+        done
+    )
+}
+
+
+# Logging function for errors.  Use this to log error messages right before you
+# exit the program or return a failure.  All messages are written to `stderr`.
+# Log messages are also passed to the `log::toFile` function to be logged to a
+# file.  (See `log::toFile` for information about log files.) This also
+# will colorize the output when the `LOG_COLOR` environment variable is set to
+# a non-empty string.
+#
+# $@         - The message to log.  Arguments are joined into one line.
+# $LOG_COLOR - Colorizes output when set to a non-empty string.
+#
+# Examples
+#
+#    log::error "Could not find some vital thing"
+#
+#    exit 1
+#
+# Returns nothing.
+log::error() {
+    (
+        set +x
+        # Disable debug in this function.  Note: this function uses a subshell!
+
+        local content output
+
+        array::join content " " "$@" || return $?
+        log::toFile "ERROR" "$content" || return $?
+        string::prefixLines output "ERROR: " "$content" || return $?
+
+        if [[ -n "${LOG_COLOR-}" ]]; then
+            output=$'\E[41;37;1m'"$output"$'\E[0m'
+        fi
+
+        echo "$output" >&2
+    )
+}
+
+
+# Writes an informational message to the logging system.  Informational
+# messages are written to `stdout` unless `$LOG_QUIET` is set to a non-empty
+# value.  The message is also sent to `log::toFile` for possible output to a
+# log file.  See `log::toFile` for information regarding logfiles.  When
+# `$LOG_COLOR` is set to a non-empty string, the output is also colorized.
+#
+# $@          - The message to write.  Arguments are joined into one line.
+# $LOG_COLOR  - When set to a non-empty value, the output is colorized.
+# $_LOG_QUIET - When set to a non-empty value, the output is suppressed.
+#
+# Returns nothing.
+log::info() {
+    (
+        set +x
+        # Disable debug in this function.  Note: this function uses a subshell!
+
+        local content output
+
+        array::join content " " "$@" || return $?
+        log::toFile INFO "$content" || return $?
+
+        if [[ -z "${LOG_QUIET-}" ]]; then
+            string::prefixLines output "INFO: " "$content" || return $?
+
+            if [[ -n "${LOG_COLOR-}" ]]; then
+                output=$'\E[32m'"$output"$'\E[0m'
+            fi
+
+            echo "$output"
+        fi
+    )
+}
+
+
+# Write a log message to a file or to a logging system.  Used by `log::debug`,
+# `log::info`, `log::warn` and `log::error`.  Should not be used directly.
+#
+# $1       - Log level. One of ERROR WARN INFO DEBUG.
+# $2       - The message to write.
+# $LOGFILE - Destination for log messages.
+#
+# Uses the environment variable `$LOGFILE` to determine where to log
+# messages.  Will write a timestamped messsage to that file, creating the file
+# if necessary.
+#
+# If `$LOGFILE` starts with "syslog:", this will use the `logger` command to
+# write a line to syslogd.  The facility defaults to user, but you can use any
+# facility; for example you can use the mail facility by setting
+# `LOGFILE="syslog:mail"`.  Additionally you can set a the tag by adding a
+# second ":" followed by the desired tag; for example you can set the tag to
+# myapp by setting `LOGFILE="syslog::myapp".
+#
+# Otherwise, `$LOGFILE` should be set to a filename.  Messages are
+# prefixed with a timestamp.
+#
+# Examples
+#
+#   # Send output to /var/log/messages
+#   LOGFILE=/var/log/messages ./your-command
+#
+#   # Send messages to /var/log/syslog using the daemon facility
+#   LOGFILE=syslog:daemon ./my-background-thing
+#
+#   # Send messages to syslog using the "user" facility (default) and
+#   # tagging them with "awesome"
+#   LOGFILE=syslog::awesome
+#
+# Returns nothing.
+log::toFile() {
+    local logLevel output facility priority tag
+
+    logLevel=$1
+
+    if [[ -z "${LOGFILE-}" ]]; then
+        return
+    fi
+
+    if [[ "${LOGFILE:0:7}" == "syslog:" ]]; then
+        facility=${LOGFILE:7}
+        tag=${facility#*:}
+
+        if [[ "$facility" == "$tag" ]]; then
+            tag=""
+        fi
+
+        facility=${facility%%:*}
+
+        if [[ -z "$facility" ]]; then
+            facility="user"
+        fi
+
+        case "$logLevel" in
+            ERROR)
+                priority="err"
+                ;;
+
+            WARN)
+                priority="warning"
+                ;;
+
+            INFO)
+                priority="info"
+                ;;
+
+            DEBUG)
+                priority="debug"
+                ;;
+        esac
+
+        loggerCmd=(logger -p "$facility"."$priority") || return $?
+
+        if [[ -n "$tag" ]]; then
+            loggerCmd[${#loggerCmd[@]}]=-t
+            loggerCmd[${#loggerCmd[@]}]=$tag
+        fi
+
+        loggerCmd[${#loggerCmd[@]}]=--
+        loggerCmd[${#loggerCmd[@]}]=$2
+        "${loggerCmd[@]}"
+    elif [[ -n "${LOGFILE-}" ]]; then
+        string::prefixLines output "$(date -Iseconds) $logLevel: " "$2" || return $?
+        echo "$output" >> "$WICK_LOGFILE"
+    fi
+}
+
+
+# Logging for warnings, such as when problems are detected and they aren't
+# severe enough to warrant an error and termination of the function.  Warning
+# messages are always written to `stderr`.  See `log::toFile` for information
+# about writing log messages to files.  This also colorizes the output when
+# `$LOG_COLOR` is set to a non-empty value.
+#
+# $@         - The text to log.  Arguments are appended into a single line.
+# $LOG_COLOR - When set to a non-empty string the output is colorized.
+#
+# Examples
+#
+#   if [[ -f /some/file ]]; then
+#       log::warn "File exists when it should not."
+#       rm /some/file
+#   fi
+#
+# Returns nothing.
+log::warn() {
+    (
+        set +x
+        # Disable debug in this function.  Note: this function uses a subshell!
+
+        local content output
+
+        array::join content " " "$@" || return $?
+        log::toFile "WARN" "$content" || return $?
+        string::prefixLines output "WARN: " "$content" || return $?
+
+        if [[ -n "${LOG_COLOR-}" ]]; then
+            output=$'\E[33;1m'"$output"$'\E[0m'
+        fi
+
+        echo "$output" >&2
+    )
+}
+bpm_include_path=$0
+#!/usr/bin/env bash
+. bpm
+bpm::include assign
+bpm::include log
+
+
+# Resolves a directory. If you are given a relative path, this turns it into
+# an absolute path.
+#
+# $1 - Destination variable name.
+# $2 - Path to resolve.
+# $3 - Path to resolve against (defaults to current directory).
+#
+# Returns true (0) when everything works. Returns false (1) when the directory
+# does not exist (thus it can't be resolved). Returns false (2) when the
+# path to resolve against does not exist.
+path::absoluteDir() {
+    local oldDir result
+
+    oldDir=$PWD
+
+    if [[ -n "${3-}" ]]; then
+        cd "$3" 2> /dev/null || return 2
+    fi
+
+    cd "$2" 2> /dev/null || return 1
+    result=$PWD
+    cd "$oldDir"
+
+    local "${1-}" && assign::value "$1" "$result"
+}
+
+
+# Resolves a file. If you are given a relative path, this turns it into
+# an absolute path.
+#
+# $1 - Destination variable name.
+# $2 - File path to resolve.
+# $3 - Path to resolve against (defaults to current directory).
+#
+# Returns true (0) when everything works. Returns error codes from
+# path::absoluteDir when there are problems.
+path::absoluteFile() {
+    local fileDir result
+
+    path::dirname fileDir "$2"
+    path::absoluteDir result "$fileDir" ${3+"$3"} || return $?
+    result=${result%/}
+
+    local "${1-}" && assign::value "$1" "$result/${2##*/}"
+}
+
+
+# Equivalent to calling `dirname` but does not make a subshell, so this is
+# roughly twice as fast.
+#
+# $1 - Destination variable name. This is set to the parent folder.
+# $2 - Filename or directory name.
+#
+# Examples
+#
+#   path::dirname dest a/file/somewhere
+#   echo "$dest"   # "a/file"
+#
+#   path::dirname dest ./filename
+#   echo "$dest"   # "."
+#
+#   path::dirname dest filename
+#   echo "$dest"   # "."
+#
+#   path::dirname dest some/dir/
+#   echo "$dest"   # "some"
+#
+#   path::dirname dest dir/
+#   echo "$dest"   # "."
+#
+# Returns nothing.
+path::dirname() {
+    local d p
+
+    p=$2
+
+    if [[ "${#p}" -gt 1 ]]; then
+        p=${p%/}
+    fi
+
+    if [[ "$p" == */* ]]; then
+        d=${p%/*}
+        local "${1-}" && assign::value "$1" "${d:-/}"
+
+        return
+    fi
+
+    local "${1-}" && assign::value "$1" "."
+}
+
+
+# Performs a single test for a target in the current directory or any parent.
+# When found, supplies the folder name to the destination variable name. The
+# location will be root-relative.
+#
+# $1 - Destination variable name.
+# $2 - The type of test to perform.
+# $3 - The target that you are testing.
+#
+# Examples:
+#
+#   # Search for a bpm.ini file in the current folder or any parent.
+#   if ! path::findParentContaining result -f bpm.ini; then
+#       echo "Sorry, did not find the file" >&2
+#   else
+#       echo "Folder containing file: $result"
+#       echo "Full path: $result/bpm.ini"
+#   fi
+#
+#   # Search for a particular library
+#   path::findParentContaining -d bpm_modules/is
+#
+# Returning success and an empty string is a valid response, so make sure you
+# use the return code from the function.
+#
+# Returns true (0) if the target was found.
+path::findParentContaining() {
+    local dir
+
+    dir=$PWD
+
+    # Scan parent folders for `bpm.ini`.
+    while true; do
+        # Nasty use of eval, but necessary. Alternatives are welcome.
+        if eval [[ "$2" "$dir/$3" ]]; then
+            log::debug "Found target $2: $dir/$3"
+            local "${1-}" && assign::value "$1" "$dir/$3"
+
+            return 0
+        fi
+
+        if [[ -z "$dir" ]]; then
+            log::debug "Did not find target $2: $3"
+
+            return 1
+        fi
+
+        log::debug "Target $2 not found in folder: $dir"
+        dir=${dir%/*}
+    done
+}
+bpm_include_ini=$0
+#!/usr/bin/env bash
+
+. bpm
+bpm::include array
+bpm::include assign
+bpm::include string
+bpm::include is
+
+
+# Retrieves a list of sections, list of keys, or a key's value.
+#
+# $1 - Target variable.
+# $2 - Prefix, required.
+# $3 - Section, optional. Required if you want to access a key.
+# $4 - Key name, optional
+#
+# Examples
+#
+#   # Assume the following INI file:
+#   #
+#   # [sectionName]
+#   # keyName = theValue
+#
+#   ini::parse INI "$iniFileContents"
+#   ini::get target INI
+#   set | grep ^target=
+#   # target=([0]="" [1]="sectionName")
+#
+#   ini::get target INI sectionName
+#   set | grep ^target=
+#   # target=([0]="keyName")
+#
+#   ini::get target INI sectionName keyName
+#   # target="theValue"
+#
+# Returns nothing
+ini::get() {
+    local keyName target value
+
+    target=${1-}
+    shift
+
+    # shellcheck disable=SC2068
+    ini::keyName keyName "$@"
+
+    if [[ "$#" -lt 3 ]]; then
+        if [[ -z "${!keyName+_}" ]]; then
+            value=()
+        else
+            # shellcheck disable=SC1087
+            eval "value=( \${$keyName[@]+\"\${$keyName[@]}\"} )"
+        fi
+
+        # shellcheck disable=SC2068
+        local "$target" && assign::array "$target" ${value[@]+"${value[@]}"}
+    elif ! is::set "$keyName"; then
+        local "$target" && assign::value "$target" ""
+    else
+        local "$target" && assign::byRef "$target" "$keyName"
+    fi
+}
+
+
+# Private: Sets up a new, blank INI structure in memory.
+#
+# Hardcode the empty section name as the first entry. Required to have a
+# single element and this also initializes the values.
+#
+# $1 - Prefix, required.
+#
+# Returns nothing.
+ini::initializePrefix() {
+    assign::array "$1" ""
+    ini::keyName emptySection "$1" ""
+    assign::array "$emptySection"
+}
+
+
+# Encode a prefix, section and key in order to generate a safe variable name
+# for Bash. All section names and key names are case insensitive.
+#
+# $1 - Prefix for environment variables, required.
+# $2 - Section, optional. Required if you want to access a key.
+# $3 - Key name, optional.
+ini::keyName() {
+    local name part target
+
+    target="$1"
+    shift
+    name="$1"
+
+    if [[ $# -gt 1 ]]; then
+        string::toUpper part "$2"
+        string::toHex part "$part"
+        name+="_$part"
+
+        if [[ $# -gt 2 ]]; then
+            string::toUpper part "$3"
+            string::toHex part "$part"
+            name+="_$part"
+        fi
+    fi
+
+    local "$target" && assign::value "$target" "$name"
+}
+
+
+# Parses an INI file into the environment.
+#
+# $1 - Prefix for environment variables that will be assigned.
+# $2 - INI file contents
+#
+# Variables are stored in memory, encoded in hex to ensure the variable names
+# are valid variables.
+#
+#   PREFIX=(array of unencoded section names)
+#   PREFIX_SECTIONENCODED=(array of unencoded key names)
+#   PREFIX_SECTIONENCODED_KEYENCODED=value
+#
+# Duplicated section names are merged together. Duplicated keys will have their
+# values changed into an array so all of the values will be captured. For
+# example, the INI on the left will be parsed into variables similar to the
+# right side. Keep in mind that section names and keys are case insensitive.
+#
+# [Section1]       PREFIX=(SECTION1 SECTION2
+# Key=value
+# kEy=value2       PREFIX_SECTION1=(KEY)
+#
+# [Section2]       PREFIX_SECTION2=(ANOTHER)
+# another=value
+#                  PREFIX_SECTION1_KEY=(value value2 value3)
+# [SECTION1]
+# KEY=value3       PREFIX_SECTION2_ANOTHER=value
+#
+# You should not use the generated environment variables directly. Instead, use
+# the other utility functions (eg. `ini::get`) to access the values.
+#
+#     $1: Prefix for variables.
+#     $2: INI file contents
+ini::parse() {
+    local IFS line prefix section
+
+    prefix=$1
+    section=
+    IFS=$'\n'
+    ini::initializePrefix "$prefix"
+
+    while read line; do
+        string::trim line "$line"
+
+        #: Eliminate comments starting with # or ;
+        line=${line#\#*}
+        line=${line#;*}
+
+        if [[ "${line:0:1}" == '[' ]] && [[ "${line:${#line}-1}" == "]" ]]; then
+            #: Remove brackets
+            line=${line:1:${#line}-2}
+            string::trim section "$line"
+        elif [[ -n "$line" ]]; then
+            IFS="=" read key value <<< "$line"
+            string::trim key "$key"
+
+            if [[ -n "$key" ]]; then
+                string::trim value "$value"
+                ini::set "$prefix" "$section" "$key" "$value"
+            fi
+        fi
+    done <<< "$2"
+}
+
+
+# Generates a unique INI file prefix that has not yet been used.
+#
+# $1 - Destination variable name for the INI prefix.
+#
+# Returns nothing.
+ini::prefix() {
+    local prefix
+
+    #: 1 in 32k
+    prefix="ini_${RANDOM}"
+
+    while is::set "$prefix"; do
+        #: 1 in 1 billion
+        prefix="ini_${RANDOM}_${RANDOM}"
+    done
+
+    local "$1" && assign::value "$1" "$prefix"
+}
+
+
+# Removes a key from a section or a section from a loaded INI. Frees up
+# memory by unsetting environment variables. If no section is specified,
+# removes all of the INI from memory.
+#
+# $1 - Prefix for environment variables, required.
+# $2 - Section name, optional.
+# $3 - Key name, optional.
+#
+# Returns nothing.
+ini::remove() {
+    local index key keys encoded IFS upper
+
+    IFS=$'\n' # Needed for array slicing before Bash 4.0-rc1
+
+    if [[ $# -gt 2 ]]; then
+        # Remove key
+        ini::keyName encoded "$1" "$2" "$3"
+        unset "$encoded"
+
+        # Remove key from the section
+        ini::keyName encoded "$1" "$2"
+        assign::byRef keys "$encoded"
+        string::toUpper upper "$3"
+
+        if array::indexOf index "$upper" ${keys[@]+"${keys[@]}"}; then
+            keys=("${keys[@]:0:index}" "${keys[@]:index+1}")
+        fi
+
+        assign::array "$encoded" ${keys[@]+"${keys[@]}"}
+    elif [[ $# -gt 1 ]]; then
+        # Remove keys from section
+        ini::keyName encoded "$1" "$2"
+        assign::byRef keys "$encoded"
+
+        if [[ "${#keys[@]}" -gt 0 ]]; then
+            for key in "${keys[@]}"; do
+                ini::remove "$1" "$2" "$key"
+            done
+        fi
+
+        # Remove the section
+        unset "$encoded"
+
+        # Remove the section from the list of sections
+        ini::keyName encoded "$1"
+        assign::byRef keys "$encoded"
+        string::toUpper upper "$2"
+
+        if array::indexOf index "$upper" ${keys[@]+"${keys[@]}"}; then
+            keys=("${keys[@]:0:index}" "${keys[@]:index+1}")
+        fi
+
+        assign::array "$encoded" ${keys[@]+"${keys[@]}"}
+    else
+        # Remove sections
+        ini::keyName encoded "$1"
+        assign::byRef keys "$1"
+
+        for key in "${keys[@]}"; do
+            ini::remove "$1" "$key"
+        done
+
+        # Remove the list
+        unset "$1"
+    fi
+}
+
+
+# Assigns a value to a property
+#
+# This will set the value if it isn't already assigned. If it is
+# assigned, it will add the value to the array in memory.
+#
+# $1 - Prefix for environment variables, required.
+# $2 - Section name, required.
+# $3 - Key, required.
+# $4 - Value, required.
+#
+# Returns nothing.
+ini::set() {
+    local keyEncoded keys keyUpper previousValue sectionEncoded sectionUpper sections
+
+    assign::byRef sections "$1"
+
+    if ! is::array sections; then
+        ini::initializePrefix "$1"
+        sections=("")
+    fi
+
+    string::toUpper sectionUpper "$2"
+    ini::keyName sectionEncoded "$1" "$2"
+    string::toUpper keyUpper "$3"
+    ini::keyName keyEncoded "$1" "$2" "$3"
+
+    if array::contains "$sectionUpper" ${sections[@]+"${sections[@]}"}; then
+        assign::byRef keys "$sectionEncoded"
+    else
+        sections[${#sections[@]}]=$sectionUpper
+        assign::array "$1" "${sections[@]}"
+        keys=()
+    fi
+
+    if array::contains "$keyUpper" ${keys[@]+"${keys[@]}"}; then
+        if ! is::array "$keyEncoded"; then
+            assign::value previousValue "${!keyEncoded}"
+            previousValue=( "$previousValue" )
+        else
+            assign::byRef previousValue "$keyEncoded"
+        fi
+
+        assign::array "$keyEncoded" "${previousValue[@]}" "$4"
+    else
+        keys[${#keys[@]}]=$keyUpper
+        assign::array "$sectionEncoded" "${keys[@]}"
+        assign::value "$keyEncoded" "$4"
+    fi
+}
+
+# Transfers the in-memory contents of the INI file back into a string.
+#
+# You will lose all of your comments that were in the INI file. The order of
+# the sections may not be preserved. The order of the keys may not be
+# preserved. Any values that were overwritten in the original INI file
+# shall be eliminated.
+#
+# Think of it as a cleansing to see what's really parsed instead of losing
+# data.
+#
+# $1 - Destination variable name for the string.
+# $2 - INI prefix
+#
+# Returns nothing.
+ini::toString() {
+    local key keys nl prefix result section sections value values
+
+    prefix=$2
+    nl=$'\n'
+    ini::get sections "$prefix"
+    result=
+    for section in "${sections[@]}"; do
+        keys=()
+        ini::get keys "$prefix" "$section"
+
+        if [[ "${#keys[@]}" -gt 0 ]]; then
+            # Skipping the section name for root entries always works
+            # because it's always hardcoded as the first section name.
+            if [[ -n "$section" ]]; then
+                result="$result[$section]$nl"
+            fi
+
+            for key in "${keys[@]}"; do
+                values=()
+                ini::get values "$prefix" "$section" "$key"
+
+                if is::array values; then
+                    for value in "${values[@]}"; do
+                        result="$result$key=$value$nl"
+                    done
+                else
+                    result="$result$key=$values$nl"
+                fi
+            done
+
+            result="$result$nl"
+        fi
+    done
+
+    local "$1" && assign::value "$1" "$result"
+}
+# Sets the PATH environment variable to add the following values, in this
+# order:
+#
+# 1. The `bpm/.bin` folder in the current directory or the first parent that
+#    contains a `bpm.ini` file.
+# 2. The user's `~/.bpm/.bin` folder.
+# 3. The system's `/usr/lib/bpm/.bin` folder.
+# 4. The rest of the existing PATH.
+#
+# To accomplish this, we simply work backwards and prepend new paths.
+#
+# Returns nothing.
+bpm::addLocationsToPath() {
+    local ini
+
+    # Add the system location
+    bpm::prependToPath /usr/lib/bpm/.bin "global libraries"
+    bpm::prependToPath ~/.bpm-modules/.bin "user libraries"
+    bpm::findParentIni ini
+
+    if [[ -n "$ini" ]]; then
+        bpm::prependToPath "${ini%/*}/bpm-modules/.bin" "project libraries"
+    fi
+}
+
+
+# Adds a package to the list of packages to install.
+#
+# $1 - Package name.
+# $2 - Package version specification.
+#
+# Alters BPM_INSTALL_LIST array to include the package name, without
+# duplication.
+#
+# Returns true (0) on success. Returns 1 when there is a conflict of version
+# specifications.
+bpm::addToInstallList() {
+    local versionVar
+
+    string::toHex versionVar "$1"
+    versionVar="BPM_INSTALL_LIST_$versionVar"
+
+    # shellcheck disable=SC2068
+    if array::contains "$1" ${BPM_INSTALL_LIST[@]+"${BPM_INSTALL_LIST[@]}"}; then
+        if [[ "${!versionVar}" != "$2" ]]; then
+            log::error "Package $1 already flagged to be installed, but with a different version."
+            log::error "Need: ${!versionVar}"
+            log::error "Also need: $2"
+
+            return 1
+        fi
+    fi
+
+    BPM_INSTALL_LIST[${#BPM_INSTALL_LIST[@]}]=$1
+    assign::value "$versionVar" "$2"
+}
+
+
+# The body of the BPM command line program
+#
+# $@ - Arguments passed on the command line.
+#
+# Returns true (0) on success. Returns 1 when no command was passed. Returns
+# 2 when an unknown command was issued.
+bpm() {
+    local command
+
+    if [[ -z "${1-}" ]]; then
+        echo "Specify a command to run. Use 'bpm help' to see a list of commands." >&2
+
+        return 1
+    fi
+
+    command=$1
+    shift
+
+    case "$command" in
+        help)
+            # shellcheck disable=SC2068
+            bpm::help ${@+"$@"}
+            ;;
+
+        install)
+            # shellcheck disable=SC2068
+            bpm::install ${@+"$@"}
+            ;;
+
+        run)
+            # shellcheck disable=SC2068
+            bpm::run ${@+"$@"}
+            ;;
+
+        version)
+            bpm::version
+            ;;
+
+        *)
+            echo "Unknown command: $command" >&2
+            echo "Use 'bpm help' to get a list of commands." >&2
+
+            return 2
+            ;;
+    esac
+}
+
+
+
+# Use the version specifier and download or copy the files into the modules
+# folder.
+#
+# $1 - Library directory for installation.
+# $2 - Package name.
+# $3 - Package version specifier.
+#
+# Returns true (0) on success. Returns 1 if there was any problem that's
+# a file system level (can't make a directory, can't copy a file). Returns
+# 2 if the package could not be downloaded or if the download method is
+# unable to be determined. Returns 3 if the archive could not be expanded or
+# if there is invalid library information encountered.
+bpm::downloadPackage() {
+    if [[ "$3" == "*" ]]; then
+        bpm::downloadPackageFromRegistry "$1" "$2" "$3"
+    elif [[ -d "$3" ]]; then
+        bpm::downloadPackageFromDirectory "$1" "$2" "$3"
+    elif [[ -f "$3" ]]; then
+        bpm::downloadPackageFromFile "$1" "$2" "$3"
+    elif [[ "$3" == *://* ]]; then
+        bpm::downloadPackageFromHttp "$1" "$2" "$3"
+    else
+        log::error "Unable to download package $2: $3"
+        log::error "No known method of download."
+
+        return 2
+    fi
+}
+
+
+
+# Downloads a package from a local directory.
+#
+# $1 - Library directory for installation.
+# $2 - Package name.
+# $3 - Package version specifier.
+#
+# Returns true (0) on success. Returns 1 if the folder can not be copied.
+bpm::downloadPackageFromDirectory() {
+    local dest
+
+    dest="$1/$2"
+    log::debug "Copying folder: $3"
+    cp -r "$3" "$dest" || return 1
+    bpm::fixPackageNesting "$dest"
+}
+
+
+
+# Downloads a package from a given archive file.
+#
+# $1 - Library directory for installation.
+# $2 - Package name.
+# $3 - Package version specifier.
+#
+# Returns true (0) on success. Returns 1 for filesystem level errors (can't
+# make a directory, can't copy a file). Returns 3 when the archive can not be
+# expanded.
+bpm::downloadPackageFromFile() {
+    local dest
+
+    dest="$1/$2"
+    log::debug "Copying file: $3"
+    mkdir -p "$dest" || return 1
+    cp "$3" "$dest/.bpm-archive" || return 1
+    bpm::expandArchive "$dest" ".bpm-archive" || return 3
+    rm "$dest/.bpm-archive" || return 1
+    bpm::fixPackageNesting "$dest"
+}
+
+
+
+# Downloads a package from the package registry.
+#
+# $1 - Library directory for installation.
+# $2 - Package name.
+# $3 - Package version specifier.
+#
+# Returns true (0) on success. Returns 1 when there is a strange error, such
+# as not being able to make a folder. Returns 2 if there's a download problem.
+# Returns 3 if the archive can not be expanded.
+bpm::downloadPackageFromHttp() {
+    local dest
+
+    dest="$1/$2"
+    mkdir -p "$dest" || return 1
+    log::debug "Downloading: $3"
+    bpm::getUrl "$3" > "$dest/.bpm-archive" || return 2
+    bpm::expandArchive "$dest" ".bpm-archive" || return 3
+    rm "$dest/.bpm-archive" || return 1
+    bpm::fixPackageNesting "$1/$2"
+}
+
+
+
+# Downloads a package from the package registry.
+#
+# $1 - Library directory for installation.
+# $2 - Package name.
+# $3 - Package version specifier.
+#
+# Returns true (0) on success. Returns 1 if there is a strange filesystem
+# error (can't copy, can't make directory). Returns 2 when the files can't be
+# downloaded. Returns 3 if there is no download URL in the package's
+# descriptor.
+bpm::downloadPackageFromRegistry() {
+    local definitionPrefix dest iniData url
+
+    # Download INI from website
+    log::debug "Loading package information from registry: $2"
+    iniData=$(bpm::getUrl "https://rawgit.com/bpm-rocks/registry/master/packages/$2.ini" || :)
+
+    if [[ -z "$iniData" ]]; then
+        log::error "Unable to download package information from registry. Package not found."
+
+        return 3
+    fi
+
+    # Parse INI, get download URL to .tar.gz
+    ini::prefix definitionPrefix
+    ini::parse "$definitionPrefix" "$iniData"
+    ini::get url "$definitionPrefix" "$2" downloadUrl
+
+    if [[ -z "$url" ]]; then
+        log::error "No 'downloadUrl' property in package's information."
+
+        return 3
+    fi
+
+    dest="$1/$2"
+    mkdir -p "$dest" || return 1
+    log::debug "Downloading: $url"
+    bpm::getUrl "$url" > "$dest/.bpm-archive"
+    bpm::expandArchive "$dest" ".bpm-archive"
+    rm "$dest/.bpm-archive" || return 1
+    bpm::fixPackageNesting "$dest"
+}
+
+
+
+# Decompresses a compressed file. Decompressed files are left in the same
+# folder as the archive.
+#
+# $1 - Folder location.
+# $2 - Archive file.
+#
+# This simply tries running all of the decompressors on the file, stopping
+# if one works and does not return an error. An alternative would be using
+# `file`, but that is not well supported across systems.
+#
+# Returns true (0) on success. Returns 1 if the archive type could not be
+# determined. Returns 2 if there's a problem during extraction, such as
+# being unable to write files.
+bpm::expandArchive() {
+    (
+        cd "$1"
+
+        if unzip -t "$2" &> /dev/null; then
+            log::debug "Detected zip file archive."
+            unzip "$2" &> /dev/null || return 2
+
+            return 0
+        fi
+
+        # This can work for .gz and .bz2 files.
+        if tar tf "$2" &> /dev/null; then
+            log::debug "Detected tar archive."
+            tar xf "$2" || return 2
+
+            return 0
+        fi
+
+        # Just in case the above does not work.
+        if tar tfz "$2" &> /dev/null; then
+            log::debug "Detected tar.gz archive."
+            tar xfz "$2" || return 2
+
+            return 0
+        fi
+
+        if tar tfj "$2" &> /dev/null; then
+            log::debug "Detected tar.bz2 archive."
+            tar xfj "$2" || return 2
+
+            return 0
+        fi
+
+        log::debug "Unable to determine archive format."
+
+        return 1
+    )
+}
+
+
+# Finds a `bpm.ini` file in the current directory or any parent. When found,
+# this will send the INI file location to the destination variable name.  The
+# INI file location will be root-relative (you'll see `/folder/dir/bpm.ini`
+# instead of `../bpm.ini`.
+#
+# Returns true (0) if `bpm.ini` was found.
+bpm::findParentIni() {
+    local result
+
+    path::findParentContaining result -f "bpm.ini" || return 1
+
+    local "${1-}" && assign::value "$1" "$result"
+}
+
+
+
+# If the specified folder has only one entry and it's a directory, move the
+# contents of that directory into the parent. This is useful when an archive is
+# extracted and it contains all files within a parent folder.
+#
+# $1 - Path name to check.
+#
+# Returns true (0) upon success. Returns 1 when the specified directory does
+# not exist or if it is not a directory.
+bpm::fixPackageNesting() {
+    local files restoreDotglob tempDir
+
+    if [[ ! -d "$1" ]]; then
+        log::error "Not a directory: $1"
+
+        return 1
+    fi
+
+    restoreDotglob=$(shopt -p dotglob)
+    shopt -s dotglob
+    files=("$1/"*)
+    eval "$restoreDotglob"
+
+    if [[ "${#files[@]}" -eq 1 && -d "${files[0]}" ]]; then
+        log::debug "Unnesting: ${files[0]}"
+        tempDir="$1.temp.$$"
+        mv "${files[0]}" "$tempDir"
+        rmdir "$1"
+        mv "$tempDir" "$1"
+    fi
+}
+
+
+# Downloads a file from the internet, pipes to stdout.
+#
+# $1 - URL.
+#
+# Returns an error if no usable tool was found.
+bpm::getUrl() {
+    if hash curl &> /dev/null; then
+        curl --fail --silent --location "$1"
+    elif hash wget &> /dev/null; then
+        wget -O - "$1" 2> /dev/null
+    else
+        log::error "Unable to download - no supported tools exist."
+        log::error "Please install curl or wget."
+
+        return 1
+    fi
+}
+
+
+# Display help messages for using BPM.
+#
+# $@ - Arguments passed on the command line.
+#
+# Returns true (0) on success. Returns 1 when a subtopic is requested but
+# is not found.
+bpm::help() {
+    if [[ -n "${1-}" ]]; then
+        if ! is::function "bpm::help::$1"; then
+            echo "No such help topic. Use 'bpm help' to list the topics."
+
+            return 1
+        fi
+
+        log::debug "Displaying help topic: $1"
+        "bpm::help::$1"
+    else
+        log::debug "Displaying help"
+        cat <<'EOF'
+BPM - Bash Package Manager
+
+Syntax:
+
+    bpm <COMMAND> [ARGUMENTS]
+
+Commands:
+
+    help        Displays this help message.
+    install [OPTIONS] [PACKAGE [VERSION]]
+                When used without PACKAGE and OPTIONS, this installs the
+                dependencies listed in bpm.ini. Otherwise, installs the
+                specified package. Use the option -g or --global to install
+                the packages globally.
+    run <SCRIPT> [ARGUMENT [...]]
+                Runs a specified script. When arguments are included, they
+                are passed to the script.
+    version     Display BPM version and build information.
+EOF
+    fi
+}
+
+
+# Installs a package or set of packages.
+#
+# $1 - Package specificiation. Optional. When not assigned a value, will
+#      search for a `bpm.ini` file and install everything listed under the
+#      `[dependencies]` and `[devDependencies]` sections.
+#
+# Determines the install location. This is passed on to other commands so they
+# install further dependencies into the same location. `$binDir` is where
+# wrapper scripts go for installed programs, `$libDir` is where the library
+# will get installed.
+#
+# * For global installs (use -g or --global)
+#     * `$libDir` is `/usr/lib/bpm`
+#     * `$binDir` is `/usr/bin`
+# * When there is a `bpm.ini` file in the current directory or any parent
+#     * `$libDir` is `$bpmIniDir/bpm`
+#     * `$binDir` is `$bpmIniDir/bpm/.bin`
+# * Installs into a local user's directory
+#     * `$libDir` is `~/.bpm`
+#     * `$binDir` is `~/.bpm/.bin`
+#
+# See `bpm::installPackage()` for more details.
+#
+# This returns true (0) on success.
+bpm::install() {
+    local binDir iniFile libDir package versionVar
+
+    BPM_INSTALL_LIST=()
+
+    if [[ "$#" -eq 0 ]]; then
+        if ! bpm::findParentIni iniFile; then
+            log::error "No bpm.ini file found and not provided a name of a package to install."
+
+            return 1
+        fi
+
+        log::debug "Install is using INI: $iniFile"
+        bpm::packagesFromIni "$iniFile" dependencies
+        bpm::packagesFromIni "$iniFile" devDependencies
+        libDir="${iniFile%/*}/bpm-modules"
+        binDir="$libDir/.bin"
+    else
+        if bpm::findParentIni iniFile; then
+            libDir="${iniFile%/*}/bpm-modules"
+            binDir="$libDir/.bin"
+        else
+            libDir=~/.bpm
+            binDir=~/.bpm/.bin
+        fi
+
+        if [[ "$1" == "-g" || "$1" == "--global" ]]; then
+            log::debug "Installing to a global location"
+            libDir=/usr/lib/bpm
+            binDir=/usr/bin
+            shift
+        fi
+
+        if [[ "$1" == -* ]]; then
+            log::warn "Unknown option: $1"
+
+            return 1
+        fi
+
+        log::debug "Install is using a package name: $1"
+        bpm::addToInstallList "$1" "${2:-*}"
+    fi
+
+    # Now install everything
+    if [[ "${#BPM_INSTALL_LIST[@]}" -gt 0 ]]; then
+        for package in "${BPM_INSTALL_LIST[@]}"; do
+            string::toHex versionVar "$package"
+            versionVar="BPM_INSTALL_LIST_$versionVar"
+            bpm::installPackage "$libDir" "$binDir" "$package" "${!versionVar}"
+        done
+    else
+        log::debug "No packages to install."
+    fi
+}
+
+
+# Installs a package or set of packages.
+#
+# $1 - Library directory for installation.
+# $2 - Bin directory for installation.
+# $3 - Package name.
+# $4 - Package version specifier.
+#
+# Packages are checked for executable programs and file includes when being
+# installed. The executables are placed in `$BIN_DIR` and the includes go
+# into `$PREFIX/.include`.
+#
+# * When installing globally, `$PREFIX` is `/usr/lib/bpm/` and `$BIN_DIR` is
+#   `/usr/bin/`.
+# * If there is a `bpm.ini` file in the current directory or any parent, the
+#   `$PREFIX` is set to the dirname of the file with "bpm/" appended. For
+#   example, when `/home/user/project/bpm.ini` is detected, `$PREFIX` is
+#   `/home/user/project/bpm/`. `$BIN_DIR` is `$PREFIX/.bin`.
+# * Finally, when all else fails, use `~/.bpm/` as `$PREFIX` and `$BIN_DIR`
+#   is `$PREFIX/.bin`.
+#
+# The package will be installed to `$PREFIX/$LIBRARY/`. After installation, the
+# `bpm.ini` package descriptor is scanned and the following actions will be
+# taken.
+#
+# * All packages under the `[dependencies]` section are installed to
+#   `$PREFIX/`. This installation logic is repeated for each of them.
+# * The `[package]` section is checked for an `include` key. If found, a file
+#   is written to `$PREFIX/.include/$LIBRARY` that will load the necessary
+#   files in the library.
+# * If there is a `[install]` section, all of the keys will generate
+#   executable wrapper scripts. The wrappers will be created as
+#   `$BIN_DIR/$COMMAND_NAME`.
+#
+# This returns true (0) on success. Returns 1 if there is any issue downloading
+# the package.
+bpm::installPackage() {
+    local dependency dependencies package packagePrefix version
+
+    # All packages are in lowercase. INI reading might return them in any
+    # capitalization.
+    string::toLower package "$3"
+
+    # See if it is already installed.
+    if [[ -d "$1/$package" ]]; then
+        log::debug "Package already installed: $package"
+
+        return 0
+    fi
+
+    echo "Installing $package"
+
+    if ! bpm::downloadPackage "$1" "$package" "$4"; then
+        log::error "Error downloading package."
+        rm -rf "${1:?}/$2"
+
+        return 1
+    fi
+
+    # Parse the INI
+    ini::prefix packagePrefix
+
+    if [[ -f "$1/$package/bpm.ini" ]]; then
+        log::debug "Loading package INI."
+        ini::parse "$packagePrefix" "$(cat "$1/$package/bpm.ini")"
+    else
+        log::debug "No package INI file. Faking an empty config."
+    fi
+
+    # Install
+    bpm::linkIncludeFile "$1" "$package" "$packagePrefix"
+    bpm::linkPrograms "$1" "$2" "$package" "$packagePrefix"
+
+    # Install any dependencies
+    ini::get dependencies "$packagePrefix" dependencies
+
+    if [[ "${#dependencies[@]}" ]]; then
+        for dependency in "${dependencies[@]}"; do
+            ini::get version "$packagePrefix" dependencies "$dependency"
+            bpm::installPackage "$1" "$2" "$dependency" "$version"
+        done
+    fi
+}
+
+
+# Creates a loader wrapper in order to load a package.
+#
+# $1 - Library folder.
+# $2 - Package name.
+# $3 - INI prefix.
+#
+# Returns nothing.
+bpm::linkIncludeFile() {
+    local include
+
+    ini::get include "$3" package include
+
+    if [[ -z "$include" ]]; then
+        log::debug "No 'package.include' setting in INI file."
+
+        return 0
+    fi
+
+    if [[ ! -f "$1/$2/$include" ]]; then
+        log::error "Library wants to include $include but file does not exist."
+
+        return 1
+    fi
+
+    if [[ ! -d "$1/.include" ]]; then
+        mkdir "$1/.include"
+    fi
+
+    log::debug "Writing wrapper .include/$2 -> $2/$include"
+    cat > "$1/.include/$2" <<EOF
+#!/usr/bin/env bash
+# Generated include file for bpm
+pushd "\${BASH_SOURCE[0]%/*}/../$2" &>/dev/null
+. "./$include"
+popd &> /dev/null
+EOF
+}
+
+
+# Creates a loader wrapper in order to load a package.
+#
+# $1 - Library folder.
+# $2 - Bin folder.
+# $3 - Package name.
+# $4 - INI prefix.
+#
+# Returns nothing.
+bpm::linkPrograms() {
+    local dest libFolderResolved oldPwd programs src
+
+    ini::get programs "$4" install
+
+    if [[ "${#programs[@]}" -eq 0 ]]; then
+        log::debug "No 'install' setting in INI file."
+
+        return 0
+    fi
+
+    # This is necessary to support for globally installed packages.
+    oldPwd=$PWD
+    cd "$1/$3"
+    libFolderResolved=$PWD
+    cd "$oldPwd"
+
+    for src in "${programs[@]}"; do
+        ini::get dest "$4" install "$src"
+
+        if [[ -z "$dest" ]]; then
+            log::error "Destination is empty for program: $src"
+
+            return 1
+        fi
+
+        if [[ ! -f "$1/$3/$dest" ]]; then
+            log::error "File does not exist: $1/$3/$dest"
+
+            return 1
+        fi
+
+        if [[ ! -d "$2" ]]; then
+            mkdir -p "$2"
+        fi
+
+        src=${dest##*/}
+        log::debug "Writing program wrapper $src -> $3/$dest"
+        cat > "$2/$src" <<EOF
+#!/usr/bin/env bash
+# Generated command file for bpm
+bpm::isSourced() {
+    [[ "\${FUNCNAME[1]-}" == "source" ]]
+}
+
+if bpm::isSourced; then
+    . "$libFolderResolved/$dest" \${@+"\$@"}
+else
+    "$libFolderResolved/$dest" \${@+"\$@"}
+fi
+EOF
+        chmod 755 "$2/$src"
+    done
+}
+
+
+# Loads an INI file and gets the packages from it that are necessary for
+# installation.
+#
+# $1 - INI file location.
+# $2 - Section name (`dependencies` or `devDependencies`).
+#
+# This returns true (0) on success.
+bpm::packagesFromIni() {
+    local iniPrefix package packages version
+
+    log::debug "Loading bpm.ini: $1"
+    ini::prefix iniPrefix
+    ini::parse "$iniPrefix" "$(cat "$1")"
+    log::debug "Loading section: $2"
+    ini::get packages "$iniPrefix" "$2"
+
+    if [[ "${#packages[@]}" -gt 0 ]]; then
+        for package in "${packages[@]}"; do
+            ini::get version "$iniPrefix" "$2" "$package"
+            bpm::addToInstallList "$package" "$version" || return 1
+        done
+    fi
+}
+
+
+# Checks if a directory exists. If it does, prepend the folder to the PATH.
+#
+# $1 - Folder path.
+# $2 - Description.
+#
+# Returns nothing.
+bpm::prependToPath() {
+    local oldPwd
+
+    if [[ ! -d "$1" ]]; then
+        log::debug "No $2 folder found"
+
+        return
+    fi
+
+    # Find the resolved location
+    oldPwd=$PWD
+    cd "$1"
+    log::debug "Prepending $2 to path: $PWD"
+    PATH="$PWD:$PATH"
+    cd "$oldPwd"
+}
+
+
+# Runs a script as defined in a `bpm.ini` file after setting up the PATH
+# to include, in this order:
+#
+# 1. The `bpm/.bin` folder in the current directory or the first parent that
+#    contains a `bpm.ini` file.
+# 2. The user's `~/.bpm/.bin` folder.
+# 3. The system's `/usr/lib/bpm/.bin` folder.
+# 4. The rest of the existing PATH.
+#
+# The command is looked up in `bpm.ini` and is executed. Any additional
+# arguments specified on the command line are appended to the defined command.
+#
+# Returns the result from running the command. Can return an error status
+# (not zero) when errors are detected.
+bpm::run() {
+    local cmd iniFile iniPrefix list scriptToRun
+
+    if ! bpm::findParentIni iniFile; then
+        echo "Unable to find bpm.ini." >&2
+
+        return 1
+    fi
+
+    log::debug "Loading bpm.ini: $iniFile"
+    ini::prefix iniPrefix
+    ini::parse "$iniPrefix" "$(cat "$iniFile")"
+
+    if [[ -z "$1" ]]; then
+        ini::get list "$iniPrefix" scripts
+
+        if [[ "${#list[@]}" -eq 0 ]]; then
+            echo "There are no scripts defined in $iniFile."
+        else
+            echo "Commands in $iniFile:"
+            echo ""
+
+            for cmd in "${list[@]}"; do
+                ini::get scriptToRun "$iniPrefix" scripts "$cmd"
+                echo "$cmd=$scriptToRun"
+            done
+        fi
+
+        return 0
+    fi
+
+    ini::get cmd "$iniPrefix" scripts "$1"
+
+    if [[ -z "$cmd" ]]; then
+        echo "Command does not exist in $iniFile: $1" >&2
+        echo "See 'bpm run' for a list of commands." >&2
+
+        return 2
+    fi
+
+    # Remove the first argument to bpm::run so we're left with only the extra
+    # arguments.
+    shift
+    bpm::addLocationsToPath
+
+    # Go to the directory containing `bpm.ini` so there's a consistent place
+    # where the command is executed.
+    cd "${iniFile%/*}"
+
+    # Display the command to be executed.
+    echo "$cmd $*"
+
+    # Add the extra arguments to the command that's being executed.
+    # shellcheck disable=SC2068
+    eval "$cmd ; exit \$?"
+}
+
+
+# Show BPM's build date and version.
+#
+# Returns nothing.
+bpm::version() {
+    local buildDate var
+
+    buildDate=${BPM_BUILD_DATE/T/ }
+    printf "# BPM - Bash Package Manager, version %s, built %s UTC\n" "$BPM_VERSION" "${buildDate%+*}"
+
+    for var in BASH_VERSION BPM_BUILD_DATE BPM_VERSION; do
+        printf "%s=%q\n" "$var" "${!var}"
+    done
+}
+
+
+
+# Run the main program
+# shellcheck disable=SC2068
+bpm ${@+"${@}"}
+
+# Thanks!

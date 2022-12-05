@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+
+against=()
+verbose=false
+delete=false
+deleteForce=false
+
+if [[ $# -gt 0 ]]; then
+    for arg in "$@"; do
+        if [[ "$arg" == "-d" ]]; then
+            delete=true
+        elif [[ "$arg" == "-D" ]]; then
+            deleteForce=true
+        elif [[ "$arg" == "-v" ]]; then
+            verbose=true
+        else
+            against+=("$arg")
+        fi
+    done
+fi
+
+if [[ "${#against[@]}" -eq 0 ]]; then
+    echo "Need to specify one or more branches that will be excluded from the cleaning."
+    echo "All other branches are tested to see if their latest commit is included in any of the mainline branches."
+    echo "If they match, commands to clean the branches will be displayed to stdout."
+    echo ""
+    echo "Flags:"
+    echo "    -d Delete branches that were merged"
+    echo "    -D Force deletion (use git branch -D), use with -d"
+    echo "    -v Enable verbose logging to stderr"
+    exit
+fi
+
+$verbose && echo "Fetching history" >&2
+git fetch > /dev/null
+
+$verbose && echo "Listing remotes" >&2
+
+remotes=( $(git remote -v | awk -e '{print $1}' | sort | uniq) )
+
+if [[ "${#remotes[@]}" -gt 0 ]]; then
+    for remote in "${remotes[@]}"; do
+        $verbose && echo "Pruning remote: $remote" >&2
+        git remote prune "$remote" > /dev/null
+    done
+fi
+
+$verbose && echo "Getting list of remote branches" >&2
+
+branches=( $(git branch -a | cut -b 3- | grep -v ' -> ') )
+
+if [[ "${#branches[@]}" -eq 0 ]]; then
+    echo "No branches found" >&2
+    exit
+fi
+
+deleteBranches=()
+
+for branch in "${branches[@]}"; do
+    $verbose && echo "$branch" >&2
+
+    commit=$(git log "$branch" --format=oneline | head -n 1 | cut -d ' ' -f 1)
+
+    if [[ -z "$commit" ]]; then
+        echo "No commit found for branch: $branch" >&2
+    else
+        containsBranches=$(git branch --contains "$commit" | cut -b 3- | grep -v ' -> ');
+
+        isATarget=false
+
+        # Verify this isn't one of our target branches
+        for againstBranch in "${against[@]}"; do
+            if [[ "$branch" == "$againstBranch" ]]; then
+                isATarget=true
+            fi
+        done
+
+        if $isATarget; then
+            $verbose && echo "Excluding branch $branch from possible removal; it is a target"
+        else
+            found=false
+
+            # Verify this is merged correctly
+            for againstBranch in "${against[@]}"; do
+                if ! $found; then
+                    echo "$containsBranches" | grep -q "^${againstBranch}$"
+
+                    if [[ $? -eq 0 ]]; then
+                        $verbose && echo "Branch $branch, latest commit $commit, found in $againstBranch" >&2
+                        found=true
+                    fi
+                fi
+            done
+
+            if $found; then
+                $verbose && echo "Adding branch $branch to the list" >&2
+                deleteBranches+=( "$branch" )
+            else
+                $verbose && echo "Latest commit is not in any target branch" >&2
+            fi
+        fi
+    fi
+done
+
+if [[ "${#deleteBranches[@]}" -eq 0 ]]; then
+    echo "No branches to delete" >&2
+    exit
+fi
+
+for branch in "${deleteBranches[@]}"; do
+    if [[ "$branch" =~ ^remotes/ ]]; then
+        remote=$(echo "$branch" | cut -d '/' -f 2)
+        branchOnly=$(echo "$branch" | cut -d '/' -f 3-)
+        cmd="git push '$remote' ':$branchOnly'"
+        echo "$cmd"
+        $delete && eval "$cmd"
+    else
+        if $deleteForce; then
+            cmd="git branch -D '$branch'"
+        else
+            cmd="git branch -d '$branch'"
+        fi
+
+        echo "$cmd"
+        $delete && eval "$cmd"
+    fi
+done

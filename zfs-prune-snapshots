@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#
+# Keep the newest N snapshots.
+#
+# for pool in bpool/BOOT/ubuntu_lp9i92 rpool/ROOT/ubuntu_lp9i92 rpool/USERDATA/fidian_aj94n5 rpool/USERDATA/root_aj94n5; do
+#     sudo ./zfs-prune-snapshots 5 "$pool" x
+# done
+
+count=$(($1 + 1))
+pool=$2
+confirm=$3
+
+if [[ -z "$pool" ]]; then
+    echo "Available pools, with number of snapshots in each:"
+
+    zfs list -H -t snapshot -o name | cut -d @ -f 1 | uniq -c
+
+    echo ""
+    echo "Run with extra arguments to clean a pool."
+    echo ""
+    echo "zfs-prune-snapshots COUNT POOL CONFIRM"
+    echo "    COUNT - the number of snapshots to keep"
+    echo "    POOL - an item from the list above"
+    echo "    CONFIRM - shows the commands if this is not specified"
+else
+    snapshots=$(zfs list -t snapshot -o name | grep '^'"$pool"'@' | tac | tail +"$count")
+
+    if [[ -z "$snapshots" ]]; then
+        echo "No snapshots to delete" >&2
+    else
+        while read -r snapshot; do
+            echo "zfs destroy -r '$snapshot'"
+
+            if [[ -n "$confirm" ]]; then
+                zfs destroy -r "$snapshot"
+            fi
+        done < <(echo "$snapshots")
+    fi
+fi

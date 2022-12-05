@@ -10,3 +10,5 @@ HEADLESS=true npm run test##Run headless tests
 HEADLESS=true npm run test-single-run##Run headless tests once
 docker run -it --rm -v "$PWD:/mnt" -w /mnt fidian/multishell##multishell
 npx ng serve --app mock -H "$(ipconfig getifaddr en0)" --disable-host-check##Serve Angular project publicly - whatever
+rsync -avP --delete /home/fidian/repo/scoutmasterbucky/build/ /home/fidian/Public/smb/##bucky
+filebot -rename --format "{plex.name}" -non-strict *.mkv##Rename movies for Plex

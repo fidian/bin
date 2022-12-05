@@ -38,7 +38,7 @@ else
 fi
 
 # Add some directories to the path if they exist.
-for D in "$HOME/bin" "$HOME/.local/bin" "$HOME/bin/packer" "$HOME/bin/node_modules/.bin" "$HOME/node_modules/.bin" "$HOME/.bpm/.bin"; do
+for D in "$HOME/bin" "$HOME/.local/bin" "$HOME/bin/packer" "$HOME/bin/node_modules/.bin" "$HOME/node_modules/.bin" "$HOME/.bpm/.bin" "$HOME/Applications"; do
     if [[ -d "$D" ]]; then
         PATH+=":$D"
     fi
