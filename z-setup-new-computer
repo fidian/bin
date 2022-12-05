@@ -1,0 +1,780 @@
+#!/usr/bin/env bash
+
+# Enable a "strict mode"
+set -eEu -o pipefail
+
+debugColors=true
+
+if ! hash tput &> /dev/null || [[ "$(tput colors)" -lt 8 ]]; then
+    debugColors=false
+fi
+
+packageSystem=none
+
+if hash apt &> /dev/null; then
+    packageSystem=apt
+fi
+
+gnu=true
+
+if ! ls --color=auto &> /dev/null; then
+    gnu=false # BSD, like Mac OS
+fi
+
+cd
+
+
+#################################################################################
+
+# Writes a debug message
+#
+# $1 - Message to write
+#
+# Returns nothing.
+function debug() {
+    if $debugColors; then
+        # Faint: ESC [ 2 m
+        # Normal: ESC [ 2 2 m
+        echo -e "\E[2m$1\E[22m" >&2
+    else
+        echo "$1"
+    fi
+}
+
+
+# Detects if a program exist
+#
+# $1 - Name of program
+#
+# Returns true if program is in $PATH, false otherwise
+function commandExists() {
+    debug "Checking for command: $1"
+
+    if hash "$1" &> /dev/null; then
+        return 0
+    fi
+
+    return 1
+}
+
+
+# Lists files in bin/conf that are not symlinked from the user's home directory
+#
+# Writes a string to stdout.
+#
+# Returns nothing.
+findMissingBinConfLinks() {
+    local f
+
+    for f in bin/conf/*; do
+        f=${f##*/}
+
+        if [[ ! -h ".$f" ]] && [[ "$f" != "bashrc" ]]; then
+            # Some are handled differently
+            case "$f" in
+                bashrc|fonts|gnupg)
+                    # Do not echo
+                    ;;
+
+                *)
+                    echo "$f"
+                    ;;
+            esac
+        fi
+    done
+}
+
+
+# Determine what packages have not yet been installed
+#
+# Writes a string to stdout
+#
+# Returns nothing
+function findMissingPackages() {
+    for pkg in "$@"; do
+        debug "Checking for package: $pkg"
+
+        if [[ "$(/usr/bin/dpkg-query --show --showformat='${db:Status-Status}\n' "$pkg" 2>/dev/null)" != "installed" ]]; then
+            echo "$pkg"
+        fi
+    done
+}
+
+
+# Determine what repositories have not yet been enabled
+#
+# Writes a string to stdout
+#
+# Returns nothing
+function findMissingRepositories() {
+    local list=$(add-apt-repository --list)
+
+    for repo in "$@"; do
+        debug "Checking for repository: $repo"
+
+        if ! grep -q -E " $repo(\$| )" <<< "$list"; then
+            echo "$repo"
+        fi
+    done
+}
+
+
+# Fixes permissions of a file or folder
+#
+# $1 - File or folder to check
+# $2 - Desired permissions
+#
+# Returns nothing
+function fixPermissions() {
+    if [[ -e "$1" ]] && [[ "$(getPermissions "$1")" != "$2" ]]; then
+        if promptYesNo "Set permissions of $1 to $2?"; then
+            chmod "$2" "$1"
+        fi
+    fi
+}
+
+
+# Gets the permissions of a file or folder
+#
+# Writes permissions to stdout
+#
+# $1 - File or folder to check
+#
+# Returns nothing
+function getPermissions() {
+    local permissions=$(stat -c '%a' "$1")
+
+    debug "Permissions of $1: $permissions"
+    echo "$permissions"
+}
+
+
+# Check if GPG setup is complete
+#
+# Returns true if setup is complete, false otherwise.
+function gpgKeysSetUp() {
+    debug "Checking GPG setup"
+
+    if [[ ! -d .gnupg ]]; then
+        return 1;
+    fi
+
+    if ! commandExists gpg; then
+        return 1
+    fi
+
+    debug "Checking if key is imported"
+    gpg --list-keys | grep -q '8F3B8C432F4393BD' || return 1
+
+    debug "Checking if key is trusted"
+    gpg --list-keys | fgrep -q '[ultimate] Tyler Akins <fidian@rumkin.com>' || return 1
+
+    return 0
+}
+
+
+# Installs a package
+#
+# $1 - Name of package to install. This is an Ubuntu/Debian name, so other package managers need to map this.
+#
+# Returns nothing.
+function installPackage() {
+    case "$packageSystem" in
+        apt)
+            sudo apt install -y "$1"
+            ;;
+
+        *)
+            echo "Unknown package system, unable to install $1"
+            exit 1
+            ;;
+    esac
+}
+
+
+# Installs a package from a URL
+#
+# $1 - URL of package to install
+#
+# Returns nothing.
+function installPackageFromUrl() {
+    local url="$1" fn="${1##*/}"
+    requireCommand curl
+    curl -o "$fn" "https://dl.google.com/linux/direct/$fn"
+
+    case "$packageSystem" in
+        apt)
+            sudo dpkg -i "$fn"
+            sudo apt install -f
+        ;;
+
+        *)
+            echo "Unable to install package - need to use different URL and package system"
+            ;;
+    esac
+
+    rm "$fn"
+}
+
+
+# Loads NVM if it exists
+#
+# Returns nothing
+function loadNvm() {
+    if [[ -d ".nvm" ]]; then
+        debug "Loading nvm"
+        export NVM_DIR="$HOME/.nvm"
+        [[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
+    fi
+}
+
+
+# Pause running until the user acknowledges a message.
+#
+# $1 - The message.
+#
+# Returns nothing.
+function pauseUntilConfirmed() {
+    local ok=""
+
+    while [[ "$ok" != "ok" ]]; do
+        echo ""
+        echo "$1"
+        echo ""
+        read -rp "Type 'ok' to confirm that you have read this message: " ok
+    done
+}
+
+
+# Ask the user for some information.
+#
+# $1 - The prompt to display. Will add a "[Y/n]" suffix.
+#
+# Returns true if yes, false otherwise.
+function promptYesNo() {
+    local ask="$1"
+
+    while true; do
+        echo ""
+        read -rp "$ask [Y/n] " yn
+
+        case "$yn" in
+            "" | [Yy]*)
+                return 0
+                ;;
+
+            [Nn]*)
+                return 1
+                ;;
+        esac
+
+        echo "Invalid input, please say yes or no."
+    done
+}
+
+
+# Check to make sure a command exists. If not, ask the user to see if it should be installed.
+#
+# $1 - The command name
+#
+# Returns nothing. Can exit.
+function requireCommand() {
+    if ! commandExists "$1"; then
+        if promptYesNo "'$1' is required - install it now?"; then
+            installPackage "$1"
+        else
+            echo "Unable to continue without necessary tooling."
+            exit 1
+        fi
+    fi
+}
+
+
+# Sets up git configuration
+#
+# Returns nothing
+function setupGitConfig() {
+    git config --global user.name "Tyler Akins"
+
+    if promptYesNo "Use fidian@rumkin.com as user.email?"; then
+        git config --global user.email "fidian@rumkin.com"
+    else
+        read -rp "What email address to use? " email
+        git config --global user.email "$email"
+    fi
+
+    git config --global push.default simple
+    git config --global color.diff auto
+    git config --global color.interactive auto
+    git config --global alias.branch-name '!git rev-parse --abbrev-ref HEAD'
+    git config --global alias.publish '!git push -u origin $(git branch-name)'
+    git config --global alias.unpublish '!git push origin :$(git branch-name)'
+    git config --global alias.unpushed "log @{u}.. --pretty=format:'%h %an %s'"
+    git config --global merge.conflictstyle diff3
+
+    if commandExists gpg && promptYesNo "Sign commits using GPG?"; then
+        git config --global user.signingkey 8F3B8C432F4393BD
+        git config --global commit.gpgsign true
+    fi
+
+    git config --global commit.template "~/.gitmessage"
+    git config --global pull.rebase false
+    git config --global init.defaultBranch master
+    git config --global pager.difftool true
+
+    if ! commandExists wdiff; then
+        if promptYesNo "bin/cwdiff uses wdiff, which may be used for git difftool - install it?"; then
+            installPackage wdiff
+        fi
+    fi
+
+    if commandExists cwdiff; then
+        git config --global difftool.cwdiff.cmd 'cwdiff "$LOCAL" "$REMOTE"'
+    fi
+}
+
+
+# Uninstalls a package
+#
+# $1 - Name of package to remove. This is an Ubuntu/Debian name, so other package managers need to map this.
+#
+# Returns nothing.
+function uninstallPackage() {
+    case "$packageSystem" in
+        apt)
+            sudo apt remove -y "$package"
+            ;;
+
+        *)
+            echo "Unknown package system, unable to uninstall $package"
+            exit 1
+            ;;
+    esac
+}
+
+
+##########################################################################################
+
+if commandExists apt; then
+    repositoriesDirty=false
+    missingRepositories=($(findMissingRepositories main universe restricted multiverse))
+
+    if [[ "${#missingRepositories[@]}" -gt 0 ]]; then
+        debug "Missing repositories: ${missingRepositories[*]}"
+    
+        if promptYesNo "Ask to install any additional apt repositories?"; then
+            for repo in "${missingRepositories[@]}"; do
+                if promptYesNo "Add the $repo repository?"; then
+                    sudo add-apt-repository -y "$repo"
+                    repositoriesDirty=true
+                fi
+            done
+        fi
+    fi
+
+    if $repositoriesDirty && promptYesNo "Update apt package lists?"; then
+        sudo apt update
+        repositoriesDirty=false
+    fi
+fi
+
+missingPackages=($(findMissingPackages vim ubuntu-restricted-extras git editorconfig curl mmv make gcc g++ jq gnome-tweaks))
+
+if [[ "${#missingPackages[@]}" -gt 0 ]]; then
+    debug "Missing packages: ${missingPackages[*]}"
+
+    if promptYesNo "Ask to install any missing packages?"; then
+        for package in "${missingPackages[@]}"; do
+            if promptYesNo "Install package $package?"; then
+                installPackage "$package"
+            fi
+        done
+    fi
+fi
+
+if [[ ! -d .ssh ]] && promptYesNo "Create .ssh directory?"; then
+    mkdir .ssh
+    chmod 700 .ssh
+fi
+
+fixPermissions .ssh 700
+
+if [[ -d .ssh ]] && [[ ! -f .ssh/id_rsa ]] && promptYesNo "Generate an SSH key?"; then
+    ssh-keygen
+fi
+
+if ! commandExists google-chrome && promptYesNo "Download and install Google Chrome?"; then
+    installPackageFromUrl "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
+fi
+
+if [[ ! -d bin/ ]] && promptYesNo "Clone bin folder?"; then
+    requireCommand git
+    pauseUntilConfirmed "Very important: Make sure GitHub has your SSH key added.
+
+https://github.com/settings/keys
+
+$(cat .ssh/id_rsa.pub)"
+    git clone git@github.com:fidian/bin.git
+fi
+
+if [[ -d bin/ ]] && promptYesNo "Initialize or update submodules under bin/?"; then
+    debug "Cloning submodules"
+    (
+        cd bin
+        git submodule init
+        git submodule update
+    )
+fi
+
+loadNvm
+
+if ! commandExists nvm && promptYesNo "Download and install Node.js using nvm?"; then
+    requireCommand curl
+
+    if [[ ! -f bin/pup ]]; then
+        echo "bin/pup is required"
+        exit 1;
+    fi
+
+    latestNvm=$(curl https://github.com/nvm-sh/nvm/releases | bin/pup 'h2 text{}' | head -n 1)
+    debug "Latest NVM version: $latestNvm"
+    curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/$latestNvm/install.sh" | PROFILE=/dev/null bash
+fi
+
+loadNvm
+
+if commandExists nvm && [[ "$(nvm current)" == "none" ]]; then
+    if promptYesNo "Install Node.js?"; then
+        nvm install node
+        nvm use node
+        nvm alias node
+    fi
+fi
+
+if [[ -d bin/ ]] && commandExists npm && promptYesNo "Install or update node modules under bin/?"; then
+    (
+        cd bin
+        npm run clean
+        npm install
+    )
+fi
+
+if [[ -d bin/ ]] && promptYesNo "Compile and install programs under bin/?"; then
+    (
+        cd bin/src
+        ./build
+    )
+fi
+
+if $gnu; then
+    bashFile=.bashrc
+else
+    bashFile=.bash_profile
+fi
+
+line=". 'bin/conf/bashrc'"
+
+if ! grep -Fq "$line" "$bashFile"; then
+    if promptYesNo "Include line to source bin/conf/bashrc at the end of $bashFile?"; then
+        echo "$line" >> "$bashFile"
+    fi
+fi
+
+missingLinks=($(findMissingBinConfLinks))
+
+if [[ "${#missingLinks[@]}" -gt 0 ]]; then
+    debug "Missing links: ${missingLinks[*]}"
+
+    if promptYesNo "Ask to link missing configs to bin/conf?"; then
+        for link in "${missingLinks[@]}"; do
+            if promptYesNo "Link .$link to bin/conf/$link?"; then
+                rm -rf ".$link"
+                ln -s "bin/conf/$link" ".$link"
+            fi
+        done
+    fi
+fi
+
+if ! gpgKeysSetUp && promptYesNo "Set up GPG?"; then
+    if ! commandExists gpg; then
+        sudo apt install gpg
+    fi
+
+    if [[ ! -d bin ]]; then
+        echo "Fail - must have bin/ folder checked out"
+        exit 1
+    fi
+
+    gpg --import "bin/Tyler Akins.secret.asc"
+    echo -e "5\ny\n" | gpg --command-fd 0 --edit-key 8F3B8C432F4393BD trust
+    cp bin/conf/gnupg/* .gnupg/
+fi
+
+fixPermissions .gnupg 700
+
+# After git, gpg
+if promptYesNo "Set up git configuration?"; then
+    setupGitConfig
+fi
+
+# After git configured
+sshKeyFrom=".ssh/id_rsa.pub"
+sshKeyToDir="bin/ssh"
+sshKeyTo="$(hostname).pub"
+if [[ -f "$sshKeyFrom" ]] && [[ ! -f "$sshKeyToDir/$sshKeyTo" ]]; then
+    if promptYesNo "Copy and commit $sshKeyFrom -> $sshKeyToDir/$sshKeyTo?"; then
+        cp "$sshKeyFrom" "$sshKeyToDir/$sshKeyTo"
+        (
+            cd "$sshKeyToDir"
+            read -rp "Description for $(hostname): " desc
+            echo "$(hostname) - ${desc}" >> computers.txt
+            git add "$sshKeyTo" computers.txt
+            git commit -m "Adding $(hostname) via setup script"
+            git push
+        )
+    fi
+fi
+
+authorizedKeys=$(cat bin/ssh/*.pub | sort)
+
+if [[ ! -f .ssh/authorized_keys ]] || [[ "$authorizedKeys" != "$(cat .ssh/authorized_keys)" ]]; then
+    if promptYesNo "Update .ssh/authorized_keys to match bin/ssh/*.pub?"; then
+        echo "$authorizedKeys" > .ssh/authorized_keys
+        chmod 600 .ssh/authorized_keys
+    fi
+fi
+
+fixPermissions .ssh/authorizedKeys 600
+
+if [[ -d .ssh ]] && promptYesNo "Update SSH config?"; then
+    if [[ -f .ssh/config ]]; then
+        debug "Moving .ssh/config to .ssh/config.old"
+        mv .ssh/config .ssh/config.old
+    fi
+
+    cp bin/ssh/config .ssh/config
+    chmod 600 .ssh/config
+fi
+
+fixPermissions .ssh/config 600
+
+if [[ -d bin ]]; then
+    if $gnu; then
+        if [[ ! -h .fonts ]] && promptYesNo "Install fonts by symlinking to bin/conf/fonts?"; then
+            rm -rf ~/.fonts
+            ln -s bin/conf/fonts ~/.fonts
+        fi
+    else
+        if promptYesNo "Install fonts by copying bin/conf/fonts to Library/Fonts?"; then
+            find bin/conf/fonts -type f -iname \*.tts -exec cp \{\} ~/Library/Fonts \;
+        fi
+    fi
+fi
+
+broken=$(find -L . -maxdepth 1 -type l -lname '*')
+
+if [[ -n "$broken" ]]; then
+    debug "Located broken links."$'\n'"$broken"
+
+    if promptYesNo "Delete these broken links?"; then
+        find -L . -maxdepth 1 -type l -lname '*' -exec rm {} \;
+    fi
+fi
+
+if ! commandExists flatpak && promptYesNo "Install and set up flatpak?"; then
+    installPackage flatpak
+    installPackage gnome-software-plugin-flatpak
+    flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+fi
+
+missingPackages=($(findMissingPackages docker-ce docker-ce-cli containerd.io))
+
+if [[ "${#missingPackages[@]}" -gt 0 ]]; then
+    debug "Missing packages: ${missingPackages[*]}"
+
+    if promptYesNo "Install Docker Container Engine?"; then
+        # docker-engine is not a package any longer, but kept to ensure a clean upgrade
+        for package in docker docker-engine docker.io containerd runc; do
+            uninstallPackage "$package" || :
+        done
+
+        for package in apt-transport-https ca-certificates curl gnupg lsb-release; do
+            installPackage "$package"
+        done
+
+        sudo mkdir -p /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt update
+
+        for package in docker-ce docker-ce-cli containerd.io docker-compose-plugin; do
+            installPackage "$package"
+        done
+
+        sudo groupadd docker || :
+    fi
+fi
+
+if commandExists docker; then
+    if ! id -nG | grep -q -E "(^| )docker($| )"; then
+        if promptYesNo "Add current user to docker group?"; then
+            sudo usermod -aG docker "$USER"
+        fi
+    fi
+fi
+
+if ! commandExists makemkv && promptYesNo "Install MakeMKV for Linux?"; then
+    sudo add-apt-repository -y ppa:heyarje/makemkv-beta
+
+    for package in makemkv-bin makemkv-oss; do
+        installPackage "$package"
+    done
+
+    if ! commandExists ccextractor; then
+        debug "Attempting to install ccextractor from a repository"
+
+        if ! installPackage ccextractor; then
+            debug "Install failed"
+        fi
+    fi
+
+    if ! commandExists ccextractor; then
+        pauseUntilConfirmed "Error: You need to manually download, compile, and install ccextractor.
+
+Clone the repository
+git clone https://github.com/CCExtractor/ccextractor.git
+
+Finally compile using the autoconf scripts
+https://github.com/CCExtractor/ccextractor/blob/master/docs/COMPILATION.MD"
+    fi
+
+    mkdir -p .MakeMKV
+fi
+
+if [[ -d .MakeMKV ]] && commandExists makemkv && [[ ! -f .MakeMKV/settings.conf ]]; then
+    if promptYesNo "Configure MakeMKV with registration key?"; then
+        requireCommand openssl
+        requireCommand ccextractor
+
+        echo "Decoding secret: makemkv-key"
+        key=$(secret -d makemkv-key)
+        cat > .MakeMKV/settings.conf << EOF
+app_DestinationDir = "$HOME"
+app_DestinationType = "3"
+app_ExpertMode = "1"
+app_Key = "$key"
+app_ccextractor = "$(which ccextractor)"
+dvd_MinimumTitleLength = "60"
+io_SingleDrive = "1"
+EOF
+    fi
+fi
+
+if promptYesNo "Set up dconf with default values?"; then
+    # Get these with "dconf dump /" or a more specific key, like "dconf dump org/gnome/desktop/"
+    for str in \
+        "/org/gnome/desktop/input-sources/per-window=false" \
+        "/org/gnome/desktop/input-sources/sources=[('xkb', 'us')]" \
+        "/org/gnome/desktop/input-sources/xkb-options=['compose:caps']" \
+        "/org/gnome/desktop/interface/color-scheme='prefer-dark'" \
+        "/org/gnome/desktop/interface/font-hinting='slight'" \
+        "/org/gnome/desktop/interface/gtk-theme='Yaru-dark'" \
+        "/org/gnome/desktop/interface/icon-theme='Yaru-dark'" \
+        "/org/gnome/desktop/interface/monospace-font-name='Anonymous Pro 14'" \
+        "/org/gnome/desktop/interface/show-battery-percentage=false" \
+        "/org/gnome/desktop/interface/toolkit-accessibility=false" \
+        "/org/gnome/desktop/peripherals/touchpad/two-finger-scrolling-enabled=true" \
+        "/org/gnome/desktop/privacy/report-technical-problems=false" \
+        "/org/gnome/rhythmbox/rhythmdb/locations=['file:///home/fidian/Music']" \
+        "/org/gnome/rhythmbox/sources/visible-columns=['post-time', 'rating', 'duration', 'genre', 'artist', 'first-seen', 'bitrate']" \
+        "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/binding='<Primary><Alt>k'" \
+        "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/command='KeePass/edit'" \
+        "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/name='KeePassX'" \
+        "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/binding='<Primary><Alt>minus'" \
+        "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/command='bin/mouse-down'" \
+        "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/name='mouse down'" \
+        "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/']" \
+        "/org/gnome/settings-daemon/plugins/media-keys/next=['AudioNext']" \
+        "/org/gnome/settings-daemon/plugins/media-keys/play=['AudioPlay']" \
+        "/org/gnome/settings-daemon/plugins/media-keys/previous=['AudioPrev']" \
+        "/org/gnome/settings-daemon/plugins/media-keys/stop=['AudioStop']" \
+        "/org/gnome/settings-daemon/plugins/media-keys/volume-down=['AudioLowerVolume']" \
+        "/org/gnome/settings-daemon/plugins/media-keys/volume-mute=['AudioMute']" \
+        "/org/gnome/settings-daemon/plugins/media-keys/volume-up=['AudioRaiseVolume']" \
+        "/org/gnome/settings-daemon/plugins/power/idle-dim=false" \
+        "/org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type='nothing'" \
+        "/org/gnome/shell/extensions/dash-to-dock/dock-fixed=false" \
+        "/org/gnome/terminal/legacy/keybindings/new-tab='<Shift><Alt>t'" \
+        "/org/gnome/terminal/legacy/keybindings/new-window='<Shift><Alt>n'" \
+        "/org/gnome/terminal/legacy/keybindings/next-tab='<Shift><Alt>Right'" \
+        "/org/gnome/terminal/legacy/keybindings/prev-tab='<Shift><Alt>Left'" \
+        "/org/gnome/terminal/legacy/menu-accelerator-enabled=false" \
+        "/org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/audible-bell=false" \
+        "/org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/background-color='rgb(0,0,0)'" \
+        "/org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/bold-is-bright=true" \
+        "/org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/foreground-color='rgb(255,255,255)'" \
+        "/org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/palette=['rgb(0,0,0)', 'rgb(170,0,0)', 'rgb(0,170,0)', 'rgb(170,85,0)', 'rgb(0,0,170)', 'rgb(170,0,170)', 'rgb(0,170,170)', 'rgb(170,170,170)', 'rgb(85,85,85)', 'rgb(255,85,85)', 'rgb(85,255,85)', 'rgb(255,255,85)', 'rgb(85,85,255)', 'rgb(255,85,255)', 'rgb(85,255,255)', 'rgb(255,255,255)']" \
+        "/org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/scrollback-lines=100000" \
+        "/org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/use-theme-colors=false" \
+        "/org/thome/system/location/enabled=false" \
+    ; do
+        key=${str%%=*}
+        value=${str#*=}
+        debug "Setting $key to $value"
+        dconf write "$key" "$value"
+    done
+fi
+
+if promptYesNo "Check for radio-related software packages?"; then
+    if ! commandExists dmrconfig && promptYesNo "Install dmrconfig?"; then
+        installPackage dmrconfig
+    fi
+
+    if ! commandExists gqrx && promptYesNo "Install GQRX SDR?"; then
+        installPackage gqrx-sdr gnuradio
+    fi
+
+    if promptYesNo "Install/reinstall CHiRP?"; then
+        mkdir -p Applications
+        debug "Removing old versions"
+        rm Applications/chirp-daily-*.flatpak &> /dev/null || :
+        debug "Finding download link"
+        fn=$(curl -s -L "https://trac.chirp.danplanet.com/download?stream=daily" | bin/pup 'a[href*="flatpak"] text{}')
+        name=${fn%.flatpak}
+        debug "Downloading CHiRP flatpak"
+        curl -so "Applications/$fn" "https://trac.chirp.danplanet.com/chirp_daily/${name#chirp-}/${fn}"
+        debug "Installing CHiRP"
+        flatpak install "Applications/$fn"
+        debug "Adding user to dialout group"
+        sudo usermod -aG dialout "$USER"
+    fi
+fi
+
+optional=($(findMissingPackages dmrconfig gqrx-sdr keepassx));
+
+if [[ "${#optional[@]}" -gt 0 ]] && promptYesNo "Check for and ask to install optional software?"; then
+    debug "Missing optional packages: ${optional[*]}"
+
+    for pkg in "${optional[@]}"; do
+        if promptYesNo "Optional: install $pkg?"; then
+            installPackage "$pkg"
+        fi
+    done
+fi
+
+# https://www.linuxuprising.com/2019/07/how-to-completely-disable-tracker.html
+if systemctl --user status tracker-extract-3.service &> /dev/null; then
+    if promptYesNo "Disable Tracker service?"; then
+        systemctl --user mask tracker-extract-3.service tracker-miner-fs-3.service tracker-miner-rss-3.service tracker-writeback-3.service tracker-xdg-portal-3.service tracker-miner-fs-control-3.service
+        tracker reset -s -r
+    fi
+fi
+
+echo ""
+echo "You need to logout and login again to update fonts, groups, your PATH, and other settings."
+
+# Startup applications - add Resilio Sync -- bin/resilio-sync
+# Edit .resilio-sync/sync.conf and remove the line "allow_empty_password: false"
+# Make new folders for Resilio Sync so the script picks them up
+#   for d in Sample Shared Folder Whatever; do mkdir -p "$d/.sync"; done
+# Set up Resilio Sync folders and link the keys
