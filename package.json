@@ -18,7 +18,6 @@
         "prettier": "latest",
         "reformat-markdown-table": "latest",
         "svgo": "latest",
-        "terminalizer": "latest",
         "tiddlywiki": "latest",
         "tslint": "latest",
         "tv4-cmd": "^1.0.1",
