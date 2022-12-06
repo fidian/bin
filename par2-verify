@@ -13,11 +13,27 @@ for fn in "$1".par2; do
     fi
 done
 
-magicLines=$(par2 verify "$1" | while read -r line; do if [[ -z "$line" ]]; then break; fi; echo "$line"; done | grep "^Load" | sed 's/.*\r//')
+wholeOutput=$(par2 verify "$1" | tr "\r" "\n")
 
+if [[ $? -ne 0 ]]; then
+    echo "par2 verification failed"
+    echo "FAILURE: $1"
+    exit 1
+fi
+
+echo "$wholeOutput" | grep -q "^Target: \"${1##*/}\" - "
+
+if [[ $? -ne 0 ]]; then
+    echo "par2 files verified the wrong file: $(echo "$wholeOutput" | grep "^Target: " | cut -b 9-)"
+    echo "FAILURE: $1"
+    exit 1
+fi
+
+magicLines=$(echo "$wholeOutput" | while read -r line; do if [[ -z "$line" ]]; then break; fi; echo "$line"; done | grep "^Load" | sed 's/.*\r//')
 desired=0
+
 while read -r line; do
-    if [[ "$line" =~ "Loading"* ]]; then
+    if [[ "$line" =~ "Loading \""* ]]; then
         desired=$(echo "$line" | sed 's/.*+\([0-9]\+\)\.par2\"\.$/\1/')
         if [[ "$desired" == "$line" ]]; then
             desired=0
@@ -36,3 +52,4 @@ while read -r line; do
         fi
     fi
 done < <(echo "$magicLines")
+

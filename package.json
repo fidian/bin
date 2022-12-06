@@ -24,7 +24,7 @@
         "tslint": "latest",
         "tv4-cmd": "^1.0.1",
         "typescript": "latest",
-        "uglifyjs": "latest",
+        "uglify-js": "latest",
         "webpack": "latest",
         "webpack-bundle-analyzer": "latest"
     },
