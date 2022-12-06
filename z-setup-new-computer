@@ -42,6 +42,16 @@ function debug() {
 }
 
 
+# Check if port is open
+#
+# $1 - Port number
+#
+# Returns true if the port is open, false otherwise.
+function checkPort() {
+    sudo netstat -tulpn | grep -q ":$1 .*LISTEN"
+}
+
+
 # Detects if a program exist
 #
 # $1 - Name of program
@@ -63,7 +73,7 @@ function commandExists() {
 # Writes a string to stdout.
 #
 # Returns nothing.
-findMissingBinConfLinks() {
+function findMissingBinConfLinks() {
     local f
 
     for f in bin/conf/*; do
@@ -361,7 +371,7 @@ if commandExists apt; then
 
     if [[ "${#missingRepositories[@]}" -gt 0 ]]; then
         debug "Missing repositories: ${missingRepositories[*]}"
-    
+
         if promptYesNo "Ask to install any additional apt repositories?"; then
             for repo in "${missingRepositories[@]}"; do
                 if promptYesNo "Add the $repo repository?"; then
@@ -378,7 +388,7 @@ if commandExists apt; then
     fi
 fi
 
-missingPackages=($(findMissingPackages vim ubuntu-restricted-extras git editorconfig curl mmv make gcc g++ jq gnome-tweaks))
+missingPackages=($(findMissingPackages vim ubuntu-restricted-extras git editorconfig curl mmv make gcc g++ jq gnome-tweaks lsof net-tools))
 
 if [[ "${#missingPackages[@]}" -gt 0 ]]; then
     debug "Missing packages: ${missingPackages[*]}"
@@ -750,7 +760,7 @@ if promptYesNo "Check for radio-related software packages?"; then
     fi
 fi
 
-optional=($(findMissingPackages dmrconfig gqrx-sdr keepassx));
+optional=($(findMissingPackages keepassx));
 
 if [[ "${#optional[@]}" -gt 0 ]] && promptYesNo "Check for and ask to install optional software?"; then
     debug "Missing optional packages: ${optional[*]}"
@@ -768,6 +778,15 @@ if systemctl --user status tracker-extract-3.service &> /dev/null; then
         systemctl --user mask tracker-extract-3.service tracker-miner-fs-3.service tracker-miner-rss-3.service tracker-writeback-3.service tracker-xdg-portal-3.service tracker-miner-fs-control-3.service
         tracker reset -s -r
     fi
+fi
+
+if ! checkPort 8384 && promptYesNo "Install SyncThing and set up as a user service?"; then
+    curl -s https://syncthing.net/release-key.txt | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/syncthing.gpg > /dev/null
+    echo "deb https://apt.syncthing.net/ syncthing stable" | sudo tee /etc/apt/sources.list.d/syncthing.list > /dev/null
+    sudo apt update
+    installPackage syncthing
+    sudo systemctl enable syncthing@"$USER".service
+    sudo systemctl start syncthing@"$USER".service
 fi
 
 echo ""
