@@ -388,7 +388,7 @@ if commandExists apt; then
     fi
 fi
 
-missingPackages=($(findMissingPackages vim ubuntu-restricted-extras git editorconfig curl mmv make gcc g++ jq gnome-tweaks lsof net-tools htop iotop par2))
+missingPackages=($(findMissingPackages vim ubuntu-restricted-extras git editorconfig curl mmv make gcc g++ jq gnome-tweaks lsof net-tools htop iotop par2 vlc))
 
 if [[ "${#missingPackages[@]}" -gt 0 ]]; then
     debug "Missing packages: ${missingPackages[*]}"
@@ -666,7 +666,7 @@ https://github.com/CCExtractor/ccextractor/blob/master/docs/COMPILATION.MD"
 fi
 
 if ! commandExists ccextractor && promptYesNo "Install ccextractor to /usr/local/bin?"; then
-    if ! commandExists git; do
+    if ! commandExists git; then
         installPackage git
     fi
 
@@ -690,6 +690,7 @@ if ! commandExists ccextractor && promptYesNo "Install ccextractor to /usr/local
     installPackage clang
     installPackage libclang-dev
     installPackage autoconf
+    installPackage pkg-config
 
     (
         cd repo/ccextractor
