@@ -388,7 +388,7 @@ if commandExists apt; then
     fi
 fi
 
-missingPackages=($(findMissingPackages vim ubuntu-restricted-extras git editorconfig curl mmv make gcc g++ jq gnome-tweaks lsof net-tools))
+missingPackages=($(findMissingPackages vim ubuntu-restricted-extras git editorconfig curl mmv make gcc g++ jq gnome-tweaks lsof net-tools htop iotop par2))
 
 if [[ "${#missingPackages[@]}" -gt 0 ]]; then
     debug "Missing packages: ${missingPackages[*]}"
@@ -459,6 +459,10 @@ if commandExists nvm && [[ "$(nvm current)" == "none" ]]; then
         nvm use node
         nvm alias node
     fi
+fi
+
+if commandExists npm && [[ ! -f .npmrc ]] && promptYesNo "Configure npm login credentials?"; then
+    secret npm > .npmrc
 fi
 
 if [[ -d bin/ ]] && commandExists npm && promptYesNo "Install or update node modules under bin/?"; then
@@ -659,6 +663,43 @@ https://github.com/CCExtractor/ccextractor/blob/master/docs/COMPILATION.MD"
     fi
 
     mkdir -p .MakeMKV
+fi
+
+if ! commandExists ccextractor && promptYesNo "Install ccextractor to /usr/local/bin?"; then
+    if ! commandExists git; do
+        installPackage git
+    fi
+
+    mkdir -p repo
+
+    if [[ ! -d repo/ccextractor ]]; then
+        (
+            cd repo
+            git clone https://github.com/CCExtractor/ccextractor.git
+        )
+    fi
+
+    installPackage libglew-dev
+    installPackage libglfw3-dev
+    installPackage cmake
+    installPackage gcc
+    installPackage libcurl4-gnutls-dev
+    installPackage tesseract-ocr
+    installPackage libtesseract-dev
+    installPackage libleptonica-dev
+    installPackage clang
+    installPackage libclang-dev
+    installPackage autoconf
+
+    (
+        cd repo/ccextractor
+        git pull
+        cd linux
+        ./autogen.sh
+        ./configure --without-rust
+        make
+        sudo make install
+    )
 fi
 
 if [[ -d .MakeMKV ]] && commandExists makemkv && [[ ! -f .MakeMKV/settings.conf ]]; then
