@@ -494,18 +494,20 @@ if ! grep -Fq "$line" "$bashFile"; then
     fi
 fi
 
-missingLinks=($(findMissingBinConfLinks))
+if [[ -d bin ]]; then
+    missingLinks=($(findMissingBinConfLinks))
 
-if [[ "${#missingLinks[@]}" -gt 0 ]]; then
-    debug "Missing links: ${missingLinks[*]}"
+    if [[ "${#missingLinks[@]}" -gt 0 ]]; then
+        debug "Missing links: ${missingLinks[*]}"
 
-    if promptYesNo "Ask to link missing configs to bin/conf?"; then
-        for link in "${missingLinks[@]}"; do
-            if promptYesNo "Link .$link to bin/conf/$link?"; then
-                rm -rf ".$link"
-                ln -s "bin/conf/$link" ".$link"
-            fi
-        done
+        if promptYesNo "Ask to link missing configs to bin/conf?"; then
+            for link in "${missingLinks[@]}"; do
+                if promptYesNo "Link .$link to bin/conf/$link?"; then
+                    rm -rf ".$link"
+                    ln -s "bin/conf/$link" ".$link"
+                fi
+            done
+        fi
     fi
 fi
 
