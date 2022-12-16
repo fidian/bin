@@ -532,33 +532,35 @@ if promptYesNo "Set up git configuration?"; then
 fi
 
 # After git configured
-sshKeyFrom=".ssh/id_rsa.pub"
-sshKeyToDir="bin/ssh"
-sshKeyTo="$(hostname).pub"
-if [[ -f "$sshKeyFrom" ]] && [[ ! -f "$sshKeyToDir/$sshKeyTo" ]]; then
-    if promptYesNo "Copy and commit $sshKeyFrom -> $sshKeyToDir/$sshKeyTo?"; then
-        cp "$sshKeyFrom" "$sshKeyToDir/$sshKeyTo"
-        (
-            cd "$sshKeyToDir"
-            read -rp "Description for $(hostname): " desc
-            echo "$(hostname) - ${desc}" >> computers.txt
-            git add "$sshKeyTo" computers.txt
-            git commit -m "Adding $(hostname) via setup script"
-            git push
-        )
+if [[ -d bin/ssh ]] && -d [[ .ssh ]]; then
+    sshKeyFrom=".ssh/id_rsa.pub"
+    sshKeyToDir="bin/ssh"
+    sshKeyTo="$(hostname).pub"
+    if [[ -f "$sshKeyFrom" ]] && [[ ! -f "$sshKeyToDir/$sshKeyTo" ]]; then
+        if promptYesNo "Copy and commit $sshKeyFrom -> $sshKeyToDir/$sshKeyTo?"; then
+            cp "$sshKeyFrom" "$sshKeyToDir/$sshKeyTo"
+            (
+                cd "$sshKeyToDir"
+                read -rp "Description for $(hostname): " desc
+                echo "$(hostname) - ${desc}" >> computers.txt
+                git add "$sshKeyTo" computers.txt
+                git commit -m "Adding $(hostname) via setup script"
+                git push
+            )
+        fi
     fi
-fi
 
-authorizedKeys=$(cat bin/ssh/*.pub | sort)
+    authorizedKeys=$(cat bin/ssh/*.pub | sort)
 
-if [[ ! -f .ssh/authorized_keys ]] || [[ "$authorizedKeys" != "$(cat .ssh/authorized_keys)" ]]; then
-    if promptYesNo "Update .ssh/authorized_keys to match bin/ssh/*.pub?"; then
-        echo "$authorizedKeys" > .ssh/authorized_keys
-        chmod 600 .ssh/authorized_keys
+    if [[ ! -f .ssh/authorized_keys ]] || [[ "$authorizedKeys" != "$(cat .ssh/authorized_keys)" ]]; then
+        if promptYesNo "Update .ssh/authorized_keys to match bin/ssh/*.pub?"; then
+            echo "$authorizedKeys" > .ssh/authorized_keys
+            chmod 600 .ssh/authorized_keys
+        fi
     fi
-fi
 
-fixPermissions .ssh/authorizedKeys 600
+    fixPermissions .ssh/authorizedKeys 600
+fi
 
 if [[ -d .ssh ]] && promptYesNo "Update SSH config?"; then
     if [[ -f .ssh/config ]]; then
