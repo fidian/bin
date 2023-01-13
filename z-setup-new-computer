@@ -388,7 +388,7 @@ if commandExists apt; then
     fi
 fi
 
-missingPackages=($(findMissingPackages vim ubuntu-restricted-extras git editorconfig curl mmv make gcc g++ jq gnome-tweaks lsof net-tools htop iotop par2 vlc))
+missingPackages=($(findMissingPackages vim ubuntu-restricted-extras git editorconfig curl mmv make gcc g++ jq gnome-tweaks lsof net-tools htop iotop par2 vlc libdvd-pkg))
 
 if [[ "${#missingPackages[@]}" -gt 0 ]]; then
     debug "Missing packages: ${missingPackages[*]}"
@@ -787,7 +787,7 @@ if promptYesNo "Check for radio-related software packages?"; then
     fi
 
     if ! commandExists gqrx && promptYesNo "Install GQRX SDR?"; then
-        installPackage gqrx-sdr gnuradio
+        installPackage gqrx-sdr gnuradio rtl-sdr
     fi
 
     if promptYesNo "Install/reinstall CHiRP?"; then
