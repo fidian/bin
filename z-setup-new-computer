@@ -340,6 +340,8 @@ function setupGitConfig() {
 
     if commandExists cwdiff; then
         git config --global difftool.cwdiff.cmd 'cwdiff "$LOCAL" "$REMOTE"'
+        git config --global difftool.prompt false
+        git config --global diff.tool cwdiff
     fi
 }
 
@@ -388,7 +390,7 @@ if commandExists apt; then
     fi
 fi
 
-missingPackages=($(findMissingPackages vim ubuntu-restricted-extras git editorconfig curl mmv make gcc g++ jq gnome-tweaks lsof net-tools htop iotop par2 vlc libdvd-pkg))
+missingPackages=($(findMissingPackages vim ubuntu-restricted-extras git editorconfig curl mmv make gcc g++ jq gnome-tweaks lsof net-tools whois htop iotop par2 vlc libdvd-pkg))
 
 if [[ "${#missingPackages[@]}" -gt 0 ]]; then
     debug "Missing packages: ${missingPackages[*]}"
