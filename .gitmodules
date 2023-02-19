@@ -43,3 +43,6 @@
 [submodule "conf/vim/bundle/vim-prettier"]
 	path = conf/vim/bundle/vim-prettier
 	url = https://github.com/prettier/vim-prettier
+[submodule "conf/vim/bundle/vim-titlecase"]
+	path = conf/vim/bundle/vim-titlecase
+	url = https://github.com/christoomey/vim-titlecase
