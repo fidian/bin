@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-# https://askubuntu.com/questions/1281034/cant-send-enter-key-in-vim-and-ncurses-apps-under-byobu-and-tmux
-xmodmap -e "keycode 104 = Return NoSymbol Return"
