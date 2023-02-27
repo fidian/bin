@@ -46,6 +46,15 @@ done
 
 export PATH
 
+if [[ -d "$HOME/go" ]]; then
+    # Just make sure the right folders are made
+    (
+        cd "$HOME/go"
+        mkdir -p src bin pkg src/github.com
+    )
+    export GOPATH="$HOME/go"
+fi
+
 if $GNU; then
     alias dir='ls -lF --color=auto'
 
