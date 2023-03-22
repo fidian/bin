@@ -16,9 +16,6 @@ if has("syntax")
     set modeline
 endif
 
-" Colorize colors
-ColorHighlight
-
 " Set some colors - http://vimdoc.sourceforge.net/htmldoc/syntax.html#E421
 " To test:  :runtime syntax/hitest.vim
 " To list:  :hi [Group - optional]
@@ -192,6 +189,9 @@ if has("autocmd")
     endfunction
 
     autocmd BufRead,FileType * call ALELSPMappings()
+
+    " Colorize colors with "c"
+    nnoremap <buffer> c :ColorToggle<CR>
 endif
 
 " Keep the cursor 5 lines away from the top/bottom
