@@ -16,6 +16,9 @@ if has("syntax")
     set modeline
 endif
 
+" Colorize colors
+ColorHighlight
+
 " Set some colors - http://vimdoc.sourceforge.net/htmldoc/syntax.html#E421
 " To test:  :runtime syntax/hitest.vim
 " To list:  :hi [Group - optional]
