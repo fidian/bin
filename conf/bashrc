@@ -319,7 +319,7 @@ bash::makePrompt() {
 PROMPT_COMMAND=bash::makePrompt
 
 case "${TERM}" in
-    xterm*)
+    xterm*|screen)
         # Set the title bar to the current directory
         PS1_TITLE_BAR='\[\033]2;\h:\w\007\]'
 
