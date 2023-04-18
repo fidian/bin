@@ -2,6 +2,14 @@ if has("autocmd")
     " Make *.less appear as "less"
     autocmd BufRead,BufNewFile *.less set filetype=less
 
+    " Make *.ts files appear as "typescript"
+    autocmd BufRead,BufNewFile *.ts set filetype=typescript
+
+	" Automatically set up per-filetype settings, like tag matching
+    filetype on
+    filetype plugin on
+	filetype plugin indent on
+
     " Enable bundles/plugins
     runtime! autoload/pathogen.vim
 
@@ -127,34 +135,11 @@ if has("autocmd")
 	command Wq wq
 	command Q q
 
-	" Automatically set up per-filetype settings, like tag matching
-	filetype plugin indent on
 	runtime macros/matchit.vim
-
-	" Automatically use spaces for YAML
-	autocmd Filetype yaml setlocal expandtab
-
-    " Turn on spell checking for Markdown
-    autocmd Filetype markdown setlocal spell! spelllang=en_us
 
     " Navigate to next/previous lint error with Ctrl-PageUp / Ctrl-PageDown
     nnoremap <C-PageUp> :ALEPreviousWrap<cr>
     nnoremap <C-PageDown> :ALENextWrap<cr>
-
-    " Ctrl-? for a type hint
-    autocmd FileType typescript nnoremap <silent> <C-?> :ALEHover<CR>
-
-
-    " Set up linters
-    let g:ale_linters = {
-    \   'typescript': ['tsserver'],
-    \}
-
-    " Disable languagetool because it's only meant for text
-    let g:ale_linters_ignore = {
-    \   'markdown': ['languagetool'],
-    \   'asciidoc': ['languagetool']
-    \}
 
     " Set up automatic jumps based on file type, so C-] and C-^ navigate
     " correctly.
