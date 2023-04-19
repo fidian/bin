@@ -138,8 +138,13 @@ if has("autocmd")
 	runtime macros/matchit.vim
 
     " Navigate to next/previous lint error with Ctrl-PageUp / Ctrl-PageDown
+    " Find keycodes by entering insert mode and press Ctrl-k then the key you
+    " want to find. If it starts with `[`, then add ESC (Ctrl-v Esc) before
+    " the code.
     nnoremap <C-PageUp> :ALEPreviousWrap<cr>
+    nnoremap [5;5~ :ALEPreviousWrap<cr>
     nnoremap <C-PageDown> :ALENextWrap<cr>
+    nnoremap [6;5~ :ALENextWrap<cr>
 
     " Set up automatic jumps based on file type, so C-] and C-^ navigate
     " correctly.
@@ -161,7 +166,9 @@ if has("autocmd")
             nnoremap <buffer> gh :ALEHover<cr>
             setlocal omnifunc=ale#completion#OmniFunc
             nnoremap <buffer> <C-]> :ALEGoToDefinition<CR>
+            nnoremap <buffer>  :ALEGoToDefinition<CR>
 		    nnoremap <buffer> <C-^> :ALEFindReferences<CR>
+            nnoremap <buffer>  :ALEFindReferences<CR>
         else
             silent! unmap <buffer> K
             silent! unmap <buffer> gr
@@ -169,7 +176,9 @@ if has("autocmd")
             silent! unmap <buffer> gy
             silent! unmap <buffer> gh
             silent! unmap <buffer> <C-]>
+            silent! unmap <buffer> 
             silent! unmap <buffer> <C-^>
+            silent! unmap <buffer> 
         endif
     endfunction
 
@@ -224,14 +233,18 @@ highlight ErrorCharacters ctermbg=red guibg=red
 match ErrorCharacters "[\u00a0\u1680\u180e\u2000-\u200b\u2014\u202f\u205f\u3000\uffff]"
 
 " Fold and unfold by using Control-Space.  vim in console sees
-" it as Control-@
+" it as Control-@ or <Nul>
 inoremap <C-Space> <C-O>za
-nnoremap <C-Space> za
-onoremap <C-Space> <C-C>za
-vnoremap <C-Space> zf
+inoremap <Nul> <C-O>za
 inoremap <C-@> <C-O>za
+nnoremap <C-Space> za
+nnoremap <Nul> za
 nnoremap <C-@> za
+onoremap <C-Space> <C-C>za
+onoremap <Nul> <C-C>za
 onoremap <C-@> <C-C>za
+vnoremap <C-Space> zf
+vnoremap <Nul> zf
 vnoremap <C-@> zf
 
 " If clipboard is available, set it to the unnamed (middle click) clipboard
@@ -243,9 +256,13 @@ endif
 " Move to another split using C-W and an arrow or C-W and j,k,l,;
 " Control-arrow resizes splits
 nnoremap <silent> <C-Right> <c-w>>
+nnoremap <silent> [1;5C <c-w>>
 nnoremap <silent> <C-Left> <c-w><
+nnoremap <silent> [1;5D <c-w><
 nnoremap <silent> <C-Down> <c-w>+
+nnoremap <silent> [1;5B <c-w>+
 nnoremap <silent> <C-Up> <c-w>-
+nnoremap <silent> [1;5A <c-w>-
 
 " Split to the bottom right by default. Useful for :Se, :Se!, :Ex, :Ex!
 set splitbelow
@@ -254,6 +271,7 @@ set splitright
 " Swap windows with Ctrl-w w - Press it on source window, then move to target
 " and press again.
 nnoremap <C-w>w :call WindowSwap#EasyWindowSwap()<CR>
+nnoremap w :call WindowSwap#EasyWindowSwap()<CR>
 
 " Change the sort sequence to directories first, then files (case sensitive)
 let g:netrw_sort_sequence="\\/$"
