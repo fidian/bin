@@ -46,3 +46,9 @@
 [submodule "conf/vim/bundle/vim-titlecase"]
 	path = conf/vim/bundle/vim-titlecase
 	url = https://github.com/christoomey/vim-titlecase
+[submodule "conf/vim/bundle/colorizer"]
+	path = conf/vim/bundle/colorizer
+	url = https://github.com/chrisbra/Colorizer
+[submodule "conf/vim/bundle/editorconfig-vim"]
+	path = conf/vim/bundle/editorconfig-vim
+	url = https://github.com/editorconfig/editorconfig-vim
