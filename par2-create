@@ -17,7 +17,6 @@ workOn() {
 }
 
 while [[ $# -gt 0 ]]; do
-    echo "$1"
     workOn "$1" || exit $?
     shift
 done
