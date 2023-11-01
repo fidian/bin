@@ -27,11 +27,11 @@ highlight Comment cterm=NONE ctermfg=cyan gui=NONE guifg=cyan
 " highlight Visual cterm=bold ctermfg=black ctermbg=gray
 highlight StatusLine cterm=NONE ctermfg=yellow ctermbg=DarkBlue gui=bold guifg=yellow guibg=blue
 " highlight String ctermfg=red
- highlight Normal cterm=NONE ctermfg=white guifg=white ctermbg=NONE
+highlight Normal cterm=NONE ctermfg=white guifg=white ctermbg=NONE
 " highlight MatchParen term=underline,bold cterm=underline,bold ctermbg=NONE
 highlight ErrorMsg term=standout cterm=bold ctermfg=white ctermbg=darkred guifg=Black guibg=Red
 highlight Search ctermfg=black ctermbg=yellow cterm=NONE
-highlight SpellBad ctermfg=white ctermbg=darkred
+highlight SpellBad ctermfg=white ctermbg=darkred cterm=bold
 highlight MatchParen ctermbg=darkblue ctermfg=gray
 highlight StatusLineNC ctermfg=black ctermbg=gray cterm=NONE
 
