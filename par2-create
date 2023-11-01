@@ -3,7 +3,7 @@
 workOn() {
     local fn=$1
 
-    if [[ "$1" =~ *.par2 ]]; then
+    if [[ "$1" == *.par2 ]]; then
         echo "This is a PAR2 file"
         return 0
     fi
