@@ -95,8 +95,11 @@ for branch in "${branches[@]}"; do
             if $found; then
                 $verbose && echo "Adding branch $branch to the list" >&2
                 deleteBranches+=( "$branch" )
+            elif $verbose; then
+                echo "Latest commit is not in any target branch" >&2
+                git log "$branch" --format="%h%x09%an%x09%ad%x09%s" | head -n 1
             else
-                $verbose && echo "Latest commit is not in any target branch" >&2
+                echo "# Skip $branch - $(git log "$branch" --format="%ad - %s" | head -n 1)"
             fi
         fi
     fi

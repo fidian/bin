@@ -1,14 +1,4 @@
-p360 --deploy=CB_Activation_JAGUARS##Deploy one-click build
-p360 --deploy=CB_Activation_JAGUARS --custom --SCM_BRANCH="{{branch}}"##Deploy specific branch
-for project in CB_Activation_JAGUARS CORE_BLUE_JAGUARS CB_Act_Services_JAGUARS; do p360 --deploy="$project"; done##Deploy all one-click builds
-for project in CB_Activation_JAGUARS CORE_BLUE_JAGUARS CB_Act_Services_JAGUARS; do p360 --deploy="$project" --custom --SCM_BRANCH="{{branch}}"; done##Deploy all custom branch builds
-while true; do date; for project in CB_Activation_JAGUARS CORE_BLUE_JAGUARS CB_Act_Services_JAGUARS; do echo "$(p360 "$project" | grep Status | cut -d " "  -f 2-)$(ansi --reset-color) ... $project"; done; sleep 15; done##Watch project deployment status
 pids=$(ps aux | grep Chrome | grep headless | tr -s ' ' | cut -d ' ' -f 2); if [[ -n "$pids" ]]; then kill $pids; fi##Kill Headless Chrome
 HAR={{har}} ; jq '.log.entries |= map(.response.content.text |= if length > 100000 then "---too long---" else . end)' "$HAR" > "${HAR%.har}-shorter.har"##Shorten HAR file
-HEADLESS=true npm run e2e##Run the end-to-end tests for an Angular project
-HEADLESS=true npm run test##Run headless tests
-HEADLESS=true npm run test-single-run##Run headless tests once
 docker run -it --rm -v "$PWD:/mnt" -w /mnt fidian/multishell##multishell
-npx ng serve --app mock -H "$(ipconfig getifaddr en0)" --disable-host-check##Serve Angular project publicly - whatever
-rsync -avP --delete /home/fidian/repo/scoutmasterbucky/build/ /home/fidian/Public/smb/##bucky
-filebot -rename --format "{plex.name}" -non-strict *.mkv##Rename movies for Plex
+filebot -rename --format "{plex.name}" -non-strict --mode interactive *.mkv##Rename movies for Plex
