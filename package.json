@@ -21,6 +21,7 @@
         "reformat-markdown-table": "latest",
         "svgo": "latest",
         "tiddlywiki": "latest",
+        "ts-unused-exports": "latest",
         "tslint": "latest",
         "tv4-cmd": "^1.0.1",
         "typescript": "latest",

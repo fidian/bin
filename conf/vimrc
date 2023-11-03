@@ -143,10 +143,12 @@ if has("autocmd")
 
     " Ctrl-? for a type hint
     autocmd FileType typescript nnoremap <silent> <C-?> :ALEHover<CR>
+    autocmd FileType javascript nnoremap <silent> <C-?> :ALEHover<CR>
 
 
     " Set up linters
     let g:ale_linters = {
+    \   'javascript': ['tsserver'],
     \   'typescript': ['tsserver'],
     \}
 
