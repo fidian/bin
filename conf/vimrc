@@ -144,7 +144,6 @@ if has("autocmd")
     autocmd FileType typescript nnoremap <silent> <C-?> :ALEHover<CR>
     autocmd FileType javascript nnoremap <silent> <C-?> :ALEHover<CR>
 
-
     " Set up linters
     let g:ale_linters = {
     \   'javascript': ['tsserver'],
