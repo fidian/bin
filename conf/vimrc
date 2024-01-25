@@ -112,18 +112,6 @@ if has("autocmd")
 	" Configure Syntastic syntax checking
 	" map <F5> :SyntasticToggleMode<CR>
 
-	" Insert <Tab> or complete identifier
-	" if the cursor is after a keyword character
-	" function MyTabOrComplete()
-	" 	let col = col('.')-1
-	" 	if !col || getline('.')[col-1] !~ '\k'
-	" 		return "\<tab>"
-	" 	else
-	" 		return "\<C-N>"
-	" 	endif
-	" endfunction
-	" inoremap <Tab> <C-R>=MyTabOrComplete()<CR>
-
     " Handle mistyped commands
 	command W w
 	command Wq wq
@@ -288,3 +276,6 @@ let g:netrw_sort_sequence="\\/$"
 
 " Show quotes in JSON files
 let g:vim_json_syntax_conceal = 0
+
+" Copilot
+imap <S-Tab> <Plug>(copilot-accept-word)

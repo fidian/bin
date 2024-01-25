@@ -52,3 +52,6 @@
 [submodule "conf/vim/bundle/editorconfig-vim"]
 	path = conf/vim/bundle/editorconfig-vim
 	url = https://github.com/editorconfig/editorconfig-vim
+[submodule "conf/vim/bundle/copilot.vim"]
+	path = conf/vim/bundle/copilot.vim
+	url = https://github.com/github/copilot.vim
