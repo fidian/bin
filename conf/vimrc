@@ -184,6 +184,9 @@ if has("autocmd")
 
     " Colorize colors with "c"
     nnoremap <buffer> c :ColorToggle<CR>
+
+    " Set vim-prettier to use prettier from ~/bin
+    let g:prettier#exec_cmd_path = "~/bin/node_modules/.bin/prettier"
 endif
 
 " Keep the cursor 5 lines away from the top/bottom
