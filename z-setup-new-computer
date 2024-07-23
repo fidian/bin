@@ -837,6 +837,10 @@ if ! checkPort 8384 && promptYesNo "Install SyncThing and set up as a user servi
     sudo systemctl start syncthing@"$USER".service
 fi
 
+if promptYesNo "Install prerequisites for OpenVideoDownloader?"; then
+    sudo apt install libfuse2t64 ffmpeg
+fi
+
 echo ""
 echo "You need to logout and login again to update fonts, groups, your PATH, and other settings."
 
