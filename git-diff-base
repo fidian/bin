@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [[ -z "$1" ]]; then
+  echo "Usage: git-diff-base <branch> [<against=HEAD>]"
+  exit 1
+fi
+
 AGAINST="${2:-HEAD}"
 HASH=$(git merge-base "$1" "$AGAINST")
 
