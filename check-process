@@ -24,6 +24,7 @@ Usage: check-process [OPTIONS] <PID/FILE>
 Options:
     --debug, -d     Write a lot of debugging information to stderr.
     --help, -h      Show this information.
+    --pid, -p       Show just the process ID from the file.
     --save, -s      Save information about the process ID to the file.
 
 Example:
@@ -64,6 +65,7 @@ set -eEu -o pipefail
 
 debugFlag=false
 saveFlag=false
+pidFlag=false
 argument=
 
 while [[ "$#" -gt 0 ]]; do
@@ -78,6 +80,11 @@ while [[ "$#" -gt 0 ]]; do
             debug "Showing help"
             showHelp
             exit 0
+            ;;
+
+        --pid | -p)
+            pidFlag=true
+            debug "Enabling PID mode"
             ;;
 
         --save | -s)
@@ -103,6 +110,11 @@ done
 if [[ -z "$argument" ]]; then
     showHelp
     exit 0
+fi
+
+if $pidFlag && $saveFlag; then
+    echo "Cannot save PID and show PID at the same time" >&2
+    exit 1
 fi
 
 if $saveFlag; then
@@ -145,6 +157,11 @@ else
     if [[ -z "$pid" ]]; then
         echo "Invalid information file: $argument" >&2
         exit 3
+    fi
+
+    if $pidFlag; then
+        echo "$pid"
+        exit 0
     fi
 
     if ! pidExists "$pid"; then
