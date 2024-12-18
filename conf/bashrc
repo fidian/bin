@@ -241,7 +241,7 @@ time::stampDiff() {
 }
 
 time::stampDiffToPs1() {
-    local decimal result
+    local decimal partial result
 
     time::stampDiff
 
@@ -249,14 +249,19 @@ time::stampDiffToPs1() {
         PS1+=$bashTimeStampDiff
     else
         decimal=${bashTimeStampDiff%.*}
+        partial=${bashTimeStampDiff#*.}
 
         # Try to preserve the same length in the prompt
         if [[ "$decimal" -lt 10 ]]; then
             # x.xx
-            printf -v result "%.2f" "$bashTimeStampDiff"
+            # Using printf with %f fails on Bash 5.2.32, Ubuntu 24.10
+            # printf -v result "%.2f" "$bashTimeStampDiff"
+            result="${decimal}.${partial:0:2}"
         elif [[ "$decimal" -lt 100 ]]; then
             # xx.x
-            printf -v result "%.1f" "$bashTimeStampDiff"
+            # Using printf with %f fails on Bash 5.2.32, Ubuntu 24.10
+            # printf -v result "%.1f" "$bashTimeStampDiff"
+            result="${decimal}.${partial:0:1}"
         elif [[ "$decimal" -lt 1000 ]]; then
             # xxx.
             result="${decimal}."
