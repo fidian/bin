@@ -22,9 +22,6 @@
 [submodule "src/git-squash"]
 	path = src/git-squash
 	url = https://github.com/jnothman/git-squash.git
-[submodule "conf/vim/bundle/vim-grammarous"]
-	path = conf/vim/bundle/vim-grammarous
-	url = https://github.com/rhysd/vim-grammarous.git
 [submodule "src/st"]
 	path = src/st
 	url = https://github.com/nferraz/st.git
