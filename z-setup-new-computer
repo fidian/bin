@@ -442,13 +442,7 @@ loadNvm
 
 if ! commandExists nvm && promptYesNo "Download and install Node.js using nvm?"; then
     requireCommand curl
-
-    if [[ ! -f bin/pup ]]; then
-        echo "bin/pup is required"
-        exit 1;
-    fi
-
-    latestNvm=$(curl https://github.com/nvm-sh/nvm/releases | bin/pup 'h2 text{}' | head -n 1)
+    latestNvm=$(curl https://api.github.com/repos/nvm-sh/nvm/releases/latest | grep 'tag_name' | cut -d '"' -f 4)
     debug "Latest NVM version: $latestNvm"
     curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/$latestNvm/install.sh" | PROFILE=/dev/null bash
 fi
