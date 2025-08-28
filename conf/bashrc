@@ -368,7 +368,11 @@ export PS4=$YEL'+'$NONE' '
 stty stop undef
 
 # Load nvm
-export NVM_DIR="$HOME/.nvm"
+if [[ -d "$HOME/.config/nvm" ]]; then
+    export NVM_DIR="$HOME/.config/nvm"
+elif [[ -d "$HOME/.nvm" ]]; then
+    export NVM_DIR="$HOME/.nvm"
+fi
 
 if [[ -s "$NVM_DIR/nvm.sh" ]]; then
     # shellcheck disable=SC1090
