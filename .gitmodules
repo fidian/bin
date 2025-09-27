@@ -52,3 +52,6 @@
 [submodule "conf/vim/bundle/copilot.vim"]
 	path = conf/vim/bundle/copilot.vim
 	url = https://github.com/github/copilot.vim
+[submodule "conf/vim/bundle/ansi-esc"]
+	path = conf/vim/bundle/ansi-esc
+	url = https://github.com/powerman/vim-plugin-AnsiEsc.git
