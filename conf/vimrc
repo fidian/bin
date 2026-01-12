@@ -282,3 +282,6 @@ let g:vim_json_syntax_conceal = 0
 
 " Copilot
 imap <S-Tab> <Plug>(copilot-accept-word)
+
+" Astro
+let g:astro_typescript = 'enable'
