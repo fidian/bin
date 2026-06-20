@@ -1,11 +1,12 @@
 {
     "private": true,
     "dependencies": {
-        "PrettyCSS": "latest",
+        "@github/copilot": "latest",
         "atomizer": "latest",
         "aws-es-curl": "latest",
         "babel-cli": "latest",
         "broken-link-checker": "latest",
+        "bun": "latest",
         "checkref": "latest",
         "eslint": "latest",
         "eslint_d": "latest",
@@ -18,6 +19,7 @@
         "npm": "latest",
         "npm-check-updates": "latest",
         "prettier": "latest",
+        "PrettyCSS": "latest",
         "reformat-markdown-table": "latest",
         "svgo": "latest",
         "tiddlywiki": "latest",

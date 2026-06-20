@@ -530,7 +530,7 @@ if promptYesNo "Set up git configuration?"; then
 fi
 
 # After git configured
-if [[ -d bin/ssh ]] && -d [[ .ssh ]]; then
+if [[ -d bin/ssh ]] && [[ -d .ssh ]]; then
     sshKeyFrom=".ssh/id_rsa.pub"
     sshKeyToDir="bin/ssh"
     sshKeyTo="$(hostname).pub"
